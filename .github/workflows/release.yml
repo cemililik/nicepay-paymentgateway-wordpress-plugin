@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Extract changelog for this version
+        id: changelog
+        run: |
+          # Extract the changelog section for the current version
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          CHANGELOG=$(awk "/^## \[${VERSION}\]/{found=1; next} /^## \[/{if(found) exit} found{print}" CHANGELOG.md)
+
+          if [ -z "$CHANGELOG" ]; then
+            CHANGELOG="Release v${VERSION}"
+          fi
+
+          # Write to file for multi-line support
+          echo "$CHANGELOG" > /tmp/changelog.txt
+
+      - name: Build plugin ZIP
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          PLUGIN_SLUG="nicepay-payment-gateway"
+
+          # Create a clean build directory
+          mkdir -p build/${PLUGIN_SLUG}
+
+          # Copy plugin files (exclude dev/test files)
+          cp -r admin/ build/${PLUGIN_SLUG}/
+          cp -r assets/ build/${PLUGIN_SLUG}/
+          cp -r includes/ build/${PLUGIN_SLUG}/
+          cp -r templates/ build/${PLUGIN_SLUG}/
+          cp -r languages/ build/${PLUGIN_SLUG}/ 2>/dev/null || mkdir -p build/${PLUGIN_SLUG}/languages
+          cp nicepay-payment-gateway.php build/${PLUGIN_SLUG}/
+          cp README.md build/${PLUGIN_SLUG}/
+          cp LICENSE build/${PLUGIN_SLUG}/
+          cp CHANGELOG.md build/${PLUGIN_SLUG}/
+
+          # Create ZIP
+          cd build
+          zip -r ../${PLUGIN_SLUG}-${VERSION}.zip ${PLUGIN_SLUG}/
+          cd ..
+
+          echo "ZIP_FILE=${PLUGIN_SLUG}-${VERSION}.zip" >> $GITHUB_ENV
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: v${{ steps.version.outputs.VERSION }}
+          body_path: /tmp/changelog.txt
+          files: ${{ env.ZIP_FILE }}
+          draft: false
+          prerelease: ${{ contains(github.ref, '-beta') || contains(github.ref, '-rc') || contains(github.ref, '-alpha') }}

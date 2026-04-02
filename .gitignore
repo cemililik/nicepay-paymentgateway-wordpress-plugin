@@ -15,3 +15,12 @@ vendor/
 
 # Build
 *.zip
+build/
+
+# Test
+tests/coverage/
+.phpunit.result.cache
+.phpunit.cache/
+
+# Composer
+composer.lock
