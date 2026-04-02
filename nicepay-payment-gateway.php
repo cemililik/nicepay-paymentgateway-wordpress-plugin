@@ -12,7 +12,7 @@
  * Requires PHP: 7.4
  * WC requires at least: 5.0
  * WC tested up to: 9.0
- * License: GPL-2.0+
+ * License: MIT
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
