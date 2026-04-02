@@ -210,8 +210,12 @@ class NicePay_Return_Handler {
                         <?php if ( ! empty( $data['VbankBankName'] ) ) : ?>
                             <dt><?php esc_html_e( 'Bank', 'nicepay-payment-gateway' ); ?></dt>
                             <dd><?php echo esc_html( $data['VbankBankName'] ); ?></dd>
+                        <?php endif; ?>
+                        <?php if ( ! empty( $data['VbankNum'] ) ) : ?>
                             <dt><?php esc_html_e( 'Account Number', 'nicepay-payment-gateway' ); ?></dt>
                             <dd><?php echo esc_html( $data['VbankNum'] ); ?></dd>
+                        <?php endif; ?>
+                        <?php if ( ! empty( $data['VbankExpDate'] ) ) : ?>
                             <dt><?php esc_html_e( 'Deposit Deadline', 'nicepay-payment-gateway' ); ?></dt>
                             <dd><?php echo esc_html( $data['VbankExpDate'] ); ?></dd>
                         <?php endif; ?>

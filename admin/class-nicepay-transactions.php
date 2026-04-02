@@ -203,8 +203,15 @@ class NicePay_Transactions {
             return;
         }
 
-        // Use stored transaction amount (not client-supplied) for full cancel
-        $cancel_amount = nicepay_get_amount( $transaction->amount );
+        // Use stored transaction amount with correct currency
+        $currency = '';
+        if ( $transaction->wc_order_id && function_exists( 'wc_get_order' ) ) {
+            $wc_order = wc_get_order( $transaction->wc_order_id );
+            if ( $wc_order ) {
+                $currency = $wc_order->get_currency();
+            }
+        }
+        $cancel_amount = nicepay_get_amount( $transaction->amount, $currency );
 
         $api    = new NicePay_API();
         $result = $api->request_cancel( $tid, $cancel_amount, $reason, $transaction->moid );
