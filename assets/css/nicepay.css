@@ -1,0 +1,259 @@
+/**
+ * NicePay Payment Gateway Styles
+ */
+
+/* Payment Form Wrapper */
+.nicepay-payment-wrapper {
+    max-width: 600px;
+    margin: 20px auto;
+    padding: 30px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.nicepay-payment-info h3 {
+    margin: 0 0 8px;
+    font-size: 20px;
+    color: #1a1a1a;
+}
+
+.nicepay-order-summary {
+    font-size: 16px;
+    color: #555;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #eee;
+}
+
+/* Payment Method Selector */
+.nicepay-method-selector {
+    margin-bottom: 24px;
+}
+
+.nicepay-method-selector > label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #333;
+    font-size: 14px;
+}
+
+.nicepay-methods {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.nicepay-method-option {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 12px 18px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    flex: 1 1 calc(50% - 10px);
+    min-width: 140px;
+}
+
+.nicepay-method-option:hover {
+    border-color: #2563eb;
+    background: #f0f4ff;
+}
+
+.nicepay-method-option input[type="radio"] {
+    margin-right: 8px;
+}
+
+.nicepay-method-option input[type="radio"]:checked + .nicepay-method-label {
+    color: #2563eb;
+    font-weight: 600;
+}
+
+.nicepay-method-option:has(input:checked),
+.nicepay-method-option.is-selected {
+    border-color: #2563eb;
+    background: #f0f4ff;
+}
+
+.nicepay-method-label {
+    font-size: 14px;
+    color: #333;
+}
+
+/* Submit Button */
+.nicepay-submit-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 24px;
+}
+
+.nicepay-pay-button {
+    display: inline-block;
+    padding: 14px 32px;
+    background: #2563eb;
+    color: #fff !important;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    text-decoration: none;
+}
+
+.nicepay-pay-button:hover {
+    background: #1d4ed8;
+    color: #fff !important;
+}
+
+.nicepay-pay-button:disabled {
+    background: #9ca3af;
+    cursor: not-allowed;
+}
+
+.nicepay-cancel-link {
+    color: #666;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.nicepay-cancel-link:hover {
+    color: #333;
+    text-decoration: underline;
+}
+
+/* Standalone Payment Form */
+.nicepay-standalone-wrapper {
+    margin: 16px 0;
+}
+
+/* Status Badges */
+.nicepay-status {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.nicepay-status-pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.nicepay-status-paid {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.nicepay-status-failed {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.nicepay-status-cancelled {
+    background: #f3f4f6;
+    color: #4b5563;
+}
+
+.nicepay-status-refunded {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+.nicepay-status-waiting {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+/* Admin Styles */
+.nicepay-admin .nicepay-settings-content {
+    margin-top: 20px;
+}
+
+.nicepay-admin .notice.inline {
+    margin: 16px 0;
+}
+
+.nicepay-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 16px;
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 6px;
+}
+
+.nicepay-filters select,
+.nicepay-filters input[type="date"],
+.nicepay-filters input[type="search"] {
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.nicepay-total-count {
+    color: #666;
+    font-size: 14px;
+}
+
+/* Shortcode Help */
+.nicepay-shortcode-help {
+    max-width: 800px;
+}
+
+.nicepay-code-block {
+    background: #1e293b;
+    padding: 16px 20px;
+    border-radius: 6px;
+    margin: 12px 0 24px;
+    overflow-x: auto;
+}
+
+.nicepay-code-block code {
+    color: #e2e8f0;
+    font-size: 13px;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .nicepay-payment-wrapper {
+        padding: 20px;
+        margin: 10px;
+    }
+
+    .nicepay-methods {
+        flex-direction: column;
+    }
+
+    .nicepay-method-option {
+        flex: 1 1 100%;
+    }
+
+    .nicepay-submit-wrapper {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .nicepay-pay-button {
+        text-align: center;
+    }
+
+    .nicepay-cancel-link {
+        text-align: center;
+    }
+
+    .nicepay-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}

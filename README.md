@@ -191,6 +191,10 @@ For virtual account deposit notifications (inbound):
 - NicePay Technical Support: `it@nicepay.co.kr`
 - Plugin Issues: [GitHub Issues](https://github.com/cemililik/nicepay-paymentgateway-wordpress-plugin/issues)
 
+## Contributing
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute, and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for our community standards.
+
 ## License
 
-GPL-2.0+
+This project is licensed under the [MIT License](LICENSE).
