@@ -182,13 +182,14 @@ class NicePaySignatureIntegrationTest extends TestCase {
     // -------------------------------------------------------
 
     public function test_auth_signature_does_not_verify_as_approval(): void {
-        // Auth sig = AuthToken+MID+Amt+Key
+        // Auth response sig = AuthToken+MID+Amt+Key
         $auth_plain = $this->authToken . $this->mid . $this->amt . $this->merchantKey;
         $auth_sig   = hash( 'sha256', $auth_plain );
 
-        // Should NOT pass approval verification (TID+MID+Amt+Key)
+        // Should NOT pass approval verification when TID differs from AuthToken
+        // Approval sig = TID+MID+Amt+Key (TID is a different value than AuthToken)
         $this->assertFalse(
-            $this->api->verify_approval_signature( $this->authToken, $this->amt, $auth_sig )
+            $this->api->verify_approval_signature( $this->tid, $this->amt, $auth_sig )
         );
     }
 

@@ -14,14 +14,15 @@
         </testsuite>
     </testsuites>
 
-    <coverage processUncoveredFiles="true">
+    <coverage processUncoveredFiles="false">
         <include>
             <directory suffix=".php">includes</directory>
-            <file>nicepay-payment-gateway.php</file>
         </include>
         <exclude>
             <directory>vendor</directory>
             <directory>tests</directory>
+            <file>includes/class-nicepay-gateway.php</file>
+            <file>includes/class-nicepay-return-handler.php</file>
         </exclude>
     </coverage>
 </phpunit>
