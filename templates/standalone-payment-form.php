@@ -15,10 +15,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 $api = new NicePay_API();
 $edi_date = $api->generate_edi_date();
 $moid     = $api->generate_moid( 'SP' );
-$amount   = sanitize_text_field( $atts['amount'] );
 $currency = sanitize_text_field( $atts['currency'] );
 $language = NicePay_API::get_nicepay_lang( $atts['language'] );
 $charset  = get_option( 'nicepay_charset', 'utf-8' );
+
+// Normalize amount: strip non-numeric chars except decimal point, validate
+$raw_amount = preg_replace( '/[^0-9.]/', '', sanitize_text_field( $atts['amount'] ) );
+$amount     = nicepay_get_amount( $raw_amount, $currency );
+
+if ( empty( $amount ) || (float) $amount <= 0 ) {
+    echo '<p>' . esc_html__( 'Invalid payment amount.', 'nicepay-payment-gateway' ) . '</p>';
+    return;
+}
 
 $sign_data      = $api->create_auth_sign_data( $edi_date, $amount );
 $return_url     = home_url( '/nicepay-return/' );
@@ -29,24 +37,26 @@ if ( $pay_method && ! in_array( $pay_method, $enabled_methods, true ) ) {
     $pay_method = '';
 }
 
-// Determine if we need method selection
 $show_method_selector = empty( $pay_method ) && count( $enabled_methods ) > 1;
 $default_method = $pay_method ? $pay_method : $enabled_methods[0];
 
 $form_id = 'nicepay-standalone-' . wp_rand( 1000, 9999 );
 
-// Save initial transaction record
-if ( $amount ) {
-    nicepay_save_transaction( array(
-        'order_id'    => $moid,
-        'moid'        => $moid,
-        'amount'      => $amount,
-        'status'      => 'pending',
-        'buyer_name'  => sanitize_text_field( $atts['buyer_name'] ),
-        'buyer_email' => sanitize_email( $atts['buyer_email'] ),
-        'buyer_tel'   => sanitize_text_field( $atts['buyer_tel'] ),
-        'goods_name'  => sanitize_text_field( $atts['goods_name'] ),
-    ) );
+// Save initial transaction record (must succeed before rendering form)
+$tx_id = nicepay_save_transaction( array(
+    'order_id'    => $moid,
+    'moid'        => $moid,
+    'amount'      => $amount,
+    'status'      => 'pending',
+    'buyer_name'  => sanitize_text_field( $atts['buyer_name'] ),
+    'buyer_email' => sanitize_email( $atts['buyer_email'] ),
+    'buyer_tel'   => sanitize_text_field( $atts['buyer_tel'] ),
+    'goods_name'  => mb_strcut( sanitize_text_field( $atts['goods_name'] ), 0, 40, 'UTF-8' ),
+) );
+
+if ( $tx_id === false ) {
+    echo '<p>' . esc_html__( 'Payment initialization failed. Please try again.', 'nicepay-payment-gateway' ) . '</p>';
+    return;
 }
 ?>
 

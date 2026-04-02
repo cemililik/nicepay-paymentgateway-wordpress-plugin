@@ -99,6 +99,12 @@ if ( ! function_exists( 'is_wp_error' ) ) {
     }
 }
 
+if ( ! function_exists( 'wp_parse_url' ) ) {
+    function wp_parse_url( $url, $component = -1 ) {
+        return parse_url( $url, $component );
+    }
+}
+
 if ( ! function_exists( 'absint' ) ) {
     function absint( $value ) {
         return abs( (int) $value );

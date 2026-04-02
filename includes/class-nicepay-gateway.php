@@ -136,8 +136,8 @@ class WC_Gateway_NicePay extends WC_Payment_Gateway {
             }
         }
 
-        // Truncate goods name to 40 bytes
-        $goods_name = mb_substr( $goods_name, 0, 38 );
+        // Truncate goods name to 40 bytes (NicePay limit is byte-based)
+        $goods_name = mb_strcut( $goods_name, 0, 40, 'UTF-8' );
 
         $sign_data = $this->api->create_auth_sign_data( $edi_date, $amount );
         $enabled_methods = get_option( 'nicepay_enabled_methods', array( 'CARD' ) );
@@ -151,7 +151,7 @@ class WC_Gateway_NicePay extends WC_Payment_Gateway {
         $order->save();
 
         // Save initial transaction record
-        nicepay_save_transaction( array(
+        $tx_id = nicepay_save_transaction( array(
             'order_id'        => $moid,
             'wc_order_id'     => $order->get_id(),
             'moid'            => $moid,
@@ -162,6 +162,15 @@ class WC_Gateway_NicePay extends WC_Payment_Gateway {
             'buyer_tel'       => $order->get_billing_phone(),
             'goods_name'      => $goods_name,
         ) );
+
+        if ( $tx_id === false ) {
+            nicepay_log( 'Failed to save initial transaction for order', $order->get_id() );
+            $order->update_status( 'failed', __( 'NicePay: failed to initialize transaction.', 'nicepay-payment-gateway' ) );
+            wc_add_notice( __( 'Payment initialization failed. Please try again.', 'nicepay-payment-gateway' ), 'error' );
+            echo '<p>' . esc_html__( 'Payment initialization failed. Please return to checkout.', 'nicepay-payment-gateway' ) . '</p>';
+            echo '<a href="' . esc_url( wc_get_checkout_url() ) . '">' . esc_html__( 'Return to Checkout', 'nicepay-payment-gateway' ) . '</a>';
+            return;
+        }
 
         $form_data = array(
             'GoodsName'    => $goods_name,
@@ -253,9 +262,9 @@ class WC_Gateway_NicePay extends WC_Payment_Gateway {
             exit;
         }
 
-        // Verify authentication signature
-        if ( $signature && ! $this->api->verify_auth_signature( $auth_token, $amt, $signature ) ) {
-            nicepay_log( 'Auth signature verification failed' );
+        // Verify authentication signature (required)
+        if ( empty( $signature ) || ! $this->api->verify_auth_signature( $auth_token, $amt, $signature ) ) {
+            nicepay_log( empty( $signature ) ? 'Auth signature missing' : 'Auth signature invalid' );
 
             nicepay_update_transaction( $transaction->id, array(
                 'status'      => 'failed',
@@ -410,9 +419,15 @@ class WC_Gateway_NicePay extends WC_Payment_Gateway {
         }
 
         $moid = $order->get_meta( '_nicepay_moid' );
+
+        // Null amount means full refund
+        if ( is_null( $amount ) ) {
+            $amount = $order->get_total();
+        }
+
         $cancel_amt = nicepay_get_amount( $amount, $order->get_currency() );
         $total_amt  = nicepay_get_amount( $order->get_total(), $order->get_currency() );
-        $is_partial = ( (float) $amount < (float) $order->get_total() );
+        $is_partial = ( (float) $cancel_amt < (float) $total_amt );
 
         if ( ! $reason ) {
             $reason = __( 'Refund requested by merchant', 'nicepay-payment-gateway' );

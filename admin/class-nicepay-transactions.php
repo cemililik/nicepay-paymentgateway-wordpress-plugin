@@ -189,7 +189,6 @@ class NicePay_Transactions {
     public function ajax_cancel_transaction() {
         $id     = isset( $_POST['id'] ) ? (int) $_POST['id'] : 0;
         $tid    = isset( $_POST['tid'] ) ? sanitize_text_field( wp_unslash( $_POST['tid'] ) ) : '';
-        $amount = isset( $_POST['amount'] ) ? sanitize_text_field( wp_unslash( $_POST['amount'] ) ) : '';
         $reason = isset( $_POST['reason'] ) ? sanitize_text_field( wp_unslash( $_POST['reason'] ) ) : '';
         $nonce  = isset( $_POST['nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['nonce'] ) ) : '';
 
@@ -204,8 +203,11 @@ class NicePay_Transactions {
             return;
         }
 
+        // Use stored transaction amount (not client-supplied) for full cancel
+        $cancel_amount = nicepay_get_amount( $transaction->amount );
+
         $api    = new NicePay_API();
-        $result = $api->request_cancel( $tid, $amount, $reason, $transaction->moid );
+        $result = $api->request_cancel( $tid, $cancel_amount, $reason, $transaction->moid );
 
         if ( is_wp_error( $result ) ) {
             wp_send_json_error( array( 'message' => $result->get_error_message() ) );

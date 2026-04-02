@@ -71,7 +71,8 @@
     font-weight: 600;
 }
 
-.nicepay-method-option:has(input:checked) {
+.nicepay-method-option:has(input:checked),
+.nicepay-method-option.is-selected {
     border-color: #2563eb;
     background: #f0f4ff;
 }

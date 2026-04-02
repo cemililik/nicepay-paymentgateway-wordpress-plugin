@@ -51,8 +51,10 @@ if ( ! defined( 'ABSPATH' ) ) {
             <input type="hidden" name="<?php echo esc_attr( $key ); ?>" value="<?php echo esc_attr( $value ); ?>">
         <?php endforeach; ?>
 
+        <?php if ( ! empty( $enabled_methods ) ) : ?>
         <input type="hidden" name="PayMethod" id="nicepay-pay-method"
-               value="<?php echo esc_attr( count( $enabled_methods ) === 1 ? $enabled_methods[0] : $enabled_methods[0] ); ?>">
+               value="<?php echo esc_attr( $enabled_methods[0] ); ?>">
+        <?php endif; ?>
 
         <?php if ( in_array( 'CELLPHONE', $enabled_methods, true ) ) : ?>
             <input type="hidden" name="GoodsCl" value="1">
@@ -73,27 +75,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 (function() {
     'use strict';
 
-    var methodRadios = document.querySelectorAll('input[name="nicepay_pay_method"]');
-    var payMethodInput = document.getElementById('nicepay-pay-method');
-    var submitBtn = document.getElementById('nicepay-submit-btn');
-
-    // Update PayMethod when radio selection changes
-    methodRadios.forEach(function(radio) {
-        radio.addEventListener('change', function() {
-            payMethodInput.value = this.value;
-        });
-    });
-
-    // Submit handler
-    submitBtn.addEventListener('click', function() {
-        if (!payMethodInput.value) {
-            alert('<?php echo esc_js( __( 'Please select a payment method.', 'nicepay-payment-gateway' ) ); ?>');
-            return;
-        }
-        nicepayStart();
-    });
-
     // NicePay callback functions (required by nicepay-pgweb.js)
+    // DOM event handling is in assets/js/nicepay.js to avoid duplicate bindings
     window.nicepaySubmit = function() {
         document.payForm.submit();
     };

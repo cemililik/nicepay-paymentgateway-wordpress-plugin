@@ -66,9 +66,9 @@ class NicePay_Return_Handler {
             return;
         }
 
-        // Verify auth signature
-        if ( $signature && ! $this->api->verify_auth_signature( $auth_token, $amt, $signature ) ) {
-            nicepay_log( 'Standalone auth signature verification failed' );
+        // Verify auth signature (required)
+        if ( empty( $signature ) || ! $this->api->verify_auth_signature( $auth_token, $amt, $signature ) ) {
+            nicepay_log( empty( $signature ) ? 'Standalone auth signature missing' : 'Standalone auth signature invalid' );
 
             if ( $transaction ) {
                 nicepay_update_transaction( $transaction->id, array(

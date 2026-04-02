@@ -254,7 +254,7 @@ function nicepay_get_amount( $amount, $currency = '' ) {
         return (string) (int) $amount;
     }
 
-    return (string) $amount;
+    return number_format( (float) $amount, 2, '.', '' );
 }
 
 /**

@@ -72,6 +72,14 @@ class NicePayFunctionsTest extends TestCase {
         $this->assertEquals( '99.99', nicepay_get_amount( 99.99, 'USD' ) );
     }
 
+    public function test_get_amount_usd_pads_trailing_zeros(): void {
+        $this->assertEquals( '50.00', nicepay_get_amount( 50, 'USD' ) );
+    }
+
+    public function test_get_amount_usd_fixed_two_decimals(): void {
+        $this->assertEquals( '10.50', nicepay_get_amount( 10.5, 'USD' ) );
+    }
+
     public function test_get_amount_default_currency(): void {
         update_option( 'nicepay_currency', 'KRW' );
         $this->assertEquals( '5000', nicepay_get_amount( 5000 ) );

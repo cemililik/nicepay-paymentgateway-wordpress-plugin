@@ -232,24 +232,28 @@ echo 'Total: ' . $result['total'];
 
 ### Override WooCommerce Payment Form
 
-Copy `templates/payment-form.php` to your theme:
-
-```
-your-theme/nicepay/payment-form.php
-```
-
-Then in your theme's `functions.php`:
+The plugin uses a direct `include` to load `templates/payment-form.php`. To override it, use the `nicepay_payment_form_template` filter (or hook into `woocommerce_receipt_nicepay` with a higher priority to replace the output):
 
 ```php
-add_filter( 'woocommerce_locate_template', function( $template, $template_name, $template_path ) {
-    if ( strpos( $template, 'nicepay' ) !== false ) {
-        $theme_template = get_stylesheet_directory() . '/nicepay/' . basename( $template );
-        if ( file_exists( $theme_template ) ) {
-            return $theme_template;
-        }
+// Option 1: Replace the template path via filter
+add_filter( 'nicepay_payment_form_template', function( $template_path ) {
+    $theme_template = get_stylesheet_directory() . '/nicepay/payment-form.php';
+    if ( file_exists( $theme_template ) ) {
+        return $theme_template;
     }
-    return $template;
-}, 10, 3 );
+    return $template_path;
+} );
+```
+
+> **Note:** This filter needs the gateway to apply it. If you need a quick override, you can unhook the default `receipt_page` and add your own:
+
+```php
+// Option 2: Replace the receipt page handler entirely
+add_action( 'init', function() {
+    // Remove the default handler and add your own
+    remove_action( 'woocommerce_receipt_nicepay', array( WC()->payment_gateways()->get_available_payment_gateways()['nicepay'], 'receipt_page' ) );
+    add_action( 'woocommerce_receipt_nicepay', 'my_custom_nicepay_receipt' );
+} );
 ```
 
 ### Customize Button Styling

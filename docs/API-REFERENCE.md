@@ -295,7 +295,7 @@ flowchart TD
 
 ### Verification Example
 
-```
+```text
 MID          = "nicepay00m"
 MerchantKey  = "EYzu8jGGMfqaDEp76gSckuvnaHHu+bC4opsSN6lHv3b2lurNYkVXrZ7Z1AoqQnXI3eLuaUFyoRNC6FkrzVjceg=="
 EdiDate      = "20200622131021"

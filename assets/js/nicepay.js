@@ -6,46 +6,55 @@
 (function($) {
     'use strict';
 
-    /**
-     * NicePay Payment Handler
-     */
     var NicePayHandler = {
         init: function() {
             this.bindEvents();
+            this.updateMethodSelection();
         },
 
         bindEvents: function() {
-            // Payment method radio selection (WooCommerce receipt page)
+            // Payment method radio selection
             $(document).on('change', 'input[name="nicepay_pay_method"]', function() {
                 $('#nicepay-pay-method').val($(this).val());
+                NicePayHandler.updateMethodSelection();
             });
 
-            // Submit button click (WooCommerce receipt page)
+            // Submit button click
             $(document).on('click', '#nicepay-submit-btn', function(e) {
                 e.preventDefault();
                 NicePayHandler.startPayment();
             });
         },
 
+        /**
+         * Update .is-selected class on method options (CSS :has() fallback)
+         */
+        updateMethodSelection: function() {
+            $('.nicepay-method-option').removeClass('is-selected');
+            $('.nicepay-method-option input:checked').closest('.nicepay-method-option').addClass('is-selected');
+        },
+
         startPayment: function() {
             var payMethod = $('#nicepay-pay-method').val();
 
             if (!payMethod) {
-                alert(nicepayParams.i18n.selectMethod);
+                if (typeof nicepayParams !== 'undefined') {
+                    alert(nicepayParams.i18n.selectMethod);
+                }
                 return;
             }
 
-            // Check if nicepayStart exists (from NicePay's JS)
             if (typeof nicepayStart === 'function') {
                 nicepayStart();
             } else {
-                console.error('[NicePay] nicepayStart function not available. Check if nicepay-pgweb.js loaded correctly.');
-                alert(nicepayParams.i18n.error);
+                console.error('[NicePay] nicepayStart not available. Check if nicepay-pgweb.js loaded.');
+                if (typeof nicepayParams !== 'undefined') {
+                    alert(nicepayParams.i18n.error);
+                }
             }
         }
     };
 
-    // Initialize when DOM is ready
     $(document).ready(function() {
         NicePayHandler.init();
     });

@@ -125,6 +125,55 @@ class NicePay_API {
     }
 
     /**
+     * Allowed NicePay API hostnames for SSRF protection
+     */
+    private static $allowed_hosts = array(
+        'dc1-api.nicepay.co.kr',
+        'dc2-api.nicepay.co.kr',
+        'pg-api.nicepay.co.kr',
+        'pg-web.nicepay.co.kr',
+    );
+
+    /**
+     * Validate that a URL points to an allowed NicePay host (SSRF protection)
+     */
+    private function validate_nicepay_url( $url ) {
+        $parsed = wp_parse_url( $url );
+
+        if ( ! $parsed || empty( $parsed['scheme'] ) || empty( $parsed['host'] ) ) {
+            return false;
+        }
+
+        if ( $parsed['scheme'] !== 'https' ) {
+            return false;
+        }
+
+        return in_array( $parsed['host'], self::$allowed_hosts, true );
+    }
+
+    /**
+     * Redact sensitive fields from data before logging
+     */
+    private function redact_for_log( $data ) {
+        if ( ! is_array( $data ) ) {
+            return $data;
+        }
+
+        $sensitive_keys = array(
+            'AuthToken', 'SignData', 'Signature', 'MerchantKey',
+            'CardNo', 'CardNumber', 'VbankNum',
+        );
+
+        foreach ( $sensitive_keys as $key ) {
+            if ( isset( $data[ $key ] ) && is_string( $data[ $key ] ) && strlen( $data[ $key ] ) > 8 ) {
+                $data[ $key ] = substr( $data[ $key ], 0, 4 ) . '****' . substr( $data[ $key ], -4 );
+            }
+        }
+
+        return $data;
+    }
+
+    /**
      * Send approval request to NicePay
      *
      * @param array $auth_data Authentication response data
@@ -132,7 +181,14 @@ class NicePay_API {
      */
     public function request_approval( $auth_data ) {
         $next_app_url = $auth_data['NextAppURL'];
-        $edi_date     = $this->generate_edi_date();
+
+        // SSRF protection: validate URL host
+        if ( ! $this->validate_nicepay_url( $next_app_url ) ) {
+            nicepay_log( 'Approval URL validation failed', $next_app_url );
+            return new WP_Error( 'nicepay_url_error', __( 'Invalid approval URL.', 'nicepay-payment-gateway' ) );
+        }
+
+        $edi_date = $this->generate_edi_date();
 
         $params = array(
             'TID'       => $auth_data['TxTid'],
@@ -149,8 +205,9 @@ class NicePay_API {
         );
 
         nicepay_log( 'Approval request', array(
-            'url'    => $next_app_url,
-            'params' => array_diff_key( $params, array( 'SignData' => '' ) ),
+            'url' => $next_app_url,
+            'TID' => $auth_data['TxTid'],
+            'Amt' => $auth_data['Amt'],
         ) );
 
         $response = wp_remote_post( $next_app_url, array(
@@ -165,7 +222,6 @@ class NicePay_API {
         if ( is_wp_error( $response ) ) {
             nicepay_log( 'Approval request failed', $response->get_error_message() );
 
-            // Attempt network cancel on connection failure
             if ( ! empty( $auth_data['NetCancelURL'] ) ) {
                 $this->request_net_cancel( $auth_data );
             }
@@ -177,7 +233,7 @@ class NicePay_API {
         $result = json_decode( $body, true );
 
         if ( ! $result ) {
-            nicepay_log( 'Approval response parse error', $body );
+            nicepay_log( 'Approval response parse error' );
 
             if ( ! empty( $auth_data['NetCancelURL'] ) ) {
                 $this->request_net_cancel( $auth_data );
@@ -186,20 +242,28 @@ class NicePay_API {
             return new WP_Error( 'nicepay_parse_error', __( 'Failed to parse approval response.', 'nicepay-payment-gateway' ) );
         }
 
-        nicepay_log( 'Approval response', $result );
+        nicepay_log( 'Approval response', $this->redact_for_log( $result ) );
 
-        // Verify signature
-        if ( ! empty( $result['Signature'] ) && ! empty( $result['TID'] ) ) {
-            $amt = isset( $result['Amt'] ) ? $result['Amt'] : $auth_data['Amt'];
-            if ( ! $this->verify_approval_signature( $result['TID'], $amt, $result['Signature'] ) ) {
-                nicepay_log( 'Approval signature verification failed' );
+        // Require and verify signature
+        if ( empty( $result['Signature'] ) || empty( $result['TID'] ) ) {
+            nicepay_log( 'Approval response missing Signature or TID' );
 
-                if ( ! empty( $auth_data['NetCancelURL'] ) ) {
-                    $this->request_net_cancel( $auth_data );
-                }
-
-                return new WP_Error( 'nicepay_signature_error', __( 'Signature verification failed.', 'nicepay-payment-gateway' ) );
+            if ( ! empty( $auth_data['NetCancelURL'] ) ) {
+                $this->request_net_cancel( $auth_data );
             }
+
+            return new WP_Error( 'nicepay_signature_error', __( 'Missing signature in approval response.', 'nicepay-payment-gateway' ) );
+        }
+
+        $amt = isset( $result['Amt'] ) ? $result['Amt'] : $auth_data['Amt'];
+        if ( ! $this->verify_approval_signature( $result['TID'], $amt, $result['Signature'] ) ) {
+            nicepay_log( 'Approval signature verification failed' );
+
+            if ( ! empty( $auth_data['NetCancelURL'] ) ) {
+                $this->request_net_cancel( $auth_data );
+            }
+
+            return new WP_Error( 'nicepay_signature_error', __( 'Signature verification failed.', 'nicepay-payment-gateway' ) );
         }
 
         return $result;
@@ -213,7 +277,13 @@ class NicePay_API {
      */
     public function request_net_cancel( $auth_data ) {
         $net_cancel_url = $auth_data['NetCancelURL'];
-        $edi_date       = $this->generate_edi_date();
+
+        if ( ! $this->validate_nicepay_url( $net_cancel_url ) ) {
+            nicepay_log( 'Net cancel URL validation failed', $net_cancel_url );
+            return new WP_Error( 'nicepay_url_error', __( 'Invalid cancel URL.', 'nicepay-payment-gateway' ) );
+        }
+
+        $edi_date = $this->generate_edi_date();
 
         $params = array(
             'TID'       => $auth_data['TxTid'],
@@ -230,7 +300,7 @@ class NicePay_API {
             'CharSet'   => $this->charset,
         );
 
-        nicepay_log( 'Network cancel request', array( 'url' => $net_cancel_url ) );
+        nicepay_log( 'Network cancel request', array( 'TID' => $auth_data['TxTid'] ) );
 
         $response = wp_remote_post( $net_cancel_url, array(
             'timeout'   => 30,
@@ -249,7 +319,7 @@ class NicePay_API {
         $body   = wp_remote_retrieve_body( $response );
         $result = json_decode( $body, true );
 
-        nicepay_log( 'Network cancel response', $result );
+        nicepay_log( 'Network cancel response', $result ? $this->redact_for_log( $result ) : 'parse_error' );
         return $result ? $result : new WP_Error( 'nicepay_parse_error', __( 'Failed to parse cancel response.', 'nicepay-payment-gateway' ) );
     }
 
@@ -305,11 +375,21 @@ class NicePay_API {
         $result = json_decode( $body, true );
 
         if ( ! $result ) {
-            nicepay_log( 'Cancel response parse error', $body );
+            nicepay_log( 'Cancel response parse error' );
             return new WP_Error( 'nicepay_parse_error', __( 'Failed to parse cancel response.', 'nicepay-payment-gateway' ) );
         }
 
-        nicepay_log( 'Cancel response', $result );
+        nicepay_log( 'Cancel response', $this->redact_for_log( $result ) );
+
+        // Verify cancel response signature
+        if ( ! empty( $result['TID'] ) && ! empty( $result['Signature'] ) ) {
+            $resp_cancel_amt = isset( $result['CancelAmt'] ) ? $result['CancelAmt'] : $cancel_amt;
+            if ( ! $this->verify_cancel_signature( $result['TID'], $resp_cancel_amt, $result['Signature'] ) ) {
+                nicepay_log( 'Cancel response signature verification failed' );
+                return new WP_Error( 'nicepay_signature_error', __( 'Cancel signature verification failed.', 'nicepay-payment-gateway' ) );
+            }
+        }
+
         return $result;
     }
 

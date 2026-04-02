@@ -63,8 +63,7 @@ final class NicePay_Payment_Gateway {
     }
 
     private function init_hooks() {
-        register_activation_hook( __FILE__, array( $this, 'activate' ) );
-        register_deactivation_hook( __FILE__, array( $this, 'deactivate' ) );
+        // Activation/deactivation hooks registered at file scope (see bottom of file)
 
         add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
         add_action( 'plugins_loaded', array( $this, 'init_woocommerce_gateway' ), 11 );
@@ -86,6 +85,8 @@ final class NicePay_Payment_Gateway {
     public function activate() {
         $this->create_tables();
         $this->set_default_options();
+        // Register endpoints before flushing so the rewrite rules are persisted
+        $this->register_endpoints();
         flush_rewrite_rules();
     }
 
@@ -175,9 +176,12 @@ final class NicePay_Payment_Gateway {
     }
 
     public function enqueue_scripts() {
-        $load_scripts = is_checkout() || $this->is_payment_page();
+        $load_scripts = $this->is_payment_page();
 
-        // Also load on checkout pay page (receipt page)
+        if ( ! $load_scripts && function_exists( 'is_checkout' ) ) {
+            $load_scripts = is_checkout();
+        }
+
         if ( ! $load_scripts && function_exists( 'is_checkout_pay_page' ) ) {
             $load_scripts = is_checkout_pay_page();
         }
@@ -278,6 +282,17 @@ final class NicePay_Payment_Gateway {
         return $links;
     }
 }
+
+// Activation/deactivation hooks must be registered at file scope
+register_activation_hook( __FILE__, function () {
+    $plugin = NicePay_Payment_Gateway::instance();
+    $plugin->activate();
+} );
+
+register_deactivation_hook( __FILE__, function () {
+    $plugin = NicePay_Payment_Gateway::instance();
+    $plugin->deactivate();
+} );
 
 /**
  * Initialize the plugin
