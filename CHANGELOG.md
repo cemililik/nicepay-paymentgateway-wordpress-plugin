@@ -2,17 +2,31 @@
 
 All notable changes to the NicePay Payment Gateway plugin are documented in this file.
 
-## [2.0.0] - 2026-04-02
+## [2.0.0] - 2026-04-03
 
-Complete rewrite of the plugin with clean architecture and improved reliability.
+Complete rewrite of the plugin with clean architecture, modern UI, and improved reliability.
 
 ### Added
 
+- **Shortcode Manager** — Admin UI to create, save, edit, and delete payment shortcodes with card grid view
+- **Shortcode Generator** — Interactive builder with live preview, color picker, display mode selector, and save/update functionality
+- **Display Modes** — `inline` (form on page) and `modal` (button opens popup overlay) via `display_mode` parameter
+- **Saved Shortcodes** — Store shortcode configs in database, reference by ID: `[nicepay_payment id="quick-payment"]`
+- **Default Presets** — 4 built-in shortcode templates (Quick Payment, Donation, Product Purchase, Subscription)
+- **Button Color Customization** — `button_color` parameter with hex color picker and 6 preset swatches
+- **Payment Method SVG Icons** — Inline SVG icons for all 6 payment methods in checkout and admin
+- **Interactive Buyer Fields** — When buyer info not pre-filled, form shows input fields with client-side validation
+- **AJAX Payment Init** — Transaction record created only when buyer clicks pay (not on page load)
+- **Modal Cancel Dialog** — Accessible modal replaces `prompt()/alert()` for transaction cancellation
+- **Toast Notifications** — Slide-in notifications replace `alert()` for admin feedback
+- **TID Copy to Clipboard** — One-click copy with visual confirmation in transaction list
+- **Loading States** — Full-screen overlay with spinner, button spinner animation during payment
+- **Animated Result Page** — Fade+slide entrance, icon pop animation, special VBank deposit card
 - **WooCommerce Refund Support** — Full and partial refunds from order edit screen via `process_refund()`
-- **Payment Method Selection** — Radio button UI for choosing between enabled methods at checkout
+- **Payment Method Selection** — Custom radio UI with icons for choosing between enabled methods
 - **Configurable VBank Expiry** — Virtual account expiry days adjustable from admin (1-30 days)
 - **Transaction Database** — Dedicated `wp_nicepay_transactions` table with proper indexing
-- **Admin Transaction Panel** — Filterable, searchable transaction history with inline cancel
+- **Admin Transaction Panel** — Filterable, searchable transaction history with styled empty states
 - **Signature Verification** — SHA-256 verification on all request/response pairs using `hash_equals()`
 - **Network Cancel** — Automatic rollback on approval failures (timeout, parse error, signature mismatch)
 - **Standalone Payments** — `[nicepay_payment]` shortcode for embedding payment buttons on any page

@@ -481,3 +481,6 @@ msgstr "取消失败。"
 
 msgid "Cancelled via NicePay admin."
 msgstr "通过NicePay管理后台取消。"
+
+msgid "Payment system is currently unavailable. Please try again later."
+msgstr "支付系统暂不可用，请稍后再试。"

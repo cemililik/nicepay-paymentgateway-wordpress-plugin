@@ -180,7 +180,56 @@
     });
 
     /* ==========================================
-       Copy to Clipboard
+       Shortcode Card: Copy
+       ========================================== */
+    $(document).on('click', '.nicepay-sc-card-copy', function() {
+        var btn = $(this);
+        var text = btn.data('shortcode');
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function() {
+                NicePayToast.show(nicepayAdmin.i18n.copied || 'Copied!', 'success', 2000);
+            });
+        }
+    });
+
+    /* ==========================================
+       Shortcode Card: Delete
+       ========================================== */
+    $(document).on('click', '.nicepay-sc-card-delete', function() {
+        var btn = $(this);
+        var id = btn.data('id');
+        var nonce = btn.data('nonce');
+
+        NicePayModal.open({
+            title: nicepayAdmin.i18n.deleteConfirmTitle || 'Delete Shortcode',
+            message: nicepayAdmin.i18n.deleteConfirmMsg || 'Are you sure?',
+            inputPlaceholder: '',
+            confirmText: nicepayAdmin.i18n.delete || 'Delete',
+            confirmClass: 'nicepay-modal-btn-danger',
+            onConfirm: function(val, modal) {
+                modal.setLoading(true);
+                $.post(nicepayAdmin.ajaxUrl, {
+                    action: 'nicepay_delete_shortcode',
+                    id: id,
+                    nonce: nonce
+                }, function(resp) {
+                    modal.close();
+                    if (resp.success) {
+                        NicePayToast.show(nicepayAdmin.i18n.shortcodeDeleted || 'Deleted.', 'success');
+                        $('#sc-card-' + id).fadeOut(300, function() { $(this).remove(); });
+                    } else {
+                        NicePayToast.show(resp.data.message || 'Error', 'error');
+                    }
+                }).fail(function() {
+                    modal.close();
+                    NicePayToast.show(nicepayAdmin.i18n.requestFailed || 'Failed.', 'error');
+                });
+            }
+        });
+    });
+
+    /* ==========================================
+       Copy to Clipboard (generic)
        ========================================== */
     $(document).on('click', '.nicepay-copy-btn', function() {
         var btn = $(this);

@@ -260,6 +260,144 @@
 }
 
 /* ============================================
+   Buyer Input Fields (Standalone Form)
+   ============================================ */
+.nicepay-buyer-fields {
+    margin-bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.nicepay-field label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--nicepay-text);
+    margin-bottom: 6px;
+}
+
+.nicepay-field-required {
+    color: var(--nicepay-error);
+}
+
+.nicepay-field-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--nicepay-border);
+    border-radius: var(--nicepay-radius-md);
+    font-size: 0.9375rem;
+    color: var(--nicepay-text);
+    background: var(--nicepay-bg-white);
+    transition: border-color var(--nicepay-transition), box-shadow var(--nicepay-transition);
+    box-sizing: border-box;
+    font-family: var(--nicepay-font);
+}
+
+.nicepay-field-input:focus {
+    border-color: var(--nicepay-primary);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.nicepay-field-input::placeholder {
+    color: var(--nicepay-text-muted);
+}
+
+.nicepay-field-input.is-invalid {
+    border-color: var(--nicepay-error);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.08);
+}
+
+.nicepay-field-input.is-invalid:focus {
+    border-color: var(--nicepay-error);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+}
+
+.nicepay-field-error {
+    margin-top: 5px;
+    font-size: 0.75rem;
+    color: var(--nicepay-error);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    animation: nicepay-slide-down 0.2s ease;
+}
+
+/* ============================================
+   Payment Modal (Frontend)
+   ============================================ */
+.nicepay-payment-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 99998;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+    animation: nicepay-modal-bg-in 0.25s ease;
+}
+
+.nicepay-payment-modal {
+    background: var(--nicepay-bg-white);
+    border-radius: var(--nicepay-radius-lg);
+    box-shadow: var(--nicepay-shadow-lg);
+    width: 480px;
+    max-width: 100%;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    position: relative;
+    animation: nicepay-modal-content-in 0.3s ease;
+}
+
+.nicepay-payment-modal-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: var(--nicepay-bg);
+    border-radius: 50%;
+    font-size: 18px;
+    color: var(--nicepay-text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--nicepay-transition);
+    z-index: 1;
+}
+
+.nicepay-payment-modal-close:hover {
+    background: var(--nicepay-border);
+    color: var(--nicepay-text);
+}
+
+.nicepay-payment-modal-body {
+    padding: 8px;
+}
+
+.nicepay-payment-modal-body .nicepay-payment-wrapper {
+    box-shadow: none;
+    margin: 0;
+    border-radius: 0;
+}
+
+@keyframes nicepay-modal-bg-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes nicepay-modal-content-in {
+    from { opacity: 0; transform: translateY(16px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ============================================
    Loading Overlay
    ============================================ */
 .nicepay-loading-overlay {

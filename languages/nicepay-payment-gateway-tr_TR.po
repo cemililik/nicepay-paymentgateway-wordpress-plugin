@@ -481,3 +481,6 @@ msgstr "Iptal basarisiz."
 
 msgid "Cancelled via NicePay admin."
 msgstr "NicePay yonetim panelinden iptal edildi."
+
+msgid "Payment system is currently unavailable. Please try again later."
+msgstr "Odeme sistemi su anda kullanilamiyor. Lutfen daha sonra tekrar deneyin."

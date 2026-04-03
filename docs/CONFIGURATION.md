@@ -162,6 +162,52 @@ add_filter( 'option_nicepay_live_merchant_key', function() {
 
 ---
 
+## Shortcode Manager
+
+### Managing Saved Shortcodes
+
+Go to **NicePay > Settings > Shortcodes** to view all saved payment shortcodes in a card grid.
+
+Each card shows:
+- Shortcode name and display mode badge (inline/modal)
+- Button preview with the configured color
+- Amount, product name, and payment method
+- Full shortcode code (copyable)
+- Edit, Copy, and Delete actions
+
+### Creating a New Shortcode
+
+1. Go to **NicePay > Settings > Shortcode Generator**
+2. Enter a **Name** (required for saving)
+3. Choose **Display Mode**:
+   - **Inline**: Full form shown directly on the page
+   - **Modal**: Only the button is visible; clicking opens a popup with the payment form
+4. Fill in the **Amount** and **Product Name** (required)
+5. Optionally select a specific **Payment Method** or leave as "All Enabled"
+6. Optionally pre-fill **Buyer Information** — if left empty, buyers fill these fields themselves
+7. Customize the **Button Text** and **Color**
+8. Click **Save Shortcode**
+9. Copy the generated shortcode from the **Shortcodes** tab and paste into any page
+
+### Editing a Shortcode
+
+Click **Edit** on any card in the Shortcodes tab. The Shortcode Generator opens with all fields pre-populated. Make changes and click **Update Shortcode**.
+
+### Default Presets
+
+On first activation, 4 presets are created:
+
+| Name | Amount | Mode | Button Color | Method |
+|---|---|---|---|---|
+| Quick Payment | 10,000 KRW | Inline | Blue | All |
+| Donation | 5,000 KRW | Inline | Green | All |
+| Product Purchase | 50,000 KRW | Modal | Black | All |
+| Subscription | 29,900 KRW | Modal | Purple | Card only |
+
+Presets can be edited or deleted. They are not automatically re-created after deletion.
+
+---
+
 ## WooCommerce Setup
 
 ### Enable the Gateway
@@ -218,40 +264,54 @@ flowchart LR
 
 ## Standalone Payment Setup
 
-### Basic Shortcode
+### Using Saved Shortcodes (Recommended)
 
-Add to any page or post:
+The easiest way: create a shortcode in **NicePay > Settings > Shortcode Generator**, then paste it:
 
 ```
-[nicepay_payment amount="10000" goods_name="Product Name"]
+[nicepay_payment id="quick-payment"]
 ```
 
-This creates a payment button with the default enabled methods.
+### Manual Shortcode — Inline Mode
+
+Shows the full payment form directly on the page:
+
+```
+[nicepay_payment amount="10000" goods_name="Product Name" currency="KRW"]
+```
+
+Buyers fill in their name, email, and phone in the form. If you pre-fill buyer info, those fields are hidden:
+
+```
+[nicepay_payment amount="25000" goods_name="Consultation" buyer_name="Kim" buyer_email="kim@example.com" buyer_tel="01012345678" currency="KRW"]
+```
+
+### Manual Shortcode — Modal Mode
+
+Shows only a button. Clicking opens a popup overlay with the full payment form:
+
+```
+[nicepay_payment amount="50000" goods_name="Premium Plan" display_mode="modal" button_text="Buy Now" button_color="#111827" currency="KRW"]
+```
 
 ### Fixed Payment Method
 
 ```
-[nicepay_payment amount="50000" goods_name="Premium Plan" pay_method="CARD" button_text="Pay with Card"]
+[nicepay_payment amount="50000" goods_name="Premium Plan" pay_method="CARD" button_text="Pay with Card" currency="KRW"]
 ```
 
-### With Buyer Information
+### Button Color Customization
+
+Use `button_color` with a hex value:
 
 ```
-[nicepay_payment 
-    amount="25000" 
-    goods_name="Consultation" 
-    buyer_name="Kim" 
-    buyer_email="kim@example.com" 
-    buyer_tel="01012345678"
-    currency="KRW"
-    language="KO"
-]
+[nicepay_payment amount="10000" goods_name="Donation" button_text="Donate" button_color="#16a34a" currency="KRW"]
 ```
 
-### Custom Styled Button
+### Custom CSS Class
 
 ```
-[nicepay_payment amount="10000" goods_name="Item" button_text="Buy Now" button_class="my-custom-button"]
+[nicepay_payment amount="10000" goods_name="Item" button_text="Buy Now" button_class="my-custom-button" currency="KRW"]
 ```
 
 Then in your CSS:

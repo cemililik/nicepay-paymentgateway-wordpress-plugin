@@ -198,6 +198,11 @@ class WC_Gateway_NicePay extends WC_Payment_Gateway {
             $form_data['GoodsCl'] = '1'; // Physical goods
         }
 
+        // Culture Cash requires MallUserID
+        if ( in_array( 'GIFT_CULT', $enabled_methods, true ) ) {
+            $form_data['MallUserID'] = $order->get_billing_email();
+        }
+
         include NICEPAY_PLUGIN_DIR . 'templates/payment-form.php';
     }
 

@@ -484,3 +484,6 @@ msgstr "Cancel failed."
 
 msgid "Cancelled via NicePay admin."
 msgstr "Cancelled via NicePay admin."
+
+msgid "Payment system is currently unavailable. Please try again later."
+msgstr "Payment system is currently unavailable. Please try again later."

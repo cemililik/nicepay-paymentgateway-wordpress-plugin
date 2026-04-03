@@ -481,3 +481,6 @@ msgstr "취소에 실패했습니다."
 
 msgid "Cancelled via NicePay admin."
 msgstr "NicePay 관리자에서 취소되었습니다."
+
+msgid "Payment system is currently unavailable. Please try again later."
+msgstr "결제 시스템을 현재 사용할 수 없습니다. 나중에 다시 시도해 주세요."

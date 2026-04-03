@@ -44,6 +44,10 @@ msgstr ""
 msgid "Complete Your Payment"
 msgstr ""
 
+#: templates/standalone-payment-form.php
+msgid "Payment system is currently unavailable. Please try again later."
+msgstr ""
+
 #: templates/payment-form.php
 msgid "Order Total: %s"
 msgstr ""
