@@ -70,7 +70,10 @@ class NicePay_Transactions {
             <p class="nicepay-total-count">
                 <?php
                 /* translators: %d: total number of transactions */
-                printf( esc_html__( 'Total: %d transactions', 'nicepay-payment-gateway' ), $total );
+                printf(
+                    esc_html( _n( 'Total: %d transaction', 'Total: %d transactions', $total, 'nicepay-payment-gateway' ) ),
+                    $total
+                );
                 ?>
             </p>
 

@@ -18,49 +18,49 @@ msgstr ""
 "X-Domain: nicepay-payment-gateway\n"
 
 msgid "NicePay Payment Gateway"
-msgstr "NicePay Odeme Gecidi"
+msgstr "NicePay Ödeme Geçidi"
 
 msgid "Processing payment..."
-msgstr "Odeme isleniyor..."
+msgstr "Ödeme işleniyor..."
 
 msgid "Payment error occurred. Please try again."
-msgstr "Odeme hatasi olustu. Lutfen tekrar deneyin."
+msgstr "Ödeme hatası oluştu. Lütfen tekrar deneyin."
 
 msgid "Please select a payment method."
-msgstr "Lutfen bir odeme yontemi secin."
+msgstr "Lütfen bir ödeme yöntemi seçin."
 
 msgid "Pay Now"
-msgstr "Simdi Ode"
+msgstr "Şimdi Ode"
 
 msgid "Settings"
 msgstr "Ayarlar"
 
 msgid "Complete Your Payment"
-msgstr "Odemenizi Tamamlayin"
+msgstr "Ödemenizi Tamamlayın"
 
 msgid "Order Total: %s"
-msgstr "Siparis Toplami: %s"
+msgstr "Sipariş Toplamı: %s"
 
 msgid "Select Payment Method"
-msgstr "Odeme Yontemi Secin"
+msgstr "Ödeme Yöntemi Seçin"
 
 msgid "Proceed to Payment"
-msgstr "Odemeye Devam Et"
+msgstr "Ödemeye Devam Et"
 
 msgid "Cancel"
-msgstr "Iptal"
+msgstr "İptal"
 
 msgid "Invalid payment amount."
-msgstr "Gecersiz odeme tutari."
+msgstr "Geçersiz ödeme tutarı."
 
 msgid "Payment initialization failed. Please try again."
-msgstr "Odeme baslatilamadi. Lutfen tekrar deneyin."
+msgstr "Ödeme başlatılamadı. Lütfen tekrar deneyin."
 
 msgid "Payment Method"
-msgstr "Odeme Yontemi"
+msgstr "Ödeme Yöntemi"
 
 msgid "Credit Card"
-msgstr "Kredi Karti"
+msgstr "Kredi Kartı"
 
 msgid "Bank Transfer"
 msgstr "Banka Havalesi"
@@ -69,142 +69,142 @@ msgid "Virtual Account"
 msgstr "Sanal Hesap"
 
 msgid "Mobile Payment"
-msgstr "Mobil Odeme"
+msgstr "Mobil Ödeme"
 
 msgid "SSG Bank Account"
-msgstr "SSG Banka Hesabi"
+msgstr "SSG Banka Hesabı"
 
 msgid "Culture Cash"
 msgstr "Culture Cash"
 
 msgid "Invalid approval URL."
-msgstr "Gecersiz onay URL'si."
+msgstr "Geçersiz onay URL'si."
 
 msgid "Failed to parse approval response."
-msgstr "Onay yaniti islenemedi."
+msgstr "Onay yaniti işlenemedi."
 
 msgid "Missing signature in approval response."
 msgstr "Onay yanitinda imza eksik."
 
 msgid "Signature verification failed."
-msgstr "Imza dogrulamasi basarisiz."
+msgstr "Imza doğrulamasi başarısız."
 
 msgid "Invalid cancel URL."
-msgstr "Gecersiz iptal URL'si."
+msgstr "Geçersiz iptal URL'si."
 
 msgid "Failed to parse cancel response."
-msgstr "Iptal yaniti islenemedi."
+msgstr "İptal yaniti işlenemedi."
 
 msgid "Cancel signature verification failed."
-msgstr "Iptal imza dogrulamasi basarisiz."
+msgstr "İptal imza doğrulamasi başarısız."
 
 msgid "NicePay"
 msgstr "NicePay"
 
 msgid "Accept payments via NicePay payment gateway (Credit Card, Bank Transfer, Virtual Account, Mobile)."
-msgstr "NicePay odeme gecidi ile odeme alin (Kredi Karti, Banka Havalesi, Sanal Hesap, Mobil)."
+msgstr "NicePay ödeme gecidi ile ödeme alin (Kredi Kartı, Banka Havalesi, Sanal Hesap, Mobil)."
 
 msgid "NicePay Payment"
-msgstr "NicePay Odeme"
+msgstr "NicePay Ödeme"
 
 msgid "Pay securely via NicePay."
-msgstr "NicePay ile guvenli odeme yapin."
+msgstr "NicePay ile güvenli ödeme yapın."
 
 msgid "Pay securely via NicePay (Credit Card, Bank Transfer, Virtual Account, Mobile)."
-msgstr "NicePay ile guvenli odeme yapin (Kredi Karti, Banka Havalesi, Sanal Hesap, Mobil)."
+msgstr "NicePay ile güvenli ödeme yapın (Kredi Kartı, Banka Havalesi, Sanal Hesap, Mobil)."
 
 msgid "Enable/Disable"
-msgstr "Etkinlestir/Devre Disi Birak"
+msgstr "Etkinleştir/Devre Disi Bırak"
 
 msgid "Enable NicePay Payment"
-msgstr "NicePay Odemeyi Etkinlestir"
+msgstr "NicePay Ödemeyi Etkinleştir"
 
 msgid "Title"
 msgstr "Baslik"
 
 msgid "Payment method title shown at checkout."
-msgstr "Odeme sayfasinda gosterilen odeme yontemi basligi."
+msgstr "Ödeme sayfasinda gösterilen ödeme yöntemi başlığı."
 
 msgid "Description"
-msgstr "Aciklama"
+msgstr "Açıklama"
 
 msgid "Payment method description shown at checkout."
-msgstr "Odeme sayfasinda gosterilen odeme yontemi aciklamasi."
+msgstr "Ödeme sayfasinda gösterilen ödeme yöntemi açıklaması."
 
 msgid "API Settings"
 msgstr "API Ayarlari"
 
 msgid "Configure MID, Merchant Key, and other API settings on the <a href=\"%s\">NicePay Settings</a> page."
-msgstr "MID, Isyeri Anahtari ve diger API ayarlarini <a href=\"%s\">NicePay Ayarlari</a> sayfasindan yapilandirin."
+msgstr "MID, Isyeri Anahtarı ve diger API ayarlarini <a href=\"%s\">NicePay Ayarlari</a> sayfasindan yapılandırın."
 
 msgid "Order not found."
-msgstr "Siparis bulunamadi."
+msgstr "Sipariş bulunamadı."
 
 msgid " and %d more"
-msgstr " ve %d urun daha"
+msgstr " ve %d ürün daha"
 
 msgid "NicePay: failed to initialize transaction."
-msgstr "NicePay: Islem baslatilamadi."
+msgstr "NicePay: İşlem başlatılamadı."
 
 msgid "Payment initialization failed. Please return to checkout."
-msgstr "Odeme baslatilamadi. Lutfen odeme sayfasina donun."
+msgstr "Ödeme başlatılamadı. Lütfen ödeme sayfasına dönün."
 
 msgid "Return to Checkout"
-msgstr "Odeme Sayfasina Don"
+msgstr "Ödeme Sayfasına Dön"
 
 msgid "NicePay authentication failed. Code: %1$s, Message: %2$s"
-msgstr "NicePay kimlik dogrulama basarisiz. Kod: %1$s, Mesaj: %2$s"
+msgstr "NicePay kimlik doğrulama başarısız. Kod: %1$s, Mesaj: %2$s"
 
 msgid "Payment authentication failed. Please try again."
-msgstr "Odeme dogrulamasi basarisiz. Lutfen tekrar deneyin."
+msgstr "Ödeme doğrulamasi başarısız. Lütfen tekrar deneyin."
 
 msgid "NicePay signature verification failed."
-msgstr "NicePay imza dogrulamasi basarisiz."
+msgstr "NicePay imza doğrulamasi başarısız."
 
 msgid "Payment verification failed. Please try again."
-msgstr "Odeme dogrulamasi basarisiz. Lutfen tekrar deneyin."
+msgstr "Ödeme doğrulamasi başarısız. Lütfen tekrar deneyin."
 
 msgid "NicePay approval request failed."
-msgstr "NicePay onay istegi basarisiz."
+msgstr "NicePay onay isteği başarısız."
 
 msgid "Payment processing failed. Please try again."
-msgstr "Odeme islemi basarisiz. Lutfen tekrar deneyin."
+msgstr "Ödeme işlemi başarısız. Lütfen tekrar deneyin."
 
 msgid "Awaiting virtual account deposit. Bank: %1$s, Account: %2$s, Expires: %3$s"
 msgstr "Sanal hesap yatirimi bekleniyor. Banka: %1$s, Hesap: %2$s, Son Tarih: %3$s"
 
 msgid "NicePay payment completed. Method: %1$s, TID: %2$s"
-msgstr "NicePay odeme tamamlandi. Yontem: %1$s, TID: %2$s"
+msgstr "NicePay ödeme tamamlandı. Yöntem: %1$s, TID: %2$s"
 
 msgid "NicePay payment failed. Code: %1$s, Message: %2$s"
-msgstr "NicePay odeme basarisiz. Kod: %1$s, Mesaj: %2$s"
+msgstr "NicePay ödeme başarısız. Kod: %1$s, Mesaj: %2$s"
 
 msgid "Payment failed."
-msgstr "Odeme basarisiz."
+msgstr "Ödeme başarısız."
 
 msgid "Transaction ID not found."
-msgstr "Islem ID'si bulunamadi."
+msgstr "İşlem ID'si bulunamadı."
 
 msgid "Refund requested by merchant"
 msgstr "Isyeri tarafindan iade talebi"
 
 msgid "NicePay refund processed. Amount: %1$s, Reason: %2$s"
-msgstr "NicePay iade islendi. Tutar: %1$s, Sebep: %2$s"
+msgstr "NicePay iade işlendi. Tutar: %1$s, Sebep: %2$s"
 
 msgid "Unknown error"
 msgstr "Bilinmeyen hata"
 
 msgid "Invalid request method."
-msgstr "Gecersiz istek yontemi."
+msgstr "Geçersiz istek yöntemi."
 
 msgid "Payment verification failed."
-msgstr "Odeme dogrulamasi basarisiz."
+msgstr "Ödeme doğrulamasi başarısız."
 
 msgid "Payment Successful"
-msgstr "Odeme Basarili"
+msgstr "Ödeme Başarılı"
 
 msgid "Payment Failed"
-msgstr "Odeme Basarisiz"
+msgstr "Ödeme Başarısız"
 
 msgid "Deposit Information"
 msgstr "Yatirma Bilgileri"
@@ -222,25 +222,25 @@ msgid "Deadline"
 msgstr "Son Tarih"
 
 msgid "Transaction ID"
-msgstr "Islem ID"
+msgstr "İşlem ID"
 
 msgid "Method"
-msgstr "Yontem"
+msgstr "Yöntem"
 
 msgid "Return to Home"
-msgstr "Ana Sayfaya Don"
+msgstr "Ana Sayfaya Dön"
 
 msgid "Pending"
-msgstr "Bekliyor"
+msgstr "Bekleniyor"
 
 msgid "Paid"
-msgstr "Odendi"
+msgstr "Ödendi"
 
 msgid "Failed"
-msgstr "Basarisiz"
+msgstr "Başarısız"
 
 msgid "Cancelled"
-msgstr "Iptal Edildi"
+msgstr "İptal Edildi"
 
 msgid "Refunded"
 msgstr "Iade Edildi"
@@ -252,7 +252,7 @@ msgid "NicePay Settings"
 msgstr "NicePay Ayarlari"
 
 msgid "Transactions"
-msgstr "Islemler"
+msgstr "İşlemler"
 
 msgid "General"
 msgstr "Genel"
@@ -261,7 +261,7 @@ msgid "API Credentials"
 msgstr "API Kimlik Bilgileri"
 
 msgid "Payment Methods"
-msgstr "Odeme Yontemleri"
+msgstr "Ödeme Yöntemleri"
 
 msgid "Shortcode"
 msgstr "Kisa Kod"
@@ -276,7 +276,7 @@ msgid "Live"
 msgstr "Canli"
 
 msgid "Use Test mode for development. Switch to Live for production."
-msgstr "Gelistirme icin Test modunu kullanin. Uretim icin Canli moda gecin."
+msgstr "Geliştirme için Test modunu kullanın. Üretim için Canli moda geçin."
 
 msgid "Language"
 msgstr "Dil"
@@ -300,7 +300,7 @@ msgid "You are currently in Test mode."
 msgstr "Su anda Test modundasiniz."
 
 msgid "You are currently in Live mode. Payments will be processed with real money."
-msgstr "Su anda Canli moddasiniz. Odemeler gercek para ile islenecektir."
+msgstr "Su anda Canli modddasınız. Ödemeler gercek para ile işlenecektir."
 
 msgid "Test Credentials"
 msgstr "Test Kimlik Bilgileri"
@@ -309,7 +309,7 @@ msgid "Test MID"
 msgstr "Test MID"
 
 msgid "Test Merchant Key"
-msgstr "Test Isyeri Anahtari"
+msgstr "Test Isyeri Anahtarı"
 
 msgid "Live Credentials"
 msgstr "Canli Kimlik Bilgileri"
@@ -318,22 +318,22 @@ msgid "Live MID"
 msgstr "Canli MID"
 
 msgid "Live Merchant Key"
-msgstr "Canli Isyeri Anahtari"
+msgstr "Canli Isyeri Anahtarı"
 
 msgid "Enabled Payment Methods"
-msgstr "Etkin Odeme Yontemleri"
+msgstr "Etkin Ödeme Yöntemleri"
 
 msgid "Virtual Account Expiry (days)"
-msgstr "Sanal Hesap Suresi (gun)"
+msgstr "Sanal Hesap Süresi (gun)"
 
 msgid "Number of days before virtual account expires."
-msgstr "Sanal hesabin suresinin dolmasina kalan gun sayisi."
+msgstr "Sanal hesabin suresinin dolmasina kalan gun sayısı."
 
 msgid "Payment Button Shortcode"
-msgstr "Odeme Butonu Kisa Kodu"
+msgstr "Ödeme Butonu Kisa Kodu"
 
 msgid "Use the following shortcode to embed a payment button on any page:"
-msgstr "Herhangi bir sayfaya odeme butonu eklemek icin asagidaki kisa kodu kullanin:"
+msgstr "Herhangi bir sayfaya ödeme butonu eklemek için aşağıdaki kisa kodu kullanın:"
 
 msgid "Available Parameters"
 msgstr "Kullanilabilir Parametreler"
@@ -351,28 +351,28 @@ msgid "No"
 msgstr "Hayir"
 
 msgid "Payment amount"
-msgstr "Odeme tutari"
+msgstr "Ödeme tutarı"
 
 msgid "Product/service name"
-msgstr "Urun/hizmet adi"
+msgstr "Urun/hizmet adı"
 
 msgid "CARD, BANK, VBANK, CELLPHONE"
 msgstr "CARD, BANK, VBANK, CELLPHONE"
 
 msgid "Buyer name"
-msgstr "Alici adi"
+msgstr "Alıcı adı"
 
 msgid "Buyer email"
-msgstr "Alici e-postasi"
+msgstr "Alıcı e-postasi"
 
 msgid "Buyer phone"
-msgstr "Alici telefonu"
+msgstr "Alıcı telefonu"
 
 msgid "Button label text"
 msgstr "Buton metni"
 
 msgid "CSS class for the button"
-msgstr "Buton CSS sinifi"
+msgstr "Buton CSS sınıfı"
 
 msgid "KRW or USD"
 msgstr "KRW veya USD"
@@ -387,43 +387,43 @@ msgid "Confirm"
 msgstr "Onayla"
 
 msgid "Cancel Transaction"
-msgstr "Islemi Iptal Et"
+msgstr "İşlemi İptal Et"
 
 msgid "This action cannot be undone. The payment will be reversed."
-msgstr "Bu islem geri alinamaz. Odeme iptal edilecektir."
+msgstr "Bu islem geri alınamaz. Ödeme iptal edilecektir."
 
 msgid "Cancellation Reason"
-msgstr "Iptal Sebebi"
+msgstr "İptal Sebebi"
 
 msgid "Enter reason for cancellation..."
-msgstr "Iptal sebebini girin..."
+msgstr "İptal sebebini girin..."
 
 msgid "Cancellation failed."
-msgstr "Iptal basarisiz."
+msgstr "İptal başarısız."
 
 msgid "Request failed. Please try again."
-msgstr "Istek basarisiz. Lutfen tekrar deneyin."
+msgstr "İstek başarısız. Lütfen tekrar deneyin."
 
 msgid "Copied to clipboard!"
-msgstr "Panoya kopyalandi!"
+msgstr "Panoya kopyalandı!"
 
 msgid "CANCELLED"
 msgstr "IPTAL EDILDI"
 
 msgid "NicePay Transactions"
-msgstr "NicePay Islemleri"
+msgstr "NicePay İşlemleri"
 
 msgid "All Statuses"
 msgstr "Tum Durumlar"
 
 msgid "All Methods"
-msgstr "Tum Yontemler"
+msgstr "Tum Yöntemler"
 
 msgid "From"
-msgstr "Baslangic"
+msgstr "Başlangıç"
 
 msgid "To"
-msgstr "Bitis"
+msgstr "Bitiş"
 
 msgid "Search..."
 msgstr "Ara..."
@@ -441,46 +441,46 @@ msgid "TID"
 msgstr "TID"
 
 msgid "Order"
-msgstr "Siparis"
+msgstr "Sipariş"
 
 msgid "Status"
 msgstr "Durum"
 
 msgid "Buyer"
-msgstr "Alici"
+msgstr "Alıcı"
 
 msgid "Date"
 msgstr "Tarih"
 
 msgid "Actions"
-msgstr "Islemler"
+msgstr "İşlemler"
 
 msgid "No transactions found"
-msgstr "Islem bulunamadi"
+msgstr "İşlem bulunamadı"
 
 msgid "Transactions will appear here once payments are made."
-msgstr "Odemeler yapildiktan sonra islemler burada gorunecektir."
+msgstr "Ödemeler yapıldıktan sonra islemler burada görünecektir."
 
 msgid "Copy TID"
 msgstr "TID Kopyala"
 
 msgid "Cancel transaction %s"
-msgstr "%s islemini iptal et"
+msgstr "%s işlemini iptal et"
 
 msgid "Unauthorized."
 msgstr "Yetkisiz."
 
 msgid "Transaction not found."
-msgstr "Islem bulunamadi."
+msgstr "İşlem bulunamadı."
 
 msgid "Transaction cancelled successfully."
-msgstr "Islem basariyla iptal edildi."
+msgstr "İşlem başarıyla iptal edildi."
 
 msgid "Cancel failed."
-msgstr "Iptal basarisiz."
+msgstr "İptal başarısız."
 
 msgid "Cancelled via NicePay admin."
 msgstr "NicePay yonetim panelinden iptal edildi."
 
 msgid "Payment system is currently unavailable. Please try again later."
-msgstr "Odeme sistemi su anda kullanilamiyor. Lutfen daha sonra tekrar deneyin."
+msgstr "Ödeme sistemi su anda kullanilamiyor. Lütfen daha sonra tekrar deneyin."

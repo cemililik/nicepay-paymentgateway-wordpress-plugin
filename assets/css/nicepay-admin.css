@@ -422,6 +422,12 @@
     height: 20px;
 }
 
+.nicepay-method-checkbox .nicepay-method-code {
+    font-size: 11px;
+    color: #9ca3af;
+    margin-left: auto;
+}
+
 /* Shortcode Help */
 .nicepay-shortcode-help {
     max-width: 800px;

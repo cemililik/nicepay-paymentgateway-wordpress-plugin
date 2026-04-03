@@ -323,7 +323,7 @@ class NicePay_Admin {
                                            <?php checked( in_array( $code, $enabled, true ) ); ?>>
                                     <?php echo nicepay_get_method_icon( $code ); ?>
                                     <span><?php echo esc_html( $label ); ?></span>
-                                    <code style="font-size:11px;color:#9ca3af;margin-left:auto;"><?php echo esc_html( $code ); ?></code>
+                                    <code class="nicepay-method-code"><?php echo esc_html( $code ); ?></code>
                                 </label>
                             <?php endforeach; ?>
                         </fieldset>

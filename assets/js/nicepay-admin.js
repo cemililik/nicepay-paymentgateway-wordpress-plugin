@@ -42,14 +42,20 @@
         }
     };
 
+    // Expose for inline scripts
+    window.NicePayToast = NicePayToast;
+
     /* ==========================================
        Modal Dialog
        ========================================== */
     var NicePayModal = {
         overlay: null,
+        isLoading: false,
 
         open: function(options) {
             var self = this;
+            self.isLoading = false;
+
             var opts = $.extend({
                 title: '',
                 message: '',
@@ -83,20 +89,19 @@
             $('body').append(html);
             this.overlay = $('#nicepay-modal');
 
-            // Focus input
             setTimeout(function() {
                 $('#nicepay-modal-input').focus();
             }, 100);
 
-            // Close handlers
-            $('#nicepay-modal-cancel').on('click', function() { self.close(); });
-            this.overlay.on('click', function(e) {
-                if ($(e.target).is('.nicepay-modal-overlay')) self.close();
+            // Close handlers — guarded by loading state
+            $('#nicepay-modal-cancel').on('click', function() {
+                if (!self.isLoading) self.close();
             });
-
-            // Escape key
+            this.overlay.on('click', function(e) {
+                if (!self.isLoading && $(e.target).is('.nicepay-modal-overlay')) self.close();
+            });
             $(document).on('keydown.nicepayModal', function(e) {
-                if (e.key === 'Escape') self.close();
+                if (e.key === 'Escape' && !self.isLoading) self.close();
             });
 
             // Confirm
@@ -115,11 +120,13 @@
         },
 
         setLoading: function(loading) {
+            this.isLoading = loading;
             $('#nicepay-modal-confirm').prop('disabled', loading);
             $('#nicepay-modal-cancel').prop('disabled', loading);
         },
 
         close: function() {
+            this.isLoading = false;
             $(document).off('keydown.nicepayModal');
             if (this.overlay) {
                 this.overlay.remove();
@@ -162,7 +169,6 @@
                     modal.close();
                     if (response.success) {
                         NicePayToast.show(response.data.message, 'success');
-                        // Update row status badge in place
                         btn.closest('tr').find('.nicepay-status')
                             .removeClass('nicepay-status-paid nicepay-status-waiting')
                             .addClass('nicepay-status-cancelled')
@@ -188,6 +194,8 @@
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(text).then(function() {
                 NicePayToast.show(nicepayAdmin.i18n.copied || 'Copied!', 'success', 2000);
+            }).catch(function() {
+                NicePayToast.show('Copy failed', 'error', 2000);
             });
         }
     });
@@ -240,14 +248,20 @@
                 btn.addClass('is-copied');
                 NicePayToast.show(nicepayAdmin.i18n.copied || 'Copied!', 'success', 2000);
                 setTimeout(function() { btn.removeClass('is-copied'); }, 2000);
+            }).catch(function() {
+                NicePayToast.show('Copy failed', 'error', 2000);
             });
         } else {
-            // Fallback
             var temp = $('<input>').val(text).appendTo('body').select();
-            document.execCommand('copy');
+            var ok = document.execCommand('copy');
             temp.remove();
-            btn.addClass('is-copied');
-            setTimeout(function() { btn.removeClass('is-copied'); }, 2000);
+            if (ok) {
+                btn.addClass('is-copied');
+                NicePayToast.show(nicepayAdmin.i18n.copied || 'Copied!', 'success', 2000);
+                setTimeout(function() { btn.removeClass('is-copied'); }, 2000);
+            } else {
+                NicePayToast.show('Copy failed', 'error', 2000);
+            }
         }
     });
 

@@ -46,7 +46,16 @@
             $('#nicepay-loading').addClass('is-active');
 
             if (typeof nicepayStart === 'function') {
-                nicepayStart();
+                try {
+                    nicepayStart();
+                } catch (e) {
+                    console.error('[NicePay] nicepayStart() threw:', e);
+                    this.hideLoading();
+                    this.showNotice(
+                        typeof nicepayParams !== 'undefined' ? nicepayParams.i18n.error : 'Payment error occurred.',
+                        'error'
+                    );
+                }
             } else {
                 this.hideLoading();
                 this.showNotice(
