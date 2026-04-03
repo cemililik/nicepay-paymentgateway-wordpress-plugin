@@ -91,13 +91,33 @@ class NicePay_Transactions {
                 <tbody>
                     <?php if ( empty( $items ) ) : ?>
                         <tr>
-                            <td colspan="9"><?php esc_html_e( 'No transactions found.', 'nicepay-payment-gateway' ); ?></td>
+                            <td colspan="9" class="nicepay-empty-state">
+                                <div class="nicepay-empty-state-inner">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                        <path d="M9 12h6M9 16h6M17 21H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                    <p class="nicepay-empty-title"><?php esc_html_e( 'No transactions found', 'nicepay-payment-gateway' ); ?></p>
+                                    <p class="nicepay-empty-desc"><?php esc_html_e( 'Transactions will appear here once payments are made.', 'nicepay-payment-gateway' ); ?></p>
+                                </div>
+                            </td>
                         </tr>
                     <?php else : ?>
                         <?php foreach ( $items as $item ) : ?>
                             <tr>
                                 <td><?php echo esc_html( $item->id ); ?></td>
-                                <td><code style="font-size:11px;"><?php echo esc_html( $item->tid ); ?></code></td>
+                                <td>
+                                    <?php if ( $item->tid ) : ?>
+                                    <div class="nicepay-tid-cell">
+                                        <code class="nicepay-tid"><?php echo esc_html( $item->tid ); ?></code>
+                                        <button type="button" class="nicepay-copy-btn" data-copy="<?php echo esc_attr( $item->tid ); ?>"
+                                                title="<?php esc_attr_e( 'Copy TID', 'nicepay-payment-gateway' ); ?>">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                                        </button>
+                                    </div>
+                                    <?php else : ?>
+                                        &mdash;
+                                    <?php endif; ?>
+                                </td>
                                 <td>
                                     <?php if ( $item->wc_order_id ) : ?>
                                         <a href="<?php echo esc_url( admin_url( 'post.php?post=' . $item->wc_order_id . '&action=edit' ) ); ?>">
@@ -107,7 +127,7 @@ class NicePay_Transactions {
                                         <?php echo esc_html( $item->moid ); ?>
                                     <?php endif; ?>
                                 </td>
-                                <td><?php echo esc_html( nicepay_format_amount( $item->amount ) ); ?></td>
+                                <td class="nicepay-amount"><?php echo esc_html( nicepay_format_amount( $item->amount ) ); ?></td>
                                 <td><?php echo esc_html( $item->pay_method_name ?: $item->payment_method ); ?></td>
                                 <td>
                                     <span class="nicepay-status nicepay-status-<?php echo esc_attr( $item->status ); ?>">
@@ -120,9 +140,9 @@ class NicePay_Transactions {
                                     <?php if ( in_array( $item->status, array( 'paid', 'waiting' ), true ) && $item->tid ) : ?>
                                         <button type="button" class="button button-small nicepay-cancel-btn"
                                                 data-tid="<?php echo esc_attr( $item->tid ); ?>"
-                                                data-amount="<?php echo esc_attr( $item->amount ); ?>"
                                                 data-id="<?php echo esc_attr( $item->id ); ?>"
-                                                data-nonce="<?php echo esc_attr( wp_create_nonce( 'nicepay_cancel_' . $item->id ) ); ?>">
+                                                data-nonce="<?php echo esc_attr( wp_create_nonce( 'nicepay_cancel_' . $item->id ) ); ?>"
+                                                aria-label="<?php echo esc_attr( sprintf( __( 'Cancel transaction %s', 'nicepay-payment-gateway' ), $item->tid ) ); ?>">
                                             <?php esc_html_e( 'Cancel', 'nicepay-payment-gateway' ); ?>
                                         </button>
                                     <?php endif; ?>
@@ -151,38 +171,6 @@ class NicePay_Transactions {
                 </div>
             <?php endif; ?>
         </div>
-
-        <script>
-        jQuery(function($) {
-            $('.nicepay-cancel-btn').on('click', function() {
-                var btn = $(this);
-                var reason = prompt('<?php echo esc_js( __( 'Enter cancellation reason:', 'nicepay-payment-gateway' ) ); ?>');
-                if (!reason) return;
-
-                btn.prop('disabled', true).text('<?php echo esc_js( __( 'Processing...', 'nicepay-payment-gateway' ) ); ?>');
-
-                $.post(ajaxurl, {
-                    action: 'nicepay_cancel_transaction',
-                    tid: btn.data('tid'),
-                    amount: btn.data('amount'),
-                    id: btn.data('id'),
-                    reason: reason,
-                    nonce: btn.data('nonce')
-                }, function(response) {
-                    if (response.success) {
-                        alert(response.data.message);
-                        location.reload();
-                    } else {
-                        alert(response.data.message || '<?php echo esc_js( __( 'Cancel failed.', 'nicepay-payment-gateway' ) ); ?>');
-                        btn.prop('disabled', false).text('<?php echo esc_js( __( 'Cancel', 'nicepay-payment-gateway' ) ); ?>');
-                    }
-                }).fail(function() {
-                    alert('<?php echo esc_js( __( 'Request failed.', 'nicepay-payment-gateway' ) ); ?>');
-                    btn.prop('disabled', false).text('<?php echo esc_js( __( 'Cancel', 'nicepay-payment-gateway' ) ); ?>');
-                });
-            });
-        });
-        </script>
         <?php
     }
 

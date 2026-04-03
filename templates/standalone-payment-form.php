@@ -64,12 +64,13 @@ if ( $tx_id === false ) {
     <?php if ( $show_method_selector ) : ?>
         <div class="nicepay-method-selector">
             <label><?php esc_html_e( 'Payment Method', 'nicepay-payment-gateway' ); ?></label>
-            <div class="nicepay-methods">
+            <div class="nicepay-methods" role="radiogroup">
                 <?php foreach ( $enabled_methods as $method ) : ?>
-                    <label class="nicepay-method-option">
+                    <label class="nicepay-method-option <?php echo ( $method === $enabled_methods[0] ) ? 'is-selected' : ''; ?>">
                         <input type="radio" name="nicepay_method_<?php echo esc_attr( $form_id ); ?>"
                                value="<?php echo esc_attr( $method ); ?>"
                                <?php checked( $method, $enabled_methods[0] ); ?>>
+                        <?php echo nicepay_get_method_icon( $method ); ?>
                         <span class="nicepay-method-label">
                             <?php echo esc_html( NicePay_API::get_payment_method_name( $method ) ); ?>
                         </span>

@@ -1,0 +1,483 @@
+# Chinese (Simplified) translation for NicePay Payment Gateway
+# Copyright (C) 2026 cemililik
+# This file is distributed under the MIT license.
+msgid ""
+msgstr ""
+"Project-Id-Version: NicePay Payment Gateway 2.0.0\n"
+"Report-Msgid-Bugs-To: https://github.com/cemililik/nicepay-paymentgateway-wordpress-plugin/issues\n"
+"POT-Creation-Date: 2026-04-03 00:00+0000\n"
+"PO-Revision-Date: 2026-04-03 00:00+0800\n"
+"Last-Translator: cemililik\n"
+"Language-Team: Chinese (Simplified)\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: NicePay Payment Gateway\n"
+"X-Domain: nicepay-payment-gateway\n"
+
+msgid "NicePay Payment Gateway"
+msgstr "NicePay 支付网关"
+
+msgid "Processing payment..."
+msgstr "正在处理支付..."
+
+msgid "Payment error occurred. Please try again."
+msgstr "支付出错，请重试。"
+
+msgid "Please select a payment method."
+msgstr "请选择支付方式。"
+
+msgid "Pay Now"
+msgstr "立即支付"
+
+msgid "Settings"
+msgstr "设置"
+
+msgid "Complete Your Payment"
+msgstr "完成支付"
+
+msgid "Order Total: %s"
+msgstr "订单金额：%s"
+
+msgid "Select Payment Method"
+msgstr "选择支付方式"
+
+msgid "Proceed to Payment"
+msgstr "继续支付"
+
+msgid "Cancel"
+msgstr "取消"
+
+msgid "Invalid payment amount."
+msgstr "支付金额无效。"
+
+msgid "Payment initialization failed. Please try again."
+msgstr "支付初始化失败，请重试。"
+
+msgid "Payment Method"
+msgstr "支付方式"
+
+msgid "Credit Card"
+msgstr "信用卡"
+
+msgid "Bank Transfer"
+msgstr "银行转账"
+
+msgid "Virtual Account"
+msgstr "虚拟账户"
+
+msgid "Mobile Payment"
+msgstr "手机支付"
+
+msgid "SSG Bank Account"
+msgstr "SSG银行账户"
+
+msgid "Culture Cash"
+msgstr "文化礼券"
+
+msgid "Invalid approval URL."
+msgstr "无效的审批URL。"
+
+msgid "Failed to parse approval response."
+msgstr "审批响应解析失败。"
+
+msgid "Missing signature in approval response."
+msgstr "审批响应缺少签名。"
+
+msgid "Signature verification failed."
+msgstr "签名验证失败。"
+
+msgid "Invalid cancel URL."
+msgstr "无效的取消URL。"
+
+msgid "Failed to parse cancel response."
+msgstr "取消响应解析失败。"
+
+msgid "Cancel signature verification failed."
+msgstr "取消签名验证失败。"
+
+msgid "NicePay"
+msgstr "NicePay"
+
+msgid "Accept payments via NicePay payment gateway (Credit Card, Bank Transfer, Virtual Account, Mobile)."
+msgstr "通过NicePay支付网关接受付款（信用卡、银行转账、虚拟账户、手机支付）。"
+
+msgid "NicePay Payment"
+msgstr "NicePay支付"
+
+msgid "Pay securely via NicePay."
+msgstr "通过NicePay安全支付。"
+
+msgid "Pay securely via NicePay (Credit Card, Bank Transfer, Virtual Account, Mobile)."
+msgstr "通过NicePay安全支付（信用卡、银行转账、虚拟账户、手机支付）。"
+
+msgid "Enable/Disable"
+msgstr "启用/禁用"
+
+msgid "Enable NicePay Payment"
+msgstr "启用NicePay支付"
+
+msgid "Title"
+msgstr "标题"
+
+msgid "Payment method title shown at checkout."
+msgstr "结账时显示的支付方式标题。"
+
+msgid "Description"
+msgstr "描述"
+
+msgid "Payment method description shown at checkout."
+msgstr "结账时显示的支付方式描述。"
+
+msgid "API Settings"
+msgstr "API设置"
+
+msgid "Configure MID, Merchant Key, and other API settings on the <a href=\"%s\">NicePay Settings</a> page."
+msgstr "在<a href=\"%s\">NicePay设置</a>页面配置MID、商户密钥和其他API设置。"
+
+msgid "Order not found."
+msgstr "未找到订单。"
+
+msgid " and %d more"
+msgstr " 等%d件商品"
+
+msgid "NicePay: failed to initialize transaction."
+msgstr "NicePay：交易初始化失败。"
+
+msgid "Payment initialization failed. Please return to checkout."
+msgstr "支付初始化失败，请返回结账页面。"
+
+msgid "Return to Checkout"
+msgstr "返回结账"
+
+msgid "NicePay authentication failed. Code: %1$s, Message: %2$s"
+msgstr "NicePay认证失败。代码：%1$s，消息：%2$s"
+
+msgid "Payment authentication failed. Please try again."
+msgstr "支付认证失败，请重试。"
+
+msgid "NicePay signature verification failed."
+msgstr "NicePay签名验证失败。"
+
+msgid "Payment verification failed. Please try again."
+msgstr "支付验证失败，请重试。"
+
+msgid "NicePay approval request failed."
+msgstr "NicePay审批请求失败。"
+
+msgid "Payment processing failed. Please try again."
+msgstr "支付处理失败，请重试。"
+
+msgid "Awaiting virtual account deposit. Bank: %1$s, Account: %2$s, Expires: %3$s"
+msgstr "等待虚拟账户汇款。银行：%1$s，账号：%2$s，截止日期：%3$s"
+
+msgid "NicePay payment completed. Method: %1$s, TID: %2$s"
+msgstr "NicePay支付完成。方式：%1$s，TID：%2$s"
+
+msgid "NicePay payment failed. Code: %1$s, Message: %2$s"
+msgstr "NicePay支付失败。代码：%1$s，消息：%2$s"
+
+msgid "Payment failed."
+msgstr "支付失败。"
+
+msgid "Transaction ID not found."
+msgstr "未找到交易ID。"
+
+msgid "Refund requested by merchant"
+msgstr "商户发起退款"
+
+msgid "NicePay refund processed. Amount: %1$s, Reason: %2$s"
+msgstr "NicePay退款已处理。金额：%1$s，原因：%2$s"
+
+msgid "Unknown error"
+msgstr "未知错误"
+
+msgid "Invalid request method."
+msgstr "无效的请求方式。"
+
+msgid "Payment verification failed."
+msgstr "支付验证失败。"
+
+msgid "Payment Successful"
+msgstr "支付成功"
+
+msgid "Payment Failed"
+msgstr "支付失败"
+
+msgid "Deposit Information"
+msgstr "汇款信息"
+
+msgid "Bank"
+msgstr "银行"
+
+msgid "Account"
+msgstr "账号"
+
+msgid "Amount"
+msgstr "金额"
+
+msgid "Deadline"
+msgstr "截止日期"
+
+msgid "Transaction ID"
+msgstr "交易ID"
+
+msgid "Method"
+msgstr "支付方式"
+
+msgid "Return to Home"
+msgstr "返回首页"
+
+msgid "Pending"
+msgstr "待处理"
+
+msgid "Paid"
+msgstr "已支付"
+
+msgid "Failed"
+msgstr "失败"
+
+msgid "Cancelled"
+msgstr "已取消"
+
+msgid "Refunded"
+msgstr "已退款"
+
+msgid "Waiting for Deposit"
+msgstr "等待汇款"
+
+msgid "NicePay Settings"
+msgstr "NicePay设置"
+
+msgid "Transactions"
+msgstr "交易记录"
+
+msgid "General"
+msgstr "常规"
+
+msgid "API Credentials"
+msgstr "API凭证"
+
+msgid "Payment Methods"
+msgstr "支付方式"
+
+msgid "Shortcode"
+msgstr "短代码"
+
+msgid "Mode"
+msgstr "模式"
+
+msgid "Test"
+msgstr "测试"
+
+msgid "Live"
+msgstr "正式"
+
+msgid "Use Test mode for development. Switch to Live for production."
+msgstr "开发时使用测试模式，生产环境切换到正式模式。"
+
+msgid "Language"
+msgstr "语言"
+
+msgid "Korean"
+msgstr "韩语"
+
+msgid "English"
+msgstr "英语"
+
+msgid "Chinese"
+msgstr "中文"
+
+msgid "Currency"
+msgstr "货币"
+
+msgid "Charset"
+msgstr "字符集"
+
+msgid "You are currently in Test mode."
+msgstr "当前为测试模式。"
+
+msgid "You are currently in Live mode. Payments will be processed with real money."
+msgstr "当前为正式模式，将使用真实资金处理支付。"
+
+msgid "Test Credentials"
+msgstr "测试凭证"
+
+msgid "Test MID"
+msgstr "测试MID"
+
+msgid "Test Merchant Key"
+msgstr "测试商户密钥"
+
+msgid "Live Credentials"
+msgstr "正式凭证"
+
+msgid "Live MID"
+msgstr "正式MID"
+
+msgid "Live Merchant Key"
+msgstr "正式商户密钥"
+
+msgid "Enabled Payment Methods"
+msgstr "已启用的支付方式"
+
+msgid "Virtual Account Expiry (days)"
+msgstr "虚拟账户有效期（天）"
+
+msgid "Number of days before virtual account expires."
+msgstr "虚拟账户过期前的天数。"
+
+msgid "Payment Button Shortcode"
+msgstr "支付按钮短代码"
+
+msgid "Use the following shortcode to embed a payment button on any page:"
+msgstr "使用以下短代码在任意页面嵌入支付按钮："
+
+msgid "Available Parameters"
+msgstr "可用参数"
+
+msgid "Parameter"
+msgstr "参数"
+
+msgid "Required"
+msgstr "必填"
+
+msgid "Yes"
+msgstr "是"
+
+msgid "No"
+msgstr "否"
+
+msgid "Payment amount"
+msgstr "支付金额"
+
+msgid "Product/service name"
+msgstr "商品/服务名称"
+
+msgid "CARD, BANK, VBANK, CELLPHONE"
+msgstr "CARD, BANK, VBANK, CELLPHONE"
+
+msgid "Buyer name"
+msgstr "买家姓名"
+
+msgid "Buyer email"
+msgstr "买家邮箱"
+
+msgid "Buyer phone"
+msgstr "买家电话"
+
+msgid "Button label text"
+msgstr "按钮文字"
+
+msgid "CSS class for the button"
+msgstr "按钮CSS类名"
+
+msgid "KRW or USD"
+msgstr "KRW 或 USD"
+
+msgid "KO, EN, or CN"
+msgstr "KO、EN 或 CN"
+
+msgid "Example with all parameters"
+msgstr "包含所有参数的示例"
+
+msgid "Confirm"
+msgstr "确认"
+
+msgid "Cancel Transaction"
+msgstr "取消交易"
+
+msgid "This action cannot be undone. The payment will be reversed."
+msgstr "此操作无法撤销，支付将被退回。"
+
+msgid "Cancellation Reason"
+msgstr "取消原因"
+
+msgid "Enter reason for cancellation..."
+msgstr "请输入取消原因..."
+
+msgid "Cancellation failed."
+msgstr "取消失败。"
+
+msgid "Request failed. Please try again."
+msgstr "请求失败，请重试。"
+
+msgid "Copied to clipboard!"
+msgstr "已复制到剪贴板！"
+
+msgid "CANCELLED"
+msgstr "已取消"
+
+msgid "NicePay Transactions"
+msgstr "NicePay交易记录"
+
+msgid "All Statuses"
+msgstr "所有状态"
+
+msgid "All Methods"
+msgstr "所有方式"
+
+msgid "From"
+msgstr "起始日期"
+
+msgid "To"
+msgstr "结束日期"
+
+msgid "Search..."
+msgstr "搜索..."
+
+msgid "Filter"
+msgstr "筛选"
+
+msgid "Total: %d transactions"
+msgstr "共 %d 笔交易"
+
+msgid "ID"
+msgstr "ID"
+
+msgid "TID"
+msgstr "TID"
+
+msgid "Order"
+msgstr "订单"
+
+msgid "Status"
+msgstr "状态"
+
+msgid "Buyer"
+msgstr "买家"
+
+msgid "Date"
+msgstr "日期"
+
+msgid "Actions"
+msgstr "操作"
+
+msgid "No transactions found"
+msgstr "暂无交易记录"
+
+msgid "Transactions will appear here once payments are made."
+msgstr "完成支付后，交易记录将显示在此处。"
+
+msgid "Copy TID"
+msgstr "复制TID"
+
+msgid "Cancel transaction %s"
+msgstr "取消交易 %s"
+
+msgid "Unauthorized."
+msgstr "未授权。"
+
+msgid "Transaction not found."
+msgstr "未找到交易。"
+
+msgid "Transaction cancelled successfully."
+msgstr "交易已成功取消。"
+
+msgid "Cancel failed."
+msgstr "取消失败。"
+
+msgid "Cancelled via NicePay admin."
+msgstr "通过NicePay管理后台取消。"

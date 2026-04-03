@@ -1,0 +1,477 @@
+/**
+ * NicePay Payment Gateway - Admin Styles
+ */
+
+/* ============================================
+   Admin Layout
+   ============================================ */
+.nicepay-admin {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.nicepay-admin h1 {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.nicepay-mode-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    vertical-align: middle;
+}
+
+.nicepay-mode-badge-test {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.nicepay-mode-badge-live {
+    background: #dcfce7;
+    color: #166534;
+}
+
+/* Settings Card */
+.nicepay-settings-content {
+    margin-top: 20px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+/* ============================================
+   Filters Bar
+   ============================================ */
+.nicepay-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 16px;
+    padding: 14px 16px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+
+.nicepay-filters select,
+.nicepay-filters input[type="date"],
+.nicepay-filters input[type="search"] {
+    padding: 6px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 13px;
+    background: #fff;
+    transition: border-color 0.2s;
+}
+
+.nicepay-filters select:focus,
+.nicepay-filters input:focus {
+    border-color: #2563eb;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(37,99,235,0.15);
+}
+
+.nicepay-total-count {
+    color: #6b7280;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+/* ============================================
+   Transaction Table
+   ============================================ */
+.nicepay-admin .wp-list-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.nicepay-admin .wp-list-table thead th {
+    background: #f8fafc;
+    border-bottom: 1px solid #e5e7eb;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #6b7280;
+    padding: 10px 12px;
+}
+
+.nicepay-admin .wp-list-table td {
+    padding: 12px;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 13px;
+}
+
+.nicepay-admin .wp-list-table tbody tr:hover td {
+    background: #f8fafc;
+}
+
+.nicepay-admin .wp-list-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* TID cell */
+.nicepay-tid-cell {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.nicepay-tid-cell code {
+    font-size: 11px;
+    background: #f1f5f9;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #475569;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+}
+
+/* Copy button */
+.nicepay-copy-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px;
+    color: #9ca3af;
+    transition: color 0.2s;
+    display: inline-flex;
+    border-radius: 4px;
+}
+
+.nicepay-copy-btn:hover {
+    color: #2563eb;
+}
+
+.nicepay-copy-btn:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 1px;
+}
+
+.nicepay-copy-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+.nicepay-copy-btn.is-copied {
+    color: #16a34a;
+}
+
+/* Amount column */
+.nicepay-amount {
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* ============================================
+   Empty State
+   ============================================ */
+.nicepay-empty-state {
+    text-align: center;
+    padding: 48px 24px !important;
+}
+
+.nicepay-empty-state-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.nicepay-empty-state-inner svg {
+    width: 48px;
+    height: 48px;
+    color: #d1d5db;
+    margin-bottom: 8px;
+}
+
+.nicepay-empty-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #374151;
+    margin: 0;
+}
+
+.nicepay-empty-desc {
+    font-size: 13px;
+    color: #9ca3af;
+    margin: 0;
+}
+
+/* ============================================
+   Modal Dialog
+   ============================================ */
+.nicepay-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 100000;
+    justify-content: center;
+    align-items: center;
+    animation: nicepay-modal-fade-in 0.2s ease;
+}
+
+.nicepay-modal-overlay.is-active {
+    display: flex;
+}
+
+.nicepay-modal {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    width: 440px;
+    max-width: calc(100vw - 32px);
+    animation: nicepay-modal-slide-up 0.25s ease;
+    overflow: hidden;
+}
+
+.nicepay-modal-header {
+    padding: 20px 24px 0;
+}
+
+.nicepay-modal-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+}
+
+.nicepay-modal-body {
+    padding: 16px 24px;
+}
+
+.nicepay-modal-body p {
+    margin: 0 0 12px;
+    font-size: 14px;
+    color: #6b7280;
+}
+
+.nicepay-modal-body input[type="text"],
+.nicepay-modal-body textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.nicepay-modal-body input:focus,
+.nicepay-modal-body textarea:focus {
+    border-color: #2563eb;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+}
+
+.nicepay-modal-footer {
+    padding: 16px 24px 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.nicepay-modal-btn {
+    padding: 8px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+}
+
+.nicepay-modal-btn-secondary {
+    background: #f3f4f6;
+    color: #374151;
+    border-color: #d1d5db;
+}
+
+.nicepay-modal-btn-secondary:hover {
+    background: #e5e7eb;
+}
+
+.nicepay-modal-btn-danger {
+    background: #dc2626;
+    color: #fff;
+}
+
+.nicepay-modal-btn-danger:hover {
+    background: #b91c1c;
+}
+
+.nicepay-modal-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+@keyframes nicepay-modal-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes nicepay-modal-slide-up {
+    from { opacity: 0; transform: translateY(12px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ============================================
+   Toast Notifications
+   ============================================ */
+.nicepay-toast-container {
+    position: fixed;
+    top: 40px;
+    right: 20px;
+    z-index: 100001;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+}
+
+.nicepay-toast {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    pointer-events: auto;
+    animation: nicepay-toast-in 0.35s ease;
+    max-width: 360px;
+}
+
+.nicepay-toast-success {
+    background: #166534;
+    color: #fff;
+}
+
+.nicepay-toast-error {
+    background: #991b1b;
+    color: #fff;
+}
+
+.nicepay-toast-info {
+    background: #1e3a5f;
+    color: #fff;
+}
+
+.nicepay-toast.is-leaving {
+    animation: nicepay-toast-out 0.3s ease forwards;
+}
+
+.nicepay-toast svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+@keyframes nicepay-toast-in {
+    from { opacity: 0; transform: translateX(40px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes nicepay-toast-out {
+    from { opacity: 1; transform: translateX(0); }
+    to { opacity: 0; transform: translateX(40px); }
+}
+
+/* ============================================
+   Settings Payment Methods with Icons
+   ============================================ */
+.nicepay-method-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    margin-bottom: 6px;
+    border-radius: 6px;
+    transition: background 0.15s;
+}
+
+.nicepay-method-checkbox:hover {
+    background: #f8fafc;
+}
+
+.nicepay-method-checkbox .nicepay-method-icon {
+    color: #6b7280;
+}
+
+.nicepay-method-checkbox .nicepay-method-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Shortcode Help */
+.nicepay-shortcode-help {
+    max-width: 800px;
+}
+
+.nicepay-code-block {
+    background: #0f172a;
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin: 12px 0 24px;
+    overflow-x: auto;
+    border: 1px solid #1e293b;
+}
+
+.nicepay-code-block code {
+    color: #e2e8f0;
+    font-size: 13px;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+/* ============================================
+   Admin Responsive
+   ============================================ */
+@media (max-width: 782px) {
+    .nicepay-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .nicepay-admin .wp-list-table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .nicepay-settings-content {
+        padding: 16px;
+    }
+
+    .nicepay-modal {
+        width: calc(100vw - 24px);
+    }
+
+    .nicepay-toast-container {
+        right: 12px;
+        left: 12px;
+    }
+
+    .nicepay-toast {
+        max-width: 100%;
+    }
+}

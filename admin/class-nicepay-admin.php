@@ -51,11 +51,43 @@ class NicePay_Admin {
         }
 
         wp_enqueue_style(
-            'nicepay-admin-css',
+            'nicepay-shared-css',
             NICEPAY_PLUGIN_URL . 'assets/css/nicepay.css',
             array(),
             NICEPAY_VERSION
         );
+
+        wp_enqueue_style(
+            'nicepay-admin-css',
+            NICEPAY_PLUGIN_URL . 'assets/css/nicepay-admin.css',
+            array( 'nicepay-shared-css' ),
+            NICEPAY_VERSION
+        );
+
+        wp_enqueue_script(
+            'nicepay-admin-js',
+            NICEPAY_PLUGIN_URL . 'assets/js/nicepay-admin.js',
+            array( 'jquery' ),
+            NICEPAY_VERSION,
+            true
+        );
+
+        wp_localize_script( 'nicepay-admin-js', 'nicepayAdmin', array(
+            'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+            'i18n'    => array(
+                'confirm'               => __( 'Confirm', 'nicepay-payment-gateway' ),
+                'cancel'                => __( 'Cancel', 'nicepay-payment-gateway' ),
+                'cancelTitle'           => __( 'Cancel Transaction', 'nicepay-payment-gateway' ),
+                'cancelMessage'         => __( 'This action cannot be undone. The payment will be reversed.', 'nicepay-payment-gateway' ),
+                'cancelReasonLabel'     => __( 'Cancellation Reason', 'nicepay-payment-gateway' ),
+                'cancelReasonPlaceholder' => __( 'Enter reason for cancellation...', 'nicepay-payment-gateway' ),
+                'cancelConfirm'         => __( 'Cancel Transaction', 'nicepay-payment-gateway' ),
+                'cancelFailed'          => __( 'Cancellation failed.', 'nicepay-payment-gateway' ),
+                'requestFailed'         => __( 'Request failed. Please try again.', 'nicepay-payment-gateway' ),
+                'copied'                => __( 'Copied to clipboard!', 'nicepay-payment-gateway' ),
+                'statusCancelled'       => __( 'CANCELLED', 'nicepay-payment-gateway' ),
+            ),
+        ) );
     }
 
     public function register_settings() {
@@ -91,8 +123,14 @@ class NicePay_Admin {
 
         $active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'general';
         ?>
+        <?php $mode = get_option( 'nicepay_mode', 'test' ); ?>
         <div class="wrap nicepay-admin">
-            <h1><?php esc_html_e( 'NicePay Settings', 'nicepay-payment-gateway' ); ?></h1>
+            <h1>
+                <?php esc_html_e( 'NicePay Settings', 'nicepay-payment-gateway' ); ?>
+                <span class="nicepay-mode-badge nicepay-mode-badge-<?php echo esc_attr( $mode ); ?>">
+                    <?php echo esc_html( strtoupper( $mode ) ); ?>
+                </span>
+            </h1>
 
             <nav class="nav-tab-wrapper">
                 <a href="<?php echo esc_url( admin_url( 'admin.php?page=nicepay-settings&tab=general' ) ); ?>"
@@ -266,11 +304,13 @@ class NicePay_Admin {
                     <td>
                         <fieldset>
                             <?php foreach ( $all_methods as $code => $label ) : ?>
-                                <label style="display: block; margin-bottom: 8px;">
+                                <label class="nicepay-method-checkbox">
                                     <input type="checkbox" name="nicepay_enabled_methods[]"
                                            value="<?php echo esc_attr( $code ); ?>"
                                            <?php checked( in_array( $code, $enabled, true ) ); ?>>
-                                    <?php echo esc_html( $label ); ?> (<?php echo esc_html( $code ); ?>)
+                                    <?php echo nicepay_get_method_icon( $code ); ?>
+                                    <span><?php echo esc_html( $label ); ?></span>
+                                    <code style="font-size:11px;color:#9ca3af;margin-left:auto;"><?php echo esc_html( $code ); ?></code>
                                 </label>
                             <?php endforeach; ?>
                         </fieldset>

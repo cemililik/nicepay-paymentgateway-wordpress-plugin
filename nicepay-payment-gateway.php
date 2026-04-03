@@ -55,6 +55,7 @@ final class NicePay_Payment_Gateway {
     private function includes() {
         require_once NICEPAY_PLUGIN_DIR . 'includes/nicepay-functions.php';
         require_once NICEPAY_PLUGIN_DIR . 'includes/class-nicepay-api.php';
+        require_once NICEPAY_PLUGIN_DIR . 'includes/nicepay-icons.php';
 
         if ( is_admin() ) {
             require_once NICEPAY_PLUGIN_DIR . 'admin/class-nicepay-admin.php';

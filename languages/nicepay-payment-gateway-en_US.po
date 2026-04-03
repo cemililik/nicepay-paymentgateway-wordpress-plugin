@@ -1,0 +1,486 @@
+# English (US) translation for NicePay Payment Gateway
+# Copyright (C) 2026 cemililik
+# This file is distributed under the MIT license.
+#
+# English is the source language. This file maps each string to itself
+# so that en_US sites have an explicit translation file.
+msgid ""
+msgstr ""
+"Project-Id-Version: NicePay Payment Gateway 2.0.0\n"
+"Report-Msgid-Bugs-To: https://github.com/cemililik/nicepay-paymentgateway-wordpress-plugin/issues\n"
+"POT-Creation-Date: 2026-04-03 00:00+0000\n"
+"PO-Revision-Date: 2026-04-03 00:00+0000\n"
+"Last-Translator: cemililik\n"
+"Language-Team: English (US)\n"
+"Language: en_US\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: NicePay Payment Gateway\n"
+"X-Domain: nicepay-payment-gateway\n"
+
+msgid "NicePay Payment Gateway"
+msgstr "NicePay Payment Gateway"
+
+msgid "Processing payment..."
+msgstr "Processing payment..."
+
+msgid "Payment error occurred. Please try again."
+msgstr "Payment error occurred. Please try again."
+
+msgid "Please select a payment method."
+msgstr "Please select a payment method."
+
+msgid "Pay Now"
+msgstr "Pay Now"
+
+msgid "Settings"
+msgstr "Settings"
+
+msgid "Complete Your Payment"
+msgstr "Complete Your Payment"
+
+msgid "Order Total: %s"
+msgstr "Order Total: %s"
+
+msgid "Select Payment Method"
+msgstr "Select Payment Method"
+
+msgid "Proceed to Payment"
+msgstr "Proceed to Payment"
+
+msgid "Cancel"
+msgstr "Cancel"
+
+msgid "Invalid payment amount."
+msgstr "Invalid payment amount."
+
+msgid "Payment initialization failed. Please try again."
+msgstr "Payment initialization failed. Please try again."
+
+msgid "Payment Method"
+msgstr "Payment Method"
+
+msgid "Credit Card"
+msgstr "Credit Card"
+
+msgid "Bank Transfer"
+msgstr "Bank Transfer"
+
+msgid "Virtual Account"
+msgstr "Virtual Account"
+
+msgid "Mobile Payment"
+msgstr "Mobile Payment"
+
+msgid "SSG Bank Account"
+msgstr "SSG Bank Account"
+
+msgid "Culture Cash"
+msgstr "Culture Cash"
+
+msgid "Invalid approval URL."
+msgstr "Invalid approval URL."
+
+msgid "Failed to parse approval response."
+msgstr "Failed to parse approval response."
+
+msgid "Missing signature in approval response."
+msgstr "Missing signature in approval response."
+
+msgid "Signature verification failed."
+msgstr "Signature verification failed."
+
+msgid "Invalid cancel URL."
+msgstr "Invalid cancel URL."
+
+msgid "Failed to parse cancel response."
+msgstr "Failed to parse cancel response."
+
+msgid "Cancel signature verification failed."
+msgstr "Cancel signature verification failed."
+
+msgid "NicePay"
+msgstr "NicePay"
+
+msgid "Accept payments via NicePay payment gateway (Credit Card, Bank Transfer, Virtual Account, Mobile)."
+msgstr "Accept payments via NicePay payment gateway (Credit Card, Bank Transfer, Virtual Account, Mobile)."
+
+msgid "NicePay Payment"
+msgstr "NicePay Payment"
+
+msgid "Pay securely via NicePay."
+msgstr "Pay securely via NicePay."
+
+msgid "Pay securely via NicePay (Credit Card, Bank Transfer, Virtual Account, Mobile)."
+msgstr "Pay securely via NicePay (Credit Card, Bank Transfer, Virtual Account, Mobile)."
+
+msgid "Enable/Disable"
+msgstr "Enable/Disable"
+
+msgid "Enable NicePay Payment"
+msgstr "Enable NicePay Payment"
+
+msgid "Title"
+msgstr "Title"
+
+msgid "Payment method title shown at checkout."
+msgstr "Payment method title shown at checkout."
+
+msgid "Description"
+msgstr "Description"
+
+msgid "Payment method description shown at checkout."
+msgstr "Payment method description shown at checkout."
+
+msgid "API Settings"
+msgstr "API Settings"
+
+msgid "Configure MID, Merchant Key, and other API settings on the <a href=\"%s\">NicePay Settings</a> page."
+msgstr "Configure MID, Merchant Key, and other API settings on the <a href=\"%s\">NicePay Settings</a> page."
+
+msgid "Order not found."
+msgstr "Order not found."
+
+msgid " and %d more"
+msgstr " and %d more"
+
+msgid "NicePay: failed to initialize transaction."
+msgstr "NicePay: failed to initialize transaction."
+
+msgid "Payment initialization failed. Please return to checkout."
+msgstr "Payment initialization failed. Please return to checkout."
+
+msgid "Return to Checkout"
+msgstr "Return to Checkout"
+
+msgid "NicePay authentication failed. Code: %1$s, Message: %2$s"
+msgstr "NicePay authentication failed. Code: %1$s, Message: %2$s"
+
+msgid "Payment authentication failed. Please try again."
+msgstr "Payment authentication failed. Please try again."
+
+msgid "NicePay signature verification failed."
+msgstr "NicePay signature verification failed."
+
+msgid "Payment verification failed. Please try again."
+msgstr "Payment verification failed. Please try again."
+
+msgid "NicePay approval request failed."
+msgstr "NicePay approval request failed."
+
+msgid "Payment processing failed. Please try again."
+msgstr "Payment processing failed. Please try again."
+
+msgid "Awaiting virtual account deposit. Bank: %1$s, Account: %2$s, Expires: %3$s"
+msgstr "Awaiting virtual account deposit. Bank: %1$s, Account: %2$s, Expires: %3$s"
+
+msgid "NicePay payment completed. Method: %1$s, TID: %2$s"
+msgstr "NicePay payment completed. Method: %1$s, TID: %2$s"
+
+msgid "NicePay payment failed. Code: %1$s, Message: %2$s"
+msgstr "NicePay payment failed. Code: %1$s, Message: %2$s"
+
+msgid "Payment failed."
+msgstr "Payment failed."
+
+msgid "Transaction ID not found."
+msgstr "Transaction ID not found."
+
+msgid "Refund requested by merchant"
+msgstr "Refund requested by merchant"
+
+msgid "NicePay refund processed. Amount: %1$s, Reason: %2$s"
+msgstr "NicePay refund processed. Amount: %1$s, Reason: %2$s"
+
+msgid "Unknown error"
+msgstr "Unknown error"
+
+msgid "Invalid request method."
+msgstr "Invalid request method."
+
+msgid "Payment verification failed."
+msgstr "Payment verification failed."
+
+msgid "Payment Successful"
+msgstr "Payment Successful"
+
+msgid "Payment Failed"
+msgstr "Payment Failed"
+
+msgid "Deposit Information"
+msgstr "Deposit Information"
+
+msgid "Bank"
+msgstr "Bank"
+
+msgid "Account"
+msgstr "Account"
+
+msgid "Amount"
+msgstr "Amount"
+
+msgid "Deadline"
+msgstr "Deadline"
+
+msgid "Transaction ID"
+msgstr "Transaction ID"
+
+msgid "Method"
+msgstr "Method"
+
+msgid "Return to Home"
+msgstr "Return to Home"
+
+msgid "Pending"
+msgstr "Pending"
+
+msgid "Paid"
+msgstr "Paid"
+
+msgid "Failed"
+msgstr "Failed"
+
+msgid "Cancelled"
+msgstr "Cancelled"
+
+msgid "Refunded"
+msgstr "Refunded"
+
+msgid "Waiting for Deposit"
+msgstr "Waiting for Deposit"
+
+msgid "NicePay Settings"
+msgstr "NicePay Settings"
+
+msgid "Transactions"
+msgstr "Transactions"
+
+msgid "General"
+msgstr "General"
+
+msgid "API Credentials"
+msgstr "API Credentials"
+
+msgid "Payment Methods"
+msgstr "Payment Methods"
+
+msgid "Shortcode"
+msgstr "Shortcode"
+
+msgid "Mode"
+msgstr "Mode"
+
+msgid "Test"
+msgstr "Test"
+
+msgid "Live"
+msgstr "Live"
+
+msgid "Use Test mode for development. Switch to Live for production."
+msgstr "Use Test mode for development. Switch to Live for production."
+
+msgid "Language"
+msgstr "Language"
+
+msgid "Korean"
+msgstr "Korean"
+
+msgid "English"
+msgstr "English"
+
+msgid "Chinese"
+msgstr "Chinese"
+
+msgid "Currency"
+msgstr "Currency"
+
+msgid "Charset"
+msgstr "Charset"
+
+msgid "You are currently in Test mode."
+msgstr "You are currently in Test mode."
+
+msgid "You are currently in Live mode. Payments will be processed with real money."
+msgstr "You are currently in Live mode. Payments will be processed with real money."
+
+msgid "Test Credentials"
+msgstr "Test Credentials"
+
+msgid "Test MID"
+msgstr "Test MID"
+
+msgid "Test Merchant Key"
+msgstr "Test Merchant Key"
+
+msgid "Live Credentials"
+msgstr "Live Credentials"
+
+msgid "Live MID"
+msgstr "Live MID"
+
+msgid "Live Merchant Key"
+msgstr "Live Merchant Key"
+
+msgid "Enabled Payment Methods"
+msgstr "Enabled Payment Methods"
+
+msgid "Virtual Account Expiry (days)"
+msgstr "Virtual Account Expiry (days)"
+
+msgid "Number of days before virtual account expires."
+msgstr "Number of days before virtual account expires."
+
+msgid "Payment Button Shortcode"
+msgstr "Payment Button Shortcode"
+
+msgid "Use the following shortcode to embed a payment button on any page:"
+msgstr "Use the following shortcode to embed a payment button on any page:"
+
+msgid "Available Parameters"
+msgstr "Available Parameters"
+
+msgid "Parameter"
+msgstr "Parameter"
+
+msgid "Required"
+msgstr "Required"
+
+msgid "Yes"
+msgstr "Yes"
+
+msgid "No"
+msgstr "No"
+
+msgid "Payment amount"
+msgstr "Payment amount"
+
+msgid "Product/service name"
+msgstr "Product/service name"
+
+msgid "CARD, BANK, VBANK, CELLPHONE"
+msgstr "CARD, BANK, VBANK, CELLPHONE"
+
+msgid "Buyer name"
+msgstr "Buyer name"
+
+msgid "Buyer email"
+msgstr "Buyer email"
+
+msgid "Buyer phone"
+msgstr "Buyer phone"
+
+msgid "Button label text"
+msgstr "Button label text"
+
+msgid "CSS class for the button"
+msgstr "CSS class for the button"
+
+msgid "KRW or USD"
+msgstr "KRW or USD"
+
+msgid "KO, EN, or CN"
+msgstr "KO, EN, or CN"
+
+msgid "Example with all parameters"
+msgstr "Example with all parameters"
+
+msgid "Confirm"
+msgstr "Confirm"
+
+msgid "Cancel Transaction"
+msgstr "Cancel Transaction"
+
+msgid "This action cannot be undone. The payment will be reversed."
+msgstr "This action cannot be undone. The payment will be reversed."
+
+msgid "Cancellation Reason"
+msgstr "Cancellation Reason"
+
+msgid "Enter reason for cancellation..."
+msgstr "Enter reason for cancellation..."
+
+msgid "Cancellation failed."
+msgstr "Cancellation failed."
+
+msgid "Request failed. Please try again."
+msgstr "Request failed. Please try again."
+
+msgid "Copied to clipboard!"
+msgstr "Copied to clipboard!"
+
+msgid "CANCELLED"
+msgstr "CANCELLED"
+
+msgid "NicePay Transactions"
+msgstr "NicePay Transactions"
+
+msgid "All Statuses"
+msgstr "All Statuses"
+
+msgid "All Methods"
+msgstr "All Methods"
+
+msgid "From"
+msgstr "From"
+
+msgid "To"
+msgstr "To"
+
+msgid "Search..."
+msgstr "Search..."
+
+msgid "Filter"
+msgstr "Filter"
+
+msgid "Total: %d transactions"
+msgstr "Total: %d transactions"
+
+msgid "ID"
+msgstr "ID"
+
+msgid "TID"
+msgstr "TID"
+
+msgid "Order"
+msgstr "Order"
+
+msgid "Status"
+msgstr "Status"
+
+msgid "Buyer"
+msgstr "Buyer"
+
+msgid "Date"
+msgstr "Date"
+
+msgid "Actions"
+msgstr "Actions"
+
+msgid "No transactions found"
+msgstr "No transactions found"
+
+msgid "Transactions will appear here once payments are made."
+msgstr "Transactions will appear here once payments are made."
+
+msgid "Copy TID"
+msgstr "Copy TID"
+
+msgid "Cancel transaction %s"
+msgstr "Cancel transaction %s"
+
+msgid "Unauthorized."
+msgstr "Unauthorized."
+
+msgid "Transaction not found."
+msgstr "Transaction not found."
+
+msgid "Transaction cancelled successfully."
+msgstr "Transaction cancelled successfully."
+
+msgid "Cancel failed."
+msgstr "Cancel failed."
+
+msgid "Cancelled via NicePay admin."
+msgstr "Cancelled via NicePay admin."
