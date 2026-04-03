@@ -248,7 +248,7 @@ final class NicePay_Payment_Gateway {
         if ( ! empty( $raw_atts['id'] ) ) {
             $saved = nicepay_get_saved_shortcode( sanitize_text_field( $raw_atts['id'] ) );
             if ( $saved ) {
-                foreach ( $defaults as $key => $default_val ) {
+                foreach ( array_keys( $defaults ) as $key ) {
                     if ( isset( $saved[ $key ] ) && $saved[ $key ] !== '' ) {
                         $defaults[ $key ] = $saved[ $key ];
                     }

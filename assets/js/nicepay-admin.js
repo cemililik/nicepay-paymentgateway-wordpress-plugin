@@ -197,6 +197,11 @@
             }).catch(function() {
                 NicePayToast.show('Copy failed', 'error', 2000);
             });
+        } else {
+            var temp = $('<textarea>').val(text).appendTo('body').select();
+            var ok = document.execCommand('copy');
+            temp.remove();
+            NicePayToast.show(ok ? (nicepayAdmin.i18n.copied || 'Copied!') : 'Copy failed', ok ? 'success' : 'error', 2000);
         }
     });
 

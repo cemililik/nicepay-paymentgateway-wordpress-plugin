@@ -327,15 +327,15 @@ function nicepay_get_default_presets() {
     return array(
         array(
             'id'           => 'quick-payment',
-            'name'         => 'Quick Payment',
+            'name'         => __( 'Quick Payment', 'nicepay-payment-gateway' ),
             'display_mode' => 'inline',
             'amount'       => '10000',
-            'goods_name'   => 'Quick Payment',
+            'goods_name'   => __( 'Quick Payment', 'nicepay-payment-gateway' ),
             'pay_method'   => '',
             'buyer_name'   => '',
             'buyer_email'  => '',
             'buyer_tel'    => '',
-            'button_text'  => 'Pay Now',
+            'button_text'  => __( 'Pay Now', 'nicepay-payment-gateway' ),
             'button_class' => 'nicepay-pay-button',
             'button_color' => '#2563eb',
             'currency'     => 'KRW',
@@ -346,15 +346,15 @@ function nicepay_get_default_presets() {
         ),
         array(
             'id'           => 'donation',
-            'name'         => 'Donation',
+            'name'         => __( 'Donation', 'nicepay-payment-gateway' ),
             'display_mode' => 'inline',
             'amount'       => '5000',
-            'goods_name'   => 'Donation',
+            'goods_name'   => __( 'Donation', 'nicepay-payment-gateway' ),
             'pay_method'   => '',
             'buyer_name'   => '',
             'buyer_email'  => '',
             'buyer_tel'    => '',
-            'button_text'  => 'Donate',
+            'button_text'  => __( 'Donate', 'nicepay-payment-gateway' ),
             'button_class' => 'nicepay-pay-button',
             'button_color' => '#16a34a',
             'currency'     => 'KRW',
@@ -365,15 +365,15 @@ function nicepay_get_default_presets() {
         ),
         array(
             'id'           => 'product-purchase',
-            'name'         => 'Product Purchase',
+            'name'         => __( 'Product Purchase', 'nicepay-payment-gateway' ),
             'display_mode' => 'modal',
             'amount'       => '50000',
-            'goods_name'   => 'Product Purchase',
+            'goods_name'   => __( 'Product Purchase', 'nicepay-payment-gateway' ),
             'pay_method'   => '',
             'buyer_name'   => '',
             'buyer_email'  => '',
             'buyer_tel'    => '',
-            'button_text'  => 'Buy Now',
+            'button_text'  => __( 'Buy Now', 'nicepay-payment-gateway' ),
             'button_class' => 'nicepay-pay-button',
             'button_color' => '#111827',
             'currency'     => 'KRW',
@@ -384,15 +384,15 @@ function nicepay_get_default_presets() {
         ),
         array(
             'id'           => 'subscription',
-            'name'         => 'Subscription',
+            'name'         => __( 'Subscription', 'nicepay-payment-gateway' ),
             'display_mode' => 'modal',
             'amount'       => '29900',
-            'goods_name'   => 'Monthly Subscription',
+            'goods_name'   => __( 'Monthly Subscription', 'nicepay-payment-gateway' ),
             'pay_method'   => 'CARD',
             'buyer_name'   => '',
             'buyer_email'  => '',
             'buyer_tel'    => '',
-            'button_text'  => 'Subscribe',
+            'button_text'  => __( 'Subscribe', 'nicepay-payment-gateway' ),
             'button_class' => 'nicepay-pay-button',
             'button_color' => '#9333ea',
             'currency'     => 'KRW',
@@ -411,7 +411,7 @@ function nicepay_get_default_presets() {
  * @return array|null Shortcode config or null
  */
 function nicepay_get_saved_shortcode( $id ) {
-    $shortcodes = get_option( 'nicepay_saved_shortcodes', array() );
+    $shortcodes = nicepay_get_all_shortcodes();
     foreach ( $shortcodes as $sc ) {
         if ( isset( $sc['id'] ) && $sc['id'] === $id ) {
             return $sc;

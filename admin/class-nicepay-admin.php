@@ -365,6 +365,20 @@ class NicePay_Admin {
             <?php else : ?>
                 <div class="nicepay-shortcodes-grid">
                     <?php foreach ( $shortcodes as $sc ) : ?>
+                        <?php
+                        // Build full shortcode string once for reuse
+                        $sc_parts = array( '[nicepay_payment' );
+                        $sc_parts[] = 'id="' . esc_attr( $sc['id'] ) . '"';
+                        if ( ! empty( $sc['display_mode'] ) && $sc['display_mode'] === 'modal' ) $sc_parts[] = 'display_mode="modal"';
+                        if ( ! empty( $sc['amount'] ) ) $sc_parts[] = 'amount="' . esc_attr( $sc['amount'] ) . '"';
+                        if ( ! empty( $sc['goods_name'] ) ) $sc_parts[] = 'goods_name="' . esc_attr( $sc['goods_name'] ) . '"';
+                        if ( ! empty( $sc['pay_method'] ) ) $sc_parts[] = 'pay_method="' . esc_attr( $sc['pay_method'] ) . '"';
+                        if ( ! empty( $sc['button_text'] ) ) $sc_parts[] = 'button_text="' . esc_attr( $sc['button_text'] ) . '"';
+                        if ( ! empty( $sc['button_color'] ) && $sc['button_color'] !== '#2563eb' ) $sc_parts[] = 'button_color="' . esc_attr( $sc['button_color'] ) . '"';
+                        if ( ! empty( $sc['currency'] ) ) $sc_parts[] = 'currency="' . esc_attr( $sc['currency'] ) . '"';
+                        if ( ! empty( $sc['language'] ) ) $sc_parts[] = 'language="' . esc_attr( $sc['language'] ) . '"';
+                        $full_shortcode = implode( ' ', $sc_parts ) . ']';
+                        ?>
                         <div class="nicepay-sc-card" data-id="<?php echo esc_attr( $sc['id'] ); ?>" id="sc-card-<?php echo esc_attr( $sc['id'] ); ?>">
                             <div class="nicepay-sc-card-header">
                                 <h4 class="nicepay-sc-card-name"><?php echo esc_html( $sc['name'] ); ?></h4>
@@ -386,19 +400,7 @@ class NicePay_Admin {
                                     <?php endif; ?>
                                 </div>
                                 <div class="nicepay-sc-card-code-wrapper">
-                                    <code class="nicepay-sc-card-code"><?php
-                                        $sc_parts = array( '[nicepay_payment' );
-                                        $sc_parts[] = 'id="' . esc_attr( $sc['id'] ) . '"';
-                                        if ( ! empty( $sc['display_mode'] ) && $sc['display_mode'] === 'modal' ) $sc_parts[] = 'display_mode="modal"';
-                                        if ( ! empty( $sc['amount'] ) ) $sc_parts[] = 'amount="' . esc_attr( $sc['amount'] ) . '"';
-                                        if ( ! empty( $sc['goods_name'] ) ) $sc_parts[] = 'goods_name="' . esc_attr( $sc['goods_name'] ) . '"';
-                                        if ( ! empty( $sc['pay_method'] ) ) $sc_parts[] = 'pay_method="' . esc_attr( $sc['pay_method'] ) . '"';
-                                        if ( ! empty( $sc['button_text'] ) ) $sc_parts[] = 'button_text="' . esc_attr( $sc['button_text'] ) . '"';
-                                        if ( ! empty( $sc['button_color'] ) && $sc['button_color'] !== '#2563eb' ) $sc_parts[] = 'button_color="' . esc_attr( $sc['button_color'] ) . '"';
-                                        if ( ! empty( $sc['currency'] ) ) $sc_parts[] = 'currency="' . esc_attr( $sc['currency'] ) . '"';
-                                        if ( ! empty( $sc['language'] ) ) $sc_parts[] = 'language="' . esc_attr( $sc['language'] ) . '"';
-                                        echo esc_html( implode( ' ', $sc_parts ) . ']' );
-                                    ?></code>
+                                    <code class="nicepay-sc-card-code"><?php echo esc_html( $full_shortcode ); ?></code>
                                 </div>
                             </div>
                             <div class="nicepay-sc-card-actions">
@@ -407,7 +409,7 @@ class NicePay_Admin {
                                     <?php esc_html_e( 'Edit', 'nicepay-payment-gateway' ); ?>
                                 </a>
                                 <button type="button" class="nicepay-sc-card-btn nicepay-sc-card-copy"
-                                        data-shortcode="<?php echo esc_attr( implode( ' ', $sc_parts ) . ']' ); ?>">
+                                        data-shortcode="<?php echo esc_attr( $full_shortcode ); ?>">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                                     <?php esc_html_e( 'Copy', 'nicepay-payment-gateway' ); ?>
                                 </button>
@@ -757,11 +759,10 @@ class NicePay_Admin {
                         if ( ! in_array( $code, $enabled_methods, true ) ) {
                             continue;
                         }
-                        // Flatten SVG to single line for JS safety
                         $icon_html = preg_replace( '/\s+/', ' ', trim( nicepay_get_method_icon( $code ) ) );
-                        $icon_js   = str_replace( array( "'", "\n", "\r" ), array( "\\'", '', '' ), $icon_html );
-                        $label_js  = esc_js( $label );
-                        echo "methodsHtml += '<div class=\"nicepay-sc-pv-method-option\">{$icon_js} {$label_js}</div>';\n";
+                        $icon_json = wp_json_encode( $icon_html );
+                        $label_json = wp_json_encode( $label );
+                        echo "methodsHtml += '<div class=\"nicepay-sc-pv-method-option\">' + {$icon_json} + ' ' + {$label_json} + '</div>';\n";
                     }
                     ?>
                     $('#sc-pv-method-options').html(methodsHtml);

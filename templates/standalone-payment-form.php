@@ -225,12 +225,6 @@ function nicepayStartStandalone(formId) {
             input.parentNode.appendChild(err);
             if (!firstInvalid) firstInvalid = input;
         }
-
-        // Sync value to hidden form field
-        if (fieldName) {
-            var hidden = document.getElementById(formId + '-' + fieldName.toLowerCase().replace('buyer', 'buyer'));
-            if (hidden) hidden.value = value;
-        }
     });
 
     if (!valid) {
@@ -335,30 +329,39 @@ window.nicepayClose = window.nicepayClose || function() {
 };
 
 // Modal mode functions
+var _nicepayModalEscHandlers = {};
+
 function nicepayOpenPaymentModal(formId) {
     var modal = document.getElementById(formId + '-modal');
-    if (modal) {
-        modal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-        // Close on backdrop click
-        modal.addEventListener('click', function(e) {
-            if (e.target === modal) nicepayClosePaymentModal(formId);
-        });
-        // Close on Escape
-        document.addEventListener('keydown', function handler(e) {
-            if (e.key === 'Escape') {
-                nicepayClosePaymentModal(formId);
-                document.removeEventListener('keydown', handler);
-            }
-        });
-    }
+    if (!modal) return;
+
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+
+    // Close on backdrop click
+    modal.onclick = function(e) {
+        if (e.target === modal) nicepayClosePaymentModal(formId);
+    };
+
+    // Close on Escape — store handler for cleanup
+    var escHandler = function(e) {
+        if (e.key === 'Escape') nicepayClosePaymentModal(formId);
+    };
+    _nicepayModalEscHandlers[formId] = escHandler;
+    document.addEventListener('keydown', escHandler);
 }
 
 function nicepayClosePaymentModal(formId) {
     var modal = document.getElementById(formId + '-modal');
     if (modal) {
         modal.style.display = 'none';
+        modal.onclick = null;
         document.body.style.overflow = '';
+    }
+    // Remove stored Escape handler
+    if (_nicepayModalEscHandlers[formId]) {
+        document.removeEventListener('keydown', _nicepayModalEscHandlers[formId]);
+        delete _nicepayModalEscHandlers[formId];
     }
 }
 </script>

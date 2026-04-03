@@ -373,7 +373,7 @@ The easiest approach:
 6. Paste into any page or post
 
 Example:
-```
+```text
 [nicepay_payment id="quick-payment"]
 ```
 
@@ -383,7 +383,7 @@ Example:
 
 The complete payment form is shown directly on the page:
 
-```
+```text
 [nicepay_payment id="donation"]
 ```
 
@@ -397,7 +397,7 @@ What the customer sees:
 
 Only a button is visible. Clicking it opens a popup overlay:
 
-```
+```text
 [nicepay_payment id="product-purchase"]
 ```
 
@@ -430,7 +430,7 @@ What the customer sees:
 *Required unless using a saved shortcode via `id` that already has these values.
 
 **Priority:** When using `id`, inline attributes override saved values. For example:
-```
+```text
 [nicepay_payment id="donation" amount="25000"]
 ```
 This loads the "Donation" config but changes the amount to 25,000.
@@ -606,7 +606,7 @@ The NicePay payment window (where customers enter card details) supports:
 - **CN** — Chinese
 
 Set globally in **NicePay > Settings > General > Language**, or per-shortcode:
-```
+```text
 [nicepay_payment id="my-payment" language="EN"]
 ```
 

@@ -113,8 +113,8 @@ class NicePay_Transactions {
                                     <div class="nicepay-tid-cell">
                                         <code class="nicepay-tid"><?php echo esc_html( $item->tid ); ?></code>
                                         <button type="button" class="nicepay-copy-btn" data-copy="<?php echo esc_attr( $item->tid ); ?>"
-                                                title="<?php esc_attr_e( 'Copy TID', 'nicepay-payment-gateway' ); ?>">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                                                aria-label="<?php echo esc_attr( sprintf( __( 'Copy TID %s', 'nicepay-payment-gateway' ), $item->tid ) ); ?>">
+                                            <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                                         </button>
                                     </div>
                                     <?php else : ?>
