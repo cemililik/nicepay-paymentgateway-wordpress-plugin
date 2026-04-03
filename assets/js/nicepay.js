@@ -40,10 +40,9 @@
                 return;
             }
 
-            // Show loading state
-            var btn = $('#nicepay-submit-btn');
-            btn.addClass('is-loading').prop('disabled', true);
-            $('#nicepay-loading').addClass('is-active');
+            // Show loading state (class-based for multi-instance support)
+            $('.nicepay-pay-button').addClass('is-loading').prop('disabled', true);
+            $('.nicepay-loading-overlay').addClass('is-active');
 
             if (typeof nicepayStart === 'function') {
                 try {
@@ -66,18 +65,28 @@
         },
 
         hideLoading: function() {
-            $('#nicepay-submit-btn').removeClass('is-loading').prop('disabled', false);
-            $('#nicepay-loading').removeClass('is-active');
+            $('.nicepay-pay-button').removeClass('is-loading').prop('disabled', false);
+            $('.nicepay-loading-overlay').removeClass('is-active');
         },
 
         showNotice: function(message, type) {
-            var wrapper = $('#nicepay-payment-wrapper, .nicepay-standalone-wrapper').first();
+            // Find the closest payment wrapper to the active form
+            var wrapper = $(document.payForm).closest('.nicepay-payment-wrapper');
+            if (!wrapper.length) {
+                wrapper = $('.nicepay-payment-wrapper').first();
+            }
             wrapper.find('.nicepay-notice').remove();
 
             var icon = '<span class="nicepay-notice-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></span>';
             var notice = $('<div class="nicepay-notice nicepay-notice-' + type + '" role="alert">' + icon + '<span>' + $('<span>').text(message).html() + '</span></div>');
 
-            wrapper.find('.nicepay-submit-wrapper').before(notice);
+            // Insert before submit button or at end of wrapper
+            var anchor = wrapper.find('.nicepay-submit-wrapper, form > button, form > .nicepay-submit-wrapper').first();
+            if (anchor.length) {
+                anchor.before(notice);
+            } else {
+                wrapper.append(notice);
+            }
 
             setTimeout(function() {
                 notice.fadeOut(300, function() { notice.remove(); });
@@ -85,7 +94,7 @@
         }
     };
 
-    // Expose hideLoading for NicePay callbacks
+    // Expose for NicePay callbacks
     window.NicePayHandler = NicePayHandler;
 
     $(document).ready(function() {
