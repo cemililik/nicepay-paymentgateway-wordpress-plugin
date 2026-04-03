@@ -130,9 +130,13 @@ class WC_Gateway_NicePay extends WC_Payment_Gateway {
         if ( count( $items ) > 0 ) {
             $first_item = reset( $items );
             $goods_name = $first_item->get_name();
-            if ( count( $items ) > 1 ) {
+            $extra = count( $items ) - 1;
+            if ( $extra > 0 ) {
                 /* translators: %d: number of additional items */
-                $goods_name .= sprintf( __( ' and %d more', 'nicepay-payment-gateway' ), count( $items ) - 1 );
+                $goods_name .= sprintf(
+                    _n( ' and %d more item', ' and %d more items', $extra, 'nicepay-payment-gateway' ),
+                    $extra
+                );
             }
         }
 
@@ -196,6 +200,11 @@ class WC_Gateway_NicePay extends WC_Payment_Gateway {
         // Cellphone goods class
         if ( in_array( 'CELLPHONE', $enabled_methods, true ) ) {
             $form_data['GoodsCl'] = '1'; // Physical goods
+        }
+
+        // Culture Cash requires MallUserID
+        if ( in_array( 'GIFT_CULT', $enabled_methods, true ) ) {
+            $form_data['MallUserID'] = $order->get_billing_email();
         }
 
         include NICEPAY_PLUGIN_DIR . 'templates/payment-form.php';

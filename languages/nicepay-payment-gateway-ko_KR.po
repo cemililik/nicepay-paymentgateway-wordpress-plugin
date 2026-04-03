@@ -1,0 +1,486 @@
+# Korean translation for NicePay Payment Gateway
+# Copyright (C) 2026 cemililik
+# This file is distributed under the MIT license.
+msgid ""
+msgstr ""
+"Project-Id-Version: NicePay Payment Gateway 2.0.0\n"
+"Report-Msgid-Bugs-To: https://github.com/cemililik/nicepay-paymentgateway-wordpress-plugin/issues\n"
+"POT-Creation-Date: 2026-04-03 00:00+0000\n"
+"PO-Revision-Date: 2026-04-03 00:00+0900\n"
+"Last-Translator: cemililik\n"
+"Language-Team: Korean\n"
+"Language: ko_KR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: NicePay Payment Gateway\n"
+"X-Domain: nicepay-payment-gateway\n"
+
+msgid "NicePay Payment Gateway"
+msgstr "NicePay 결제 게이트웨이"
+
+msgid "Processing payment..."
+msgstr "결제 처리 중..."
+
+msgid "Payment error occurred. Please try again."
+msgstr "결제 오류가 발생했습니다. 다시 시도해 주세요."
+
+msgid "Please select a payment method."
+msgstr "결제 수단을 선택해 주세요."
+
+msgid "Pay Now"
+msgstr "결제하기"
+
+msgid "Settings"
+msgstr "설정"
+
+msgid "Complete Your Payment"
+msgstr "결제를 완료해 주세요"
+
+msgid "Order Total: %s"
+msgstr "주문 금액: %s"
+
+msgid "Select Payment Method"
+msgstr "결제 수단 선택"
+
+msgid "Proceed to Payment"
+msgstr "결제 진행"
+
+msgid "Cancel"
+msgstr "취소"
+
+msgid "Invalid payment amount."
+msgstr "유효하지 않은 결제 금액입니다."
+
+msgid "Payment initialization failed. Please try again."
+msgstr "결제 초기화에 실패했습니다. 다시 시도해 주세요."
+
+msgid "Payment Method"
+msgstr "결제 수단"
+
+msgid "Credit Card"
+msgstr "신용카드"
+
+msgid "Bank Transfer"
+msgstr "계좌이체"
+
+msgid "Virtual Account"
+msgstr "가상계좌"
+
+msgid "Mobile Payment"
+msgstr "휴대폰 결제"
+
+msgid "SSG Bank Account"
+msgstr "SSG 은행계좌"
+
+msgid "Culture Cash"
+msgstr "컬쳐캐쉬"
+
+msgid "Invalid approval URL."
+msgstr "유효하지 않은 승인 URL입니다."
+
+msgid "Failed to parse approval response."
+msgstr "승인 응답 처리에 실패했습니다."
+
+msgid "Missing signature in approval response."
+msgstr "승인 응답에 서명이 누락되었습니다."
+
+msgid "Signature verification failed."
+msgstr "서명 검증에 실패했습니다."
+
+msgid "Invalid cancel URL."
+msgstr "유효하지 않은 취소 URL입니다."
+
+msgid "Failed to parse cancel response."
+msgstr "취소 응답 처리에 실패했습니다."
+
+msgid "Cancel signature verification failed."
+msgstr "취소 서명 검증에 실패했습니다."
+
+msgid "NicePay"
+msgstr "NicePay"
+
+msgid "Accept payments via NicePay payment gateway (Credit Card, Bank Transfer, Virtual Account, Mobile)."
+msgstr "NicePay 결제 게이트웨이를 통해 결제를 받습니다 (신용카드, 계좌이체, 가상계좌, 휴대폰)."
+
+msgid "NicePay Payment"
+msgstr "NicePay 결제"
+
+msgid "Pay securely via NicePay."
+msgstr "NicePay를 통해 안전하게 결제하세요."
+
+msgid "Pay securely via NicePay (Credit Card, Bank Transfer, Virtual Account, Mobile)."
+msgstr "NicePay를 통해 안전하게 결제하세요 (신용카드, 계좌이체, 가상계좌, 휴대폰)."
+
+msgid "Enable/Disable"
+msgstr "사용/미사용"
+
+msgid "Enable NicePay Payment"
+msgstr "NicePay 결제 사용"
+
+msgid "Title"
+msgstr "제목"
+
+msgid "Payment method title shown at checkout."
+msgstr "결제 페이지에 표시되는 결제 수단 제목."
+
+msgid "Description"
+msgstr "설명"
+
+msgid "Payment method description shown at checkout."
+msgstr "결제 페이지에 표시되는 결제 수단 설명."
+
+msgid "API Settings"
+msgstr "API 설정"
+
+msgid "Configure MID, Merchant Key, and other API settings on the <a href=\"%s\">NicePay Settings</a> page."
+msgstr "MID, 상점키 및 기타 API 설정은 <a href=\"%s\">NicePay 설정</a> 페이지에서 구성하세요."
+
+msgid "Order not found."
+msgstr "주문을 찾을 수 없습니다."
+
+msgid " and %d more"
+msgstr " 외 %d건"
+
+msgid "NicePay: failed to initialize transaction."
+msgstr "NicePay: 거래 초기화에 실패했습니다."
+
+msgid "Payment initialization failed. Please return to checkout."
+msgstr "결제 초기화에 실패했습니다. 결제 페이지로 돌아가 주세요."
+
+msgid "Return to Checkout"
+msgstr "결제 페이지로 돌아가기"
+
+msgid "NicePay authentication failed. Code: %1$s, Message: %2$s"
+msgstr "NicePay 인증 실패. 코드: %1$s, 메시지: %2$s"
+
+msgid "Payment authentication failed. Please try again."
+msgstr "결제 인증에 실패했습니다. 다시 시도해 주세요."
+
+msgid "NicePay signature verification failed."
+msgstr "NicePay 서명 검증에 실패했습니다."
+
+msgid "Payment verification failed. Please try again."
+msgstr "결제 검증에 실패했습니다. 다시 시도해 주세요."
+
+msgid "NicePay approval request failed."
+msgstr "NicePay 승인 요청에 실패했습니다."
+
+msgid "Payment processing failed. Please try again."
+msgstr "결제 처리에 실패했습니다. 다시 시도해 주세요."
+
+msgid "Awaiting virtual account deposit. Bank: %1$s, Account: %2$s, Expires: %3$s"
+msgstr "가상계좌 입금 대기 중. 은행: %1$s, 계좌: %2$s, 만료: %3$s"
+
+msgid "NicePay payment completed. Method: %1$s, TID: %2$s"
+msgstr "NicePay 결제 완료. 결제수단: %1$s, TID: %2$s"
+
+msgid "NicePay payment failed. Code: %1$s, Message: %2$s"
+msgstr "NicePay 결제 실패. 코드: %1$s, 메시지: %2$s"
+
+msgid "Payment failed."
+msgstr "결제에 실패했습니다."
+
+msgid "Transaction ID not found."
+msgstr "거래 ID를 찾을 수 없습니다."
+
+msgid "Refund requested by merchant"
+msgstr "가맹점 환불 요청"
+
+msgid "NicePay refund processed. Amount: %1$s, Reason: %2$s"
+msgstr "NicePay 환불 처리 완료. 금액: %1$s, 사유: %2$s"
+
+msgid "Unknown error"
+msgstr "알 수 없는 오류"
+
+msgid "Invalid request method."
+msgstr "잘못된 요청 방식입니다."
+
+msgid "Payment verification failed."
+msgstr "결제 검증에 실패했습니다."
+
+msgid "Payment Successful"
+msgstr "결제 성공"
+
+msgid "Payment Failed"
+msgstr "결제 실패"
+
+msgid "Deposit Information"
+msgstr "입금 정보"
+
+msgid "Bank"
+msgstr "은행"
+
+msgid "Account"
+msgstr "계좌번호"
+
+msgid "Amount"
+msgstr "금액"
+
+msgid "Deadline"
+msgstr "입금기한"
+
+msgid "Transaction ID"
+msgstr "거래 ID"
+
+msgid "Method"
+msgstr "결제수단"
+
+msgid "Return to Home"
+msgstr "홈으로 돌아가기"
+
+msgid "Pending"
+msgstr "대기 중"
+
+msgid "Paid"
+msgstr "결제 완료"
+
+msgid "Failed"
+msgstr "실패"
+
+msgid "Cancelled"
+msgstr "취소됨"
+
+msgid "Refunded"
+msgstr "환불됨"
+
+msgid "Waiting for Deposit"
+msgstr "입금 대기"
+
+msgid "NicePay Settings"
+msgstr "NicePay 설정"
+
+msgid "Transactions"
+msgstr "거래내역"
+
+msgid "General"
+msgstr "일반"
+
+msgid "API Credentials"
+msgstr "API 인증정보"
+
+msgid "Payment Methods"
+msgstr "결제 수단"
+
+msgid "Shortcode"
+msgstr "숏코드"
+
+msgid "Mode"
+msgstr "모드"
+
+msgid "Test"
+msgstr "테스트"
+
+msgid "Live"
+msgstr "운영"
+
+msgid "Use Test mode for development. Switch to Live for production."
+msgstr "개발 중에는 테스트 모드를 사용하세요. 운영 환경에서는 운영 모드로 전환하세요."
+
+msgid "Language"
+msgstr "언어"
+
+msgid "Korean"
+msgstr "한국어"
+
+msgid "English"
+msgstr "영어"
+
+msgid "Chinese"
+msgstr "중국어"
+
+msgid "Currency"
+msgstr "통화"
+
+msgid "Charset"
+msgstr "문자셋"
+
+msgid "You are currently in Test mode."
+msgstr "현재 테스트 모드입니다."
+
+msgid "You are currently in Live mode. Payments will be processed with real money."
+msgstr "현재 운영 모드입니다. 실제 결제가 처리됩니다."
+
+msgid "Test Credentials"
+msgstr "테스트 인증정보"
+
+msgid "Test MID"
+msgstr "테스트 MID"
+
+msgid "Test Merchant Key"
+msgstr "테스트 상점키"
+
+msgid "Live Credentials"
+msgstr "운영 인증정보"
+
+msgid "Live MID"
+msgstr "운영 MID"
+
+msgid "Live Merchant Key"
+msgstr "운영 상점키"
+
+msgid "Enabled Payment Methods"
+msgstr "사용 가능한 결제 수단"
+
+msgid "Virtual Account Expiry (days)"
+msgstr "가상계좌 만료일 (일)"
+
+msgid "Number of days before virtual account expires."
+msgstr "가상계좌 만료까지의 일수."
+
+msgid "Payment Button Shortcode"
+msgstr "결제 버튼 숏코드"
+
+msgid "Use the following shortcode to embed a payment button on any page:"
+msgstr "아래 숏코드를 사용하여 페이지에 결제 버튼을 추가하세요:"
+
+msgid "Available Parameters"
+msgstr "사용 가능한 파라미터"
+
+msgid "Parameter"
+msgstr "파라미터"
+
+msgid "Required"
+msgstr "필수"
+
+msgid "Yes"
+msgstr "예"
+
+msgid "No"
+msgstr "아니오"
+
+msgid "Payment amount"
+msgstr "결제 금액"
+
+msgid "Product/service name"
+msgstr "상품/서비스명"
+
+msgid "CARD, BANK, VBANK, CELLPHONE"
+msgstr "CARD, BANK, VBANK, CELLPHONE"
+
+msgid "Buyer name"
+msgstr "구매자 이름"
+
+msgid "Buyer email"
+msgstr "구매자 이메일"
+
+msgid "Buyer phone"
+msgstr "구매자 전화번호"
+
+msgid "Button label text"
+msgstr "버튼 텍스트"
+
+msgid "CSS class for the button"
+msgstr "버튼 CSS 클래스"
+
+msgid "KRW or USD"
+msgstr "KRW 또는 USD"
+
+msgid "KO, EN, or CN"
+msgstr "KO, EN 또는 CN"
+
+msgid "Example with all parameters"
+msgstr "전체 파라미터 예시"
+
+msgid "Confirm"
+msgstr "확인"
+
+msgid "Cancel Transaction"
+msgstr "거래 취소"
+
+msgid "This action cannot be undone. The payment will be reversed."
+msgstr "이 작업은 되돌릴 수 없습니다. 결제가 취소됩니다."
+
+msgid "Cancellation Reason"
+msgstr "취소 사유"
+
+msgid "Enter reason for cancellation..."
+msgstr "취소 사유를 입력하세요..."
+
+msgid "Cancellation failed."
+msgstr "취소에 실패했습니다."
+
+msgid "Request failed. Please try again."
+msgstr "요청에 실패했습니다. 다시 시도해 주세요."
+
+msgid "Copied to clipboard!"
+msgstr "클립보드에 복사되었습니다!"
+
+msgid "CANCELLED"
+msgstr "취소됨"
+
+msgid "NicePay Transactions"
+msgstr "NicePay 거래내역"
+
+msgid "All Statuses"
+msgstr "모든 상태"
+
+msgid "All Methods"
+msgstr "모든 결제수단"
+
+msgid "From"
+msgstr "시작일"
+
+msgid "To"
+msgstr "종료일"
+
+msgid "Search..."
+msgstr "검색..."
+
+msgid "Filter"
+msgstr "필터"
+
+msgid "Total: %d transactions"
+msgstr "전체: %d건"
+
+msgid "ID"
+msgstr "ID"
+
+msgid "TID"
+msgstr "TID"
+
+msgid "Order"
+msgstr "주문"
+
+msgid "Status"
+msgstr "상태"
+
+msgid "Buyer"
+msgstr "구매자"
+
+msgid "Date"
+msgstr "날짜"
+
+msgid "Actions"
+msgstr "작업"
+
+msgid "No transactions found"
+msgstr "거래내역이 없습니다"
+
+msgid "Transactions will appear here once payments are made."
+msgstr "결제가 완료되면 여기에 거래내역이 표시됩니다."
+
+msgid "Copy TID"
+msgstr "TID 복사"
+
+msgid "Cancel transaction %s"
+msgstr "거래 %s 취소"
+
+msgid "Unauthorized."
+msgstr "권한이 없습니다."
+
+msgid "Transaction not found."
+msgstr "거래를 찾을 수 없습니다."
+
+msgid "Transaction cancelled successfully."
+msgstr "거래가 성공적으로 취소되었습니다."
+
+msgid "Cancel failed."
+msgstr "취소에 실패했습니다."
+
+msgid "Cancelled via NicePay admin."
+msgstr "NicePay 관리자에서 취소되었습니다."
+
+msgid "Payment system is currently unavailable. Please try again later."
+msgstr "결제 시스템을 현재 사용할 수 없습니다. 나중에 다시 시도해 주세요."

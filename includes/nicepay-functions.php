@@ -316,3 +316,120 @@ function nicepay_get_bank_name( $code ) {
 
     return isset( $banks[ $code ] ) ? $banks[ $code ] : $code;
 }
+
+/**
+ * Get default shortcode presets
+ *
+ * @return array Array of preset shortcode configs
+ */
+function nicepay_get_default_presets() {
+    $now = time();
+    return array(
+        array(
+            'id'           => 'quick-payment',
+            'name'         => __( 'Quick Payment', 'nicepay-payment-gateway' ),
+            'display_mode' => 'inline',
+            'amount'       => '10000',
+            'goods_name'   => __( 'Quick Payment', 'nicepay-payment-gateway' ),
+            'pay_method'   => '',
+            'buyer_name'   => '',
+            'buyer_email'  => '',
+            'buyer_tel'    => '',
+            'button_text'  => __( 'Pay Now', 'nicepay-payment-gateway' ),
+            'button_class' => 'nicepay-pay-button',
+            'button_color' => '#2563eb',
+            'currency'     => 'KRW',
+            'language'     => '',
+            'is_preset'    => true,
+            'created_at'   => $now,
+            'updated_at'   => $now,
+        ),
+        array(
+            'id'           => 'donation',
+            'name'         => __( 'Donation', 'nicepay-payment-gateway' ),
+            'display_mode' => 'inline',
+            'amount'       => '5000',
+            'goods_name'   => __( 'Donation', 'nicepay-payment-gateway' ),
+            'pay_method'   => '',
+            'buyer_name'   => '',
+            'buyer_email'  => '',
+            'buyer_tel'    => '',
+            'button_text'  => __( 'Donate', 'nicepay-payment-gateway' ),
+            'button_class' => 'nicepay-pay-button',
+            'button_color' => '#16a34a',
+            'currency'     => 'KRW',
+            'language'     => '',
+            'is_preset'    => true,
+            'created_at'   => $now,
+            'updated_at'   => $now,
+        ),
+        array(
+            'id'           => 'product-purchase',
+            'name'         => __( 'Product Purchase', 'nicepay-payment-gateway' ),
+            'display_mode' => 'modal',
+            'amount'       => '50000',
+            'goods_name'   => __( 'Product Purchase', 'nicepay-payment-gateway' ),
+            'pay_method'   => '',
+            'buyer_name'   => '',
+            'buyer_email'  => '',
+            'buyer_tel'    => '',
+            'button_text'  => __( 'Buy Now', 'nicepay-payment-gateway' ),
+            'button_class' => 'nicepay-pay-button',
+            'button_color' => '#111827',
+            'currency'     => 'KRW',
+            'language'     => '',
+            'is_preset'    => true,
+            'created_at'   => $now,
+            'updated_at'   => $now,
+        ),
+        array(
+            'id'           => 'subscription',
+            'name'         => __( 'Subscription', 'nicepay-payment-gateway' ),
+            'display_mode' => 'modal',
+            'amount'       => '29900',
+            'goods_name'   => __( 'Monthly Subscription', 'nicepay-payment-gateway' ),
+            'pay_method'   => 'CARD',
+            'buyer_name'   => '',
+            'buyer_email'  => '',
+            'buyer_tel'    => '',
+            'button_text'  => __( 'Subscribe', 'nicepay-payment-gateway' ),
+            'button_class' => 'nicepay-pay-button',
+            'button_color' => '#9333ea',
+            'currency'     => 'KRW',
+            'language'     => '',
+            'is_preset'    => true,
+            'created_at'   => $now,
+            'updated_at'   => $now,
+        ),
+    );
+}
+
+/**
+ * Get a saved shortcode config by ID
+ *
+ * @param string $id Shortcode ID (slug)
+ * @return array|null Shortcode config or null
+ */
+function nicepay_get_saved_shortcode( $id ) {
+    $shortcodes = nicepay_get_all_shortcodes();
+    foreach ( $shortcodes as $sc ) {
+        if ( isset( $sc['id'] ) && $sc['id'] === $id ) {
+            return $sc;
+        }
+    }
+    return null;
+}
+
+/**
+ * Get all saved shortcodes, seeding defaults if empty
+ *
+ * @return array
+ */
+function nicepay_get_all_shortcodes() {
+    $shortcodes = get_option( 'nicepay_saved_shortcodes', null );
+    if ( $shortcodes === null ) {
+        $shortcodes = nicepay_get_default_presets();
+        update_option( 'nicepay_saved_shortcodes', $shortcodes );
+    }
+    return $shortcodes;
+}

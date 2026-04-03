@@ -228,6 +228,114 @@ echo 'Total: ' . $result['total'];
 
 ---
 
+## Shortcode Management
+
+### Saved Shortcodes
+
+Shortcode configs are stored in the `nicepay_saved_shortcodes` WordPress option as a PHP array. Each entry:
+
+```php
+array(
+    'id'           => 'quick-payment',    // unique slug
+    'name'         => 'Quick Payment',
+    'display_mode' => 'inline',           // 'inline' or 'modal'
+    'amount'       => '10000',
+    'goods_name'   => 'Quick Payment',
+    'pay_method'   => '',                 // empty = all enabled
+    'buyer_name'   => '',
+    'buyer_email'  => '',
+    'buyer_tel'    => '',
+    'button_text'  => 'Pay Now',
+    'button_class' => 'nicepay-pay-button',
+    'button_color' => '#2563eb',
+    'currency'     => 'KRW',
+    'language'     => '',
+    'is_preset'    => true,               // true for built-in presets
+    'created_at'   => 1712000000,
+    'updated_at'   => 1712000000,
+)
+```
+
+### Helper Functions
+
+```php
+// Get all saved shortcodes (seeds defaults if empty)
+$shortcodes = nicepay_get_all_shortcodes();
+
+// Get a specific shortcode by ID
+$config = nicepay_get_saved_shortcode( 'quick-payment' );
+if ( $config ) {
+    echo $config['amount'];    // '10000'
+    echo $config['button_color']; // '#2563eb'
+}
+
+// Get default presets (4 built-in templates)
+$presets = nicepay_get_default_presets();
+
+// Get SVG icon for a payment method
+echo nicepay_get_method_icon( 'CARD' );  // Returns <span class="nicepay-method-icon">...</span>
+echo nicepay_get_method_icon( 'BANK' );
+echo nicepay_get_method_icon( 'VBANK' );
+echo nicepay_get_method_icon( 'CELLPHONE' );
+```
+
+### Shortcode ID Resolution
+
+When `[nicepay_payment id="donation"]` is used:
+
+```mermaid
+flowchart TD
+    A[Parse shortcode attributes] --> B{id attribute?}
+    B -->|Yes| C[Load saved config]
+    C --> D[Use saved values as defaults]
+    D --> E[Inline attributes override saved values]
+    B -->|No| F[Use plugin defaults]
+    E --> G[Render payment form]
+    F --> G
+```
+
+Example: `[nicepay_payment id="donation" amount="7500"]` loads the donation config but uses 7500 as the amount.
+
+### Display Modes
+
+The `display_mode` parameter controls how the payment form appears:
+
+```mermaid
+flowchart LR
+    subgraph "inline (default)"
+        A[Form + Fields + Button<br/>shown directly on page]
+    end
+    subgraph "modal"
+        B[Only button shown] -->|click| C[Popup overlay<br/>with full form]
+    end
+```
+
+- **Inline**: Payment method selector, buyer fields, and pay button rendered directly in the page content
+- **Modal**: Only the pay button is shown. Clicking opens a centered modal overlay with the full form. Closes on backdrop click, close button, or Escape key.
+
+### AJAX Payment Initialization
+
+Standalone payments use AJAX to create the transaction record when the buyer clicks pay (not on page load):
+
+```mermaid
+sequenceDiagram
+    participant Buyer
+    participant Form as Payment Form
+    participant WP as WordPress AJAX
+    participant DB as Database
+    participant NP as NicePay
+
+    Buyer->>Form: Fill in fields, click Pay
+    Form->>Form: Client-side validation
+    Form->>WP: POST nicepay_init_payment
+    WP->>DB: nicepay_save_transaction()
+    WP-->>Form: {edi_date, moid, sign_data}
+    Form->>Form: Populate hidden fields
+    Form->>NP: nicepayStart()
+```
+
+---
+
 ## Customizing Templates
 
 ### Override WooCommerce Payment Form

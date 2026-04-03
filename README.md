@@ -5,13 +5,17 @@ A WordPress plugin that integrates [NicePay](https://www.nicepay.co.kr/) payment
 ## Features
 
 - **WooCommerce Integration** — Seamless checkout experience with automatic order management
-- **Standalone Payments** — Embed payment buttons anywhere via shortcodes
+- **Standalone Payments** — Embed payment buttons anywhere via shortcodes (inline or modal)
+- **Shortcode Manager** — Visual admin UI to create, save, edit, and manage payment shortcodes
+- **Display Modes** — Show payment form inline on the page or inside a popup modal
 - **Multiple Payment Methods** — Credit Card, Bank Transfer, Virtual Account, Mobile Payment, SSG Bank, Culture Cash
+- **Payment Method Icons** — SVG icons for each payment method in the checkout form
 - **Signature Verification** — SHA-256 based tamper-proof verification on every transaction
 - **Network Cancel** — Automatic rollback on approval failures
 - **Refund Support** — Full and partial refunds from WooCommerce order screen
-- **Admin Dashboard** — Transaction history with filtering, search, and cancellation
-- **Multi-language** — Korean, English, Chinese payment window support
+- **Admin Dashboard** — Transaction history with filtering, search, modal cancel dialog, toast notifications
+- **Shortcode Generator** — Interactive builder with live preview, color picker, and one-click copy
+- **Multi-language** — Korean, English, Chinese, Turkish translations included
 - **Test & Live Modes** — Separate credentials for development and production
 
 ## Requirements
@@ -60,10 +64,16 @@ Go to **WooCommerce > Settings > Payments**, find **NicePay Payment**, and enabl
 
 ### 4. Standalone Payment (Optional)
 
-Add a payment button to any page using the shortcode:
+Add a payment button to any page using a shortcode. You can create shortcodes visually from **NicePay > Settings > Shortcode Generator**, or write them manually:
 
 ```
 [nicepay_payment amount="10000" goods_name="Product Name" pay_method="CARD" button_text="Pay Now"]
+```
+
+Or use a saved shortcode by ID:
+
+```
+[nicepay_payment id="quick-payment"]
 ```
 
 ## Payment Flow
@@ -91,27 +101,45 @@ sequenceDiagram
 
 ### `[nicepay_payment]`
 
-Renders a payment button on any page or post.
+Renders a payment form on any page or post. Can display inline or as a modal popup.
 
 | Parameter | Required | Default | Description |
 |---|---|---|---|
+| `id` | No | — | Load a saved shortcode config by ID (e.g., `id="quick-payment"`) |
+| `display_mode` | No | `inline` | `inline` (form on page) or `modal` (button opens popup overlay) |
 | `amount` | Yes | — | Payment amount |
-| `goods_name` | Yes | — | Product or service name |
-| `pay_method` | No | First enabled | `CARD`, `BANK`, `VBANK`, `CELLPHONE` |
-| `buyer_name` | No | — | Buyer's name |
-| `buyer_email` | No | — | Buyer's email |
-| `buyer_tel` | No | — | Buyer's phone number |
+| `goods_name` | Yes | — | Product or service name (max 40 bytes) |
+| `pay_method` | No | First enabled | `CARD`, `BANK`, `VBANK`, `CELLPHONE`, `SSG_BANK`, `GIFT_CULT` |
+| `buyer_name` | No | — | Pre-fill buyer name (if empty, buyer fills in the form) |
+| `buyer_email` | No | — | Pre-fill buyer email |
+| `buyer_tel` | No | — | Pre-fill buyer phone |
 | `button_text` | No | "Pay Now" | Button label |
 | `button_class` | No | "nicepay-pay-button" | CSS class |
-| `currency` | No | Settings value | `KRW` or `USD` |
+| `button_color` | No | `#2563eb` | Button background color (hex) |
+| `currency` | No | `KRW` | `KRW` or `USD` |
 | `language` | No | Settings value | `KO`, `EN`, or `CN` |
+
+> When `buyer_name`, `buyer_email`, or `buyer_tel` are left empty, the payment form shows input fields for the buyer to fill in. When provided, those fields are pre-filled and hidden.
+
+> When `id` is used, the saved config provides defaults. Any additional inline attributes override the saved values.
 
 **Examples:**
 
 ```
-[nicepay_payment amount="50000" goods_name="Premium Plan" pay_method="CARD"]
+// Inline form — buyer fills in their info
+[nicepay_payment amount="50000" goods_name="Premium Plan" currency="KRW"]
 
-[nicepay_payment amount="25000" goods_name="Consulting Fee" buyer_name="John" buyer_email="john@example.com" buyer_tel="01012345678" button_text="Pay 25,000 KRW" currency="KRW" language="EN"]
+// Modal popup — button opens payment overlay
+[nicepay_payment amount="10000" goods_name="Product" display_mode="modal" button_text="Buy Now" button_color="#111827" currency="USD"]
+
+// Using a saved shortcode
+[nicepay_payment id="quick-payment"]
+
+// Saved shortcode with overrides
+[nicepay_payment id="donation" amount="25000" button_text="Donate 25,000 KRW"]
+
+// Pre-filled buyer info (fields hidden from buyer)
+[nicepay_payment amount="25000" goods_name="Consulting" buyer_name="John" buyer_email="john@example.com" buyer_tel="01012345678" currency="KRW" language="EN"]
 ```
 
 ## Supported Payment Methods
@@ -133,15 +161,17 @@ Renders a payment button on any page or post.
 |---|---|
 | **General** | Mode (Test/Live), language, currency, charset |
 | **API Credentials** | Test and Live MID + Merchant Key |
-| **Payment Methods** | Enable/disable methods, VBank expiry days |
-| **Shortcode** | Usage reference and examples |
+| **Payment Methods** | Enable/disable methods with icons, VBank expiry days |
+| **Shortcodes** | Card grid of saved shortcodes with copy/edit/delete actions |
+| **Shortcode Generator** | Interactive builder with live preview, color picker, display mode, and save |
 
 ### Transactions (NicePay > Transactions)
 
 - View all transaction history
 - Filter by status, payment method, date range
 - Search by TID, order ID, buyer name, or goods name
-- Cancel transactions directly from the admin panel
+- Copy TID to clipboard with one click
+- Cancel transactions via modal confirmation dialog with toast notifications
 
 ## Firewall Configuration
 
@@ -163,10 +193,11 @@ For virtual account deposit notifications (inbound):
 
 ## Documentation
 
+- [User & Implementation Guide](docs/USER-GUIDE.md) — Complete step-by-step guide for setup, usage, payment flows, and troubleshooting
+- [Configuration Guide](docs/CONFIGURATION.md) — Detailed setup instructions for every environment
 - [Architecture Overview](docs/ARCHITECTURE.md) — System design, class relationships, and data flow
 - [Developer Guide](docs/DEVELOPER-GUIDE.md) — Hooks, filters, customization, and extending the plugin
 - [API Reference](docs/API-REFERENCE.md) — NicePay API parameters, encryption rules, and partner codes
-- [Configuration Guide](docs/CONFIGURATION.md) — Detailed setup instructions for every environment
 
 ## Security
 

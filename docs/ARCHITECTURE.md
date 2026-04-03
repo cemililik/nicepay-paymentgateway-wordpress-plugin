@@ -59,21 +59,24 @@ graph TB
 
 ```
 nicepay-payment-gateway/
-├── nicepay-payment-gateway.php      # Plugin entry point, bootstrap
+├── nicepay-payment-gateway.php      # Plugin entry point, bootstrap, AJAX handlers
 ├── includes/
 │   ├── class-nicepay-api.php        # NicePay API communication layer
 │   ├── class-nicepay-gateway.php    # WooCommerce payment gateway
 │   ├── class-nicepay-return-handler.php  # Standalone payment return handler
-│   └── nicepay-functions.php        # Helper functions, DB operations
+│   ├── nicepay-functions.php        # Helper functions, DB operations, shortcode helpers
+│   └── nicepay-icons.php            # SVG icons for payment methods
 ├── admin/
-│   ├── class-nicepay-admin.php      # Admin settings UI
+│   ├── class-nicepay-admin.php      # Admin settings, shortcode manager, generator
 │   └── class-nicepay-transactions.php  # Transaction management UI
 ├── templates/
 │   ├── payment-form.php             # WooCommerce receipt page form
-│   └── standalone-payment-form.php  # Shortcode payment form
+│   └── standalone-payment-form.php  # Shortcode payment form (inline + modal)
 ├── assets/
-│   ├── js/nicepay.js                # Frontend JavaScript
-│   └── css/nicepay.css              # Styles
+│   ├── js/nicepay.js                # Frontend JavaScript (payment, loading)
+│   ├── js/nicepay-admin.js          # Admin JavaScript (modal, toast, card actions)
+│   ├── css/nicepay.css              # Frontend styles
+│   └── css/nicepay-admin.css        # Admin styles (cards, builder, modal)
 ├── languages/                       # Translation files
 └── docs/                            # Documentation
 ```
@@ -398,10 +401,16 @@ flowchart LR
 | `wp_enqueue_scripts` | Action | Load NicePay JS and CSS |
 | `admin_menu` | Action | Add NicePay admin menu |
 | `admin_init` | Action | Register settings |
+| `admin_enqueue_scripts` | Action | Load admin CSS/JS on NicePay pages |
 | `woocommerce_payment_gateways` | Filter | Register NicePay gateway |
 | `woocommerce_receipt_nicepay` | Action | Display payment form on receipt page |
 | `woocommerce_api_nicepay_return` | Action | Handle WC payment return |
 | `plugin_action_links_*` | Filter | Add settings link to plugins page |
+| `wp_ajax_nicepay_init_payment` | Action | AJAX: Initialize standalone payment |
+| `wp_ajax_nopriv_nicepay_init_payment` | Action | AJAX: Same (public) |
+| `wp_ajax_nicepay_save_shortcode` | Action | AJAX: Save/update shortcode config |
+| `wp_ajax_nicepay_delete_shortcode` | Action | AJAX: Delete shortcode config |
+| `wp_ajax_nicepay_cancel_transaction` | Action | AJAX: Cancel transaction |
 
 ### WooCommerce API Endpoints
 
@@ -430,3 +439,4 @@ flowchart LR
 | `nicepay_vbank_expiry_days` | int | Virtual account expiry in days |
 | `nicepay_charset` | string | Character encoding (`utf-8` or `euc-kr`) |
 | `nicepay_db_version` | string | Database schema version |
+| `nicepay_saved_shortcodes` | array | Saved shortcode configurations (includes presets) |
