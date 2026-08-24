@@ -82,11 +82,11 @@ class NicePayResultCodeTest extends TestCase {
 
     public static function genericSuccessCodeProvider(): array {
         return [
-            [ '3001', true ],
-            [ '4000', true ],
-            [ '4100', true ],
-            [ 'A000', true ],
-            [ '0000', true ],
+            [ '3001', false ],
+            [ '4000', false ],
+            [ '4100', false ],
+            [ 'A000', false ],
+            [ '0000', false ],
             [ '2001', false ],  // cancel code, not approval
             [ '9999', false ],
             [ '',     false ],
@@ -121,9 +121,9 @@ class NicePayResultCodeTest extends TestCase {
     // Edge cases
     // -------------------------------------------------------
 
-    public function test_success_code_unknown_method_checks_all(): void {
-        // Unknown method falls through to in_array check against all success codes
-        $this->assertTrue( $this->api->is_success_code( '3001', 'UNKNOWN_METHOD' ) );
+    public function test_success_code_unknown_method_fails_closed(): void {
+        $this->assertFalse( $this->api->is_success_code( '3001', 'UNKNOWN_METHOD' ) );
+        $this->assertFalse( $this->api->is_success_code( '0000', 'unknown' ) );
     }
 
     public function test_success_code_null_equivalent(): void {

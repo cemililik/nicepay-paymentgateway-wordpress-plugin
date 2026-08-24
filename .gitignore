@@ -21,6 +21,3 @@ build/
 tests/coverage/
 .phpunit.result.cache
 .phpunit.cache/
-
-# Composer
-composer.lock

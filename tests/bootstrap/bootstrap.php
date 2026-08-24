@@ -24,3 +24,5 @@ define( 'NICEPAY_TEST_MERCHANT_KEY', 'EYzu8jGGMfqaDEp76gSckuvnaHHu+bC4opsSN6lHv3
 // Load plugin files under test
 require_once NICEPAY_PLUGIN_DIR . 'includes/nicepay-functions.php';
 require_once NICEPAY_PLUGIN_DIR . 'includes/class-nicepay-api.php';
+require_once NICEPAY_PLUGIN_DIR . 'includes/class-nicepay-installer.php';
+require_once NICEPAY_PLUGIN_DIR . 'includes/class-nicepay-retention.php';

@@ -2,6 +2,10 @@
 
 This document describes the system architecture, class relationships, data flow, and design decisions of the NicePay Payment Gateway WordPress plugin.
 
+> **Supported execution envelope:** New payments are restricted to certified `CARD`, `BANK`, and `CELLPHONE` flows, KRW, and UTF-8. The WooCommerce gateway and the separate standalone surface both default disabled. Standalone payment commercial data resolves from a required saved configuration ID; shortcode attributes cannot override amount, goods, currency, or method policy.
+
+> The protocol adapter targets legacy PG-Web v3/manual v2.0.8. DG-01 vendor confirmation and DG-02 sanitized fixtures remain prerequisites for broader certification. `VBANK`, `SSG_BANK`, `GIFT_CULT`, recurring/subscription, escrow, and tax features are outside the supported architecture.
+
 ## Table of Contents
 
 - [High-Level Architecture](#high-level-architecture)
@@ -64,6 +68,10 @@ nicepay-payment-gateway/
 │   ├── class-nicepay-api.php        # NicePay API communication layer
 │   ├── class-nicepay-gateway.php    # WooCommerce payment gateway
 │   ├── class-nicepay-return-handler.php  # Standalone payment return handler
+│   ├── class-nicepay-offer-resolver.php  # Server-authoritative saved standalone offers
+│   ├── class-nicepay-inbound-validator.php # Return/approval binding policy
+│   ├── class-nicepay-installer.php        # Versioned dbDelta schema installer
+│   ├── class-nicepay-transaction-schema.php # Pure schema/write map
 │   ├── nicepay-functions.php        # Helper functions, DB operations, shortcode helpers
 │   └── nicepay-icons.php            # SVG icons for payment methods
 ├── admin/
@@ -214,7 +222,7 @@ sequenceDiagram
 
 ### Standalone Payment Flow
 
-Used when the `[nicepay_payment]` shortcode is embedded on a page.
+Used only when standalone forms are explicitly enabled and `[nicepay_payment id="saved-config"]` is embedded on a page. Rendering or initialization fails closed without the saved ID. Amount, goods, KRW currency, and method policy come from that saved record; custom/open amount is unavailable.
 
 ```mermaid
 sequenceDiagram
@@ -224,8 +232,9 @@ sequenceDiagram
     participant API as NicePay_API
     participant NP as NicePay Server
 
-    C->>WP: Visit page with [nicepay_payment] shortcode
-    WP-->>C: Render payment form
+    C->>WP: Visit page with saved-config shortcode
+    WP->>WP: Resolve fixed server-side offer by id
+    WP-->>C: Render payment form if standalone enabled
 
     C->>NP: nicepayStart() opens payment window
     NP-->>C: Auth response
@@ -251,8 +260,9 @@ sequenceDiagram
     alt WooCommerce Refund
         Admin->>G: process_refund($order_id, $amount)
         G->>API: request_cancel(TID, amount, reason)
-    else Admin Panel Cancel
-        Admin->>API: request_cancel(TID, amount, reason)
+    else Transactions screen Refund
+        Admin->>G: wc_create_refund() for linked WC order
+        G->>API: process_refund() -> request_cancel()
     end
 
     API->>API: Create SignData<br/>hex(sha256(MID+CancelAmt+EdiDate+Key))
@@ -269,7 +279,7 @@ sequenceDiagram
 
 ### Network Cancel Flow
 
-Network cancel is triggered automatically when the approval request fails (timeout, network error, or internal error). This prevents orphaned transactions where the customer was charged but the merchant's system doesn't know.
+After authorization, applicable approval failures attempt network cancel and verify its outcome. A failed, missing, or ambiguous network-cancel result does not prove rollback: the transaction becomes `needs_reconciliation` and requires comparison with the NICEPAY merchant record. Blind retry is intentionally avoided.
 
 ```mermaid
 flowchart TD
@@ -301,25 +311,27 @@ erDiagram
         bigint wc_order_id FK "WooCommerce order ID (nullable)"
         varchar moid "Merchant Order ID (Moid)"
         decimal amount "Transaction amount"
-        varchar payment_method "CARD, BANK, VBANK, etc."
+        varchar payment_method "CARD, BANK, CELLPHONE for new payments"
         varchar pay_method_name "Display name"
-        varchar status "pending, paid, failed, cancelled, refunded, waiting"
+        varchar status "pending, approving, paid, failed, partially_refunded, refunded, needs_reconciliation"
         varchar result_code "NicePay result code"
         text result_msg "Result message"
-        varchar auth_token "Authentication token"
+        varchar auth_token "Temporary; retained only for unresolved reconciliation"
         varchar buyer_name "Buyer name"
         varchar buyer_email "Buyer email"
         varchar buyer_tel "Buyer phone"
         varchar goods_name "Product name"
         varchar card_code "Card company code"
         varchar card_name "Card company name"
-        varchar card_no "Masked card number"
         varchar card_quota "Installment months"
+        char cc_part_cl "Provider partial-refund capability"
+        varchar clickpay_cl "Simple-pay service code"
+        varchar card_type "Personal/corporate/overseas card type"
         varchar bank_code "Bank code"
         varchar bank_name "Bank name"
         varchar vbank_num "Virtual account number"
         varchar vbank_exp_date "VBank expiry date"
-        longtext payment_data "Full JSON response"
+        longtext payment_data "Allowlisted reconciliation fields only"
         datetime created_at "Creation timestamp"
         datetime updated_at "Last update timestamp"
     }
@@ -332,15 +344,17 @@ erDiagram
 ```mermaid
 stateDiagram-v2
     [*] --> pending : Transaction created
-    pending --> paid : Approval success (CARD, BANK, CELLPHONE)
-    pending --> waiting : Approval success (VBANK)
-    pending --> failed : Auth or approval failed
-    waiting --> paid : Deposit received
-    waiting --> cancelled : Cancelled before deposit
-    paid --> refunded : Full refund
-    paid --> cancelled : Full cancel
+    pending --> approving : Atomic approval claim
+    approving --> paid : Bound approval success (CARD, BANK, CELLPHONE)
+    pending --> failed : Known authentication decline
+    approving --> failed : Known approval decline / confirmed rollback
+    approving --> needs_reconciliation : Approval or net-cancel outcome unknown
+    paid --> partially_refunded : Partial WC refund
+    partially_refunded --> partially_refunded : Additional partial WC refund
+    paid --> refunded : Full WC refund
+    partially_refunded --> refunded : Remaining balance refunded
     refunded --> [*]
-    cancelled --> [*]
+    needs_reconciliation --> [*] : Merchant review required
     failed --> [*]
 ```
 
@@ -410,7 +424,7 @@ flowchart LR
 | `wp_ajax_nopriv_nicepay_init_payment` | Action | AJAX: Same (public) |
 | `wp_ajax_nicepay_save_shortcode` | Action | AJAX: Save/update shortcode config |
 | `wp_ajax_nicepay_delete_shortcode` | Action | AJAX: Delete shortcode config |
-| `wp_ajax_nicepay_cancel_transaction` | Action | AJAX: Cancel transaction |
+| `wp_ajax_nicepay_cancel_transaction` | Action | Legacy action name; initiates one WooCommerce refund flow for an eligible linked order |
 
 ### WooCommerce API Endpoints
 
@@ -437,6 +451,13 @@ flowchart LR
 | `nicepay_language` | string | Payment window language (`KO`, `EN`, `CN`) |
 | `nicepay_currency` | string | Default currency code |
 | `nicepay_vbank_expiry_days` | int | Virtual account expiry in days |
-| `nicepay_charset` | string | Character encoding (`utf-8` or `euc-kr`) |
+| `nicepay_retention_settings` | array | Fail-closed `indefinite` policy or acknowledged custom `days` value |
+| `nicepay_retention_last_run` | array | Non-sensitive UTC completion time, deleted count, and error code |
+| Protocol charset | fixed | UTF-8 only; no persisted EUC-KR setting |
 | `nicepay_db_version` | string | Database schema version |
 | `nicepay_saved_shortcodes` | array | Saved shortcode configurations (includes presets) |
+| `nicepay_transactions_schema_version` | string | Independent migrator version; current target `2026.08.24.7` |
+
+WordPress privacy exporter/eraser callbacks are implemented by `NicePay_Privacy`. The eraser anonymizes buyer contact and receipt/payload fields but deliberately retains the financial identity and amount ledger.
+
+`NicePay_Retention` implements the separate merchant-selected lifecycle. Its default is indefinite. When a custom period is explicitly acknowledged, a daily bounded job selects old eligible rows with `FOR UPDATE`, deletes child refund-attempt history and parent rows in one database transaction, and rolls back if the locked parent set changes. Active/ambiguous/reconciliation states are excluded. WooCommerce orders and external/provider storage are outside this cleanup boundary.

@@ -102,6 +102,23 @@ class NicePaySignatureIntegrationTest extends TestCase {
         );
     }
 
+    public function test_approval_signature_preserves_a_fixed_width_response_amount(): void {
+        $this->assertTrue(
+            $this->api->verify_approval_signature(
+                $this->tid,
+                '000000001004',
+                '59c36831e223d8d7c96e248123816a31a1a4510088e4bd63862455fe91851de5'
+            )
+        );
+        $this->assertFalse(
+            $this->api->verify_approval_signature(
+                $this->tid,
+                '000000001004',
+                '9439b21e792ee41d1411d7b5e7e34a2062f0f42f19fa3f875f35c388954d4efd'
+            )
+        );
+    }
+
     /**
      * Doc Section 9.5 — Net Cancel Request SignData
      * Same rule as approval: AuthToken + MID + Amt + EdiDate + MerchantKey
@@ -137,6 +154,24 @@ class NicePaySignatureIntegrationTest extends TestCase {
     }
 
     /**
+     * Doc Section 9.7 — Cancel Request SignData
+     * PlainText: MID + CancelAmt + EdiDate + MerchantKey
+     *
+     * The manual's worked example uses a different MID/key pair. This literal was
+     * independently generated for the public nicepay00m test credentials used by
+     * the other contract fixtures; it must not be recomputed inside this test.
+     */
+    public function test_doc_rule_9_7_cancel_request_signdata_matches_golden_digest(): void {
+        $result = $this->api->create_cancel_sign_data( '1004', '20191219133357' );
+
+        $this->assertSame(
+            'e6959c2ff876c64ccf0008828cab0007a81230c589f3cd727d0277acdc3c4cd5',
+            $result,
+            'Cancel request SignData must preserve the v2.0.8 section 9.7 field order'
+        );
+    }
+
+    /**
      * Doc Section 9.8 — Cancel Response Signature
      * PlainText: TID + MID + CancelAmt + MerchantKey
      * Expected:  9439b21e792ee41d1411d7b5e7e34a2062f0f42f19fa3f875f35c388954d4efd
@@ -151,45 +186,41 @@ class NicePaySignatureIntegrationTest extends TestCase {
     }
 
     // -------------------------------------------------------
-    // Cross-validation: generate then verify roundtrip
-    // -------------------------------------------------------
-
-    public function test_auth_roundtrip_generate_and_verify(): void {
-        // Generate what a response signature should be
-        $plain = $this->authToken . $this->mid . $this->amt . $this->merchantKey;
-        $sig   = hash( 'sha256', $plain );
-
-        $this->assertTrue( $this->api->verify_auth_signature( $this->authToken, $this->amt, $sig ) );
-    }
-
-    public function test_approval_roundtrip_generate_and_verify(): void {
-        $plain = $this->tid . $this->mid . $this->amt . $this->merchantKey;
-        $sig   = hash( 'sha256', $plain );
-
-        $this->assertTrue( $this->api->verify_approval_signature( $this->tid, $this->amt, $sig ) );
-    }
-
-    public function test_cancel_roundtrip_generate_and_verify(): void {
-        $cancel_amt = '5000';
-        $plain = $this->tid . $this->mid . $cancel_amt . $this->merchantKey;
-        $sig   = hash( 'sha256', $plain );
-
-        $this->assertTrue( $this->api->verify_cancel_signature( $this->tid, $cancel_amt, $sig ) );
-    }
-
-    // -------------------------------------------------------
     // Negative: cross-type signatures must NOT match
     // -------------------------------------------------------
 
     public function test_auth_signature_does_not_verify_as_approval(): void {
-        // Auth response sig = AuthToken+MID+Amt+Key
-        $auth_plain = $this->authToken . $this->mid . $this->amt . $this->merchantKey;
-        $auth_sig   = hash( 'sha256', $auth_plain );
+        // Literal auth-response signature from the v2.0.8 worked example.
+        $auth_sig = 'cc94db193780ffb83d79845bb001b26da397cb5855dd285a3b85a4acc1fa55fe';
 
         // Should NOT pass approval verification when TID differs from AuthToken
         // Approval sig = TID+MID+Amt+Key (TID is a different value than AuthToken)
         $this->assertFalse(
             $this->api->verify_approval_signature( $this->tid, $this->amt, $auth_sig )
+        );
+    }
+
+    public function test_literal_response_signatures_reject_tampered_amounts(): void {
+        $this->assertFalse(
+            $this->api->verify_auth_signature(
+                $this->authToken,
+                '1005',
+                'cc94db193780ffb83d79845bb001b26da397cb5855dd285a3b85a4acc1fa55fe'
+            )
+        );
+        $this->assertFalse(
+            $this->api->verify_approval_signature(
+                $this->tid,
+                '1005',
+                '9439b21e792ee41d1411d7b5e7e34a2062f0f42f19fa3f875f35c388954d4efd'
+            )
+        );
+        $this->assertFalse(
+            $this->api->verify_cancel_signature(
+                $this->tid,
+                '1005',
+                '9439b21e792ee41d1411d7b5e7e34a2062f0f42f19fa3f875f35c388954d4efd'
+            )
         );
     }
 

@@ -51,6 +51,7 @@
     var NicePayModal = {
         overlay: null,
         isLoading: false,
+        lastFocus: null,
 
         open: function(options) {
             var self = this;
@@ -68,16 +69,18 @@
             }, options);
 
             this.close();
+            self.lastFocus = document.activeElement;
 
             var html = '<div class="nicepay-modal-overlay is-active" id="nicepay-modal">' +
-                '<div class="nicepay-modal" role="dialog" aria-modal="true" aria-labelledby="nicepay-modal-title">' +
+                '<div class="nicepay-modal" role="dialog" aria-modal="true" aria-labelledby="nicepay-modal-title" aria-busy="false">' +
                     '<div class="nicepay-modal-header">' +
                         '<h3 class="nicepay-modal-title" id="nicepay-modal-title">' + $('<span>').text(opts.title).html() + '</h3>' +
                     '</div>' +
                     '<div class="nicepay-modal-body">' +
                         (opts.message ? '<p>' + $('<span>').text(opts.message).html() + '</p>' : '') +
-                        (opts.inputLabel ? '<label style="display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:#374151;">' + $('<span>').text(opts.inputLabel).html() + '</label>' : '') +
-                        '<input type="text" id="nicepay-modal-input" placeholder="' + $('<span>').text(opts.inputPlaceholder).html() + '" autocomplete="off">' +
+                        (opts.inputLabel ? '<label for="nicepay-modal-input" style="display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:#374151;">' + $('<span>').text(opts.inputLabel).html() + '</label>' : '') +
+                        (opts.inputLabel ? '<input type="text" id="nicepay-modal-input" placeholder="' + $('<span>').text(opts.inputPlaceholder).html() + '" autocomplete="off" aria-describedby="nicepay-modal-error">' : '') +
+                        '<p class="nicepay-modal-error" id="nicepay-modal-error" role="alert" aria-live="assertive" hidden></p>' +
                     '</div>' +
                     '<div class="nicepay-modal-footer">' +
                         '<button type="button" class="nicepay-modal-btn nicepay-modal-btn-secondary" id="nicepay-modal-cancel">' + $('<span>').text(opts.cancelText).html() + '</button>' +
@@ -89,9 +92,11 @@
             $('body').append(html);
             this.overlay = $('#nicepay-modal');
 
-            setTimeout(function() {
-                $('#nicepay-modal-input').focus();
-            }, 100);
+            var firstControl = self.overlay.find('#nicepay-modal-input').first();
+            if (!firstControl.length) {
+                firstControl = self.overlay.find('#nicepay-modal-cancel').first();
+            }
+            firstControl.focus();
 
             // Close handlers — guarded by loading state
             $('#nicepay-modal-cancel').on('click', function() {
@@ -101,12 +106,31 @@
                 if (!self.isLoading && $(e.target).is('.nicepay-modal-overlay')) self.close();
             });
             $(document).on('keydown.nicepayModal', function(e) {
-                if (e.key === 'Escape' && !self.isLoading) self.close();
+                if (e.key === 'Escape' && !self.isLoading) {
+                    e.preventDefault();
+                    self.close();
+                }
+                if (e.key === 'Tab' && self.overlay) {
+                    var focusable = self.overlay.find('button:not(:disabled), input:not(:disabled), a[href]').filter(function() {
+                        return $(this).attr('aria-hidden') !== 'true';
+                    });
+                    if (!focusable.length) return;
+                    var first = focusable.first()[0];
+                    var last = focusable.last()[0];
+                    if (e.shiftKey && document.activeElement === first) {
+                        e.preventDefault();
+                        last.focus();
+                    } else if (!e.shiftKey && document.activeElement === last) {
+                        e.preventDefault();
+                        first.focus();
+                    }
+                }
             });
 
             // Confirm
             $('#nicepay-modal-confirm').on('click', function() {
-                var value = $('#nicepay-modal-input').val();
+                if (self.isLoading) return;
+                var value = $('#nicepay-modal-input').length ? $('#nicepay-modal-input').val() : '';
                 opts.onConfirm(value, self);
             });
 
@@ -114,7 +138,7 @@
             $('#nicepay-modal-input').on('keydown', function(e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
-                    $('#nicepay-modal-confirm').click();
+                    if (!self.isLoading) $('#nicepay-modal-confirm').click();
                 }
             });
         },
@@ -123,6 +147,19 @@
             this.isLoading = loading;
             $('#nicepay-modal-confirm').prop('disabled', loading);
             $('#nicepay-modal-cancel').prop('disabled', loading);
+            $('#nicepay-modal-input').prop('readonly', loading);
+            $('#nicepay-modal .nicepay-modal').attr('aria-busy', loading ? 'true' : 'false');
+        },
+
+        showError: function(message) {
+            var error = $('#nicepay-modal-error');
+            error.text(message || nicepayAdmin.i18n.cancelFailed || 'Cancellation failed.').prop('hidden', false);
+            $('#nicepay-modal-input').attr('aria-invalid', 'true').css('border-color', '#dc2626').focus();
+        },
+
+        clearError: function() {
+            $('#nicepay-modal-error').text('').prop('hidden', true);
+            $('#nicepay-modal-input').removeAttr('aria-invalid').css('border-color', '');
         },
 
         close: function() {
@@ -133,6 +170,10 @@
                 this.overlay = null;
             }
             $('#nicepay-modal').remove();
+            if (this.lastFocus && document.contains(this.lastFocus)) {
+                this.lastFocus.focus();
+            }
+            this.lastFocus = null;
         }
     };
 
@@ -153,10 +194,11 @@
             confirmText: nicepayAdmin.i18n.cancelConfirm || 'Cancel Transaction',
             onConfirm: function(reason, modal) {
                 if (!reason || !reason.trim()) {
-                    $('#nicepay-modal-input').css('border-color', '#dc2626').focus();
+                    modal.showError(nicepayAdmin.i18n.cancelReasonRequired || 'A cancellation reason is required.');
                     return;
                 }
 
+                modal.clearError();
                 modal.setLoading(true);
 
                 $.post(nicepayAdmin.ajaxUrl, {
@@ -166,20 +208,25 @@
                     reason: reason.trim(),
                     nonce: nonce
                 }, function(response) {
-                    modal.close();
-                    if (response.success) {
+                    if (response && response.success) {
+                        modal.close();
                         NicePayToast.show(response.data.message, 'success');
                         btn.closest('tr').find('.nicepay-status')
-                            .removeClass('nicepay-status-paid nicepay-status-waiting')
-                            .addClass('nicepay-status-cancelled')
-                            .text(nicepayAdmin.i18n.statusCancelled || 'CANCELLED');
+                            .removeClass('nicepay-status-paid nicepay-status-partially_refunded')
+                            .addClass('nicepay-status-refunded')
+                            .text(nicepayAdmin.i18n.statusRefunded || 'REFUNDED');
                         btn.remove();
                     } else {
-                        NicePayToast.show(response.data.message || nicepayAdmin.i18n.cancelFailed, 'error');
+                        var message = response && response.data && response.data.message ? response.data.message : nicepayAdmin.i18n.cancelFailed;
+                        modal.setLoading(false);
+                        modal.showError(message);
+                        NicePayToast.show(message, 'error');
                     }
                 }).fail(function() {
-                    modal.close();
-                    NicePayToast.show(nicepayAdmin.i18n.requestFailed || 'Request failed.', 'error');
+                    var message = nicepayAdmin.i18n.requestFailed || 'Request failed.';
+                    modal.setLoading(false);
+                    modal.showError(message);
+                    NicePayToast.show(message, 'error');
                 });
             }
         });

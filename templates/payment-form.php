@@ -5,6 +5,7 @@
  * @var WC_Order $order          WooCommerce order
  * @var array    $form_data      Form fields for NicePay
  * @var array    $enabled_methods Enabled payment methods
+ * @var bool     $is_test_mode    Whether the configured API is in test mode
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -12,7 +13,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 ?>
 
-<div id="nicepay-payment-wrapper" class="nicepay-payment-wrapper">
+<div id="nicepay-payment-wrapper" class="nicepay-payment-wrapper" data-nicepay-checkout-url="<?php echo esc_url( wc_get_checkout_url() ); ?>">
+    <?php if ( $is_test_mode ) : ?>
+        <div class="nicepay-notice" role="status">
+            <?php esc_html_e( 'Test mode — no real payment will be collected.', 'nicepay-payment-gateway' ); ?>
+        </div>
+    <?php endif; ?>
+
     <div class="nicepay-loading-overlay" id="nicepay-loading" role="alert" aria-live="assertive">
         <div class="nicepay-spinner"></div>
         <span class="nicepay-loading-text"><?php esc_html_e( 'Processing payment...', 'nicepay-payment-gateway' ); ?></span>
@@ -47,8 +54,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     <?php endif; ?>
 
     <form id="nicepay-pay-form" name="payForm" method="post"
-          action="<?php echo esc_url( WC()->api_request_url( 'nicepay_return' ) ); ?>"
-          accept-charset="<?php echo esc_attr( $form_data['CharSet'] ); ?>">
+          action="<?php echo esc_url( WC()->api_request_url( 'nicepay_return' ) ); ?>">
         <?php foreach ( $form_data as $key => $value ) : ?>
             <input type="hidden" name="<?php echo esc_attr( $key ); ?>" value="<?php echo esc_attr( $value ); ?>">
         <?php endforeach; ?>
@@ -56,10 +62,6 @@ if ( ! defined( 'ABSPATH' ) ) {
         <?php if ( ! empty( $enabled_methods ) ) : ?>
         <input type="hidden" name="PayMethod" id="nicepay-pay-method"
                value="<?php echo esc_attr( $enabled_methods[0] ); ?>">
-        <?php endif; ?>
-
-        <?php if ( in_array( 'CELLPHONE', $enabled_methods, true ) ) : ?>
-            <input type="hidden" name="GoodsCl" value="1">
         <?php endif; ?>
 
         <div class="nicepay-submit-wrapper">
@@ -73,16 +75,3 @@ if ( ! defined( 'ABSPATH' ) ) {
         </div>
     </form>
 </div>
-
-<script>
-(function() {
-    'use strict';
-    window.nicepaySubmit = function() {
-        document.payForm.submit();
-    };
-    window.nicepayClose = function() {
-        if (window.NicePayHandler) window.NicePayHandler.hideLoading();
-        window.location.href = '<?php echo esc_js( wc_get_checkout_url() ); ?>';
-    };
-})();
-</script>

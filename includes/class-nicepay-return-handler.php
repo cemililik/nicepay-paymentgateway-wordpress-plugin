@@ -23,7 +23,17 @@ class NicePay_Return_Handler {
      * Process the payment return
      */
     public function process() {
-        if ( $_SERVER['REQUEST_METHOD'] !== 'POST' ) {
+        if ( function_exists( 'nocache_headers' ) ) {
+            nocache_headers();
+        }
+        header( 'X-Robots-Tag: noindex, nofollow', true );
+        header( 'Referrer-Policy: no-referrer', true );
+        header( 'X-Frame-Options: DENY', true );
+
+        $request_method = isset( $_SERVER['REQUEST_METHOD'] ) && is_string( $_SERVER['REQUEST_METHOD'] )
+            ? strtoupper( wp_unslash( $_SERVER['REQUEST_METHOD'] ) )
+            : '';
+        if ( 'POST' !== $request_method ) {
             wp_die( esc_html__( 'Invalid request method.', 'nicepay-payment-gateway' ), 'NicePay Error', array( 'response' => 405 ) );
             return;
         }
@@ -47,43 +57,8 @@ class NicePay_Return_Handler {
             'PayMethod'      => $pay_method,
         ) );
 
-        // Find existing transaction
-        $transaction = nicepay_get_transaction_by_moid( $moid );
-
-        // Authentication failed
-        if ( $auth_result_code !== '0000' ) {
-            nicepay_log( 'Standalone auth failed', array( 'code' => $auth_result_code, 'msg' => $auth_result_msg ) );
-
-            if ( $transaction ) {
-                nicepay_update_transaction( $transaction->id, array(
-                    'status'      => 'failed',
-                    'result_code' => $auth_result_code,
-                    'result_msg'  => $auth_result_msg,
-                ) );
-            }
-
-            $this->render_result_page( false, $auth_result_msg );
-            return;
-        }
-
-        // Verify auth signature (required)
-        if ( empty( $signature ) || ! $this->api->verify_auth_signature( $auth_token, $amt, $signature ) ) {
-            nicepay_log( empty( $signature ) ? 'Standalone auth signature missing' : 'Standalone auth signature invalid' );
-
-            if ( $transaction ) {
-                nicepay_update_transaction( $transaction->id, array(
-                    'status'      => 'failed',
-                    'result_code' => 'SIG_FAIL',
-                    'result_msg'  => 'Signature verification failed',
-                ) );
-            }
-
-            $this->render_result_page( false, __( 'Payment verification failed.', 'nicepay-payment-gateway' ) );
-            return;
-        }
-
-        // Request approval
         $auth_data = array(
+            'AuthResultCode' => $auth_result_code,
             'AuthToken'    => $auth_token,
             'TxTid'        => $tx_tid,
             'NextAppURL'   => $next_app_url,
@@ -92,20 +67,94 @@ class NicePay_Return_Handler {
             'MID'          => $mid,
             'Moid'         => $moid,
             'PayMethod'    => $pay_method,
+            'Signature'    => $signature,
         );
+
+        $transaction = NicePay_Inbound_Validator::validate_auth_return(
+            'standalone',
+            $auth_data,
+            $this->api
+        );
+        if ( is_wp_error( $transaction ) ) {
+            nicepay_log( 'Standalone auth return rejected', $transaction->get_error_code(), 'warning' );
+            $message = 'nicepay_inbound_auth_failed' === $transaction->get_error_code()
+                ? __( 'Payment authentication was not completed. You may try again.', 'nicepay-payment-gateway' )
+                : __( 'We could not verify this payment attempt.', 'nicepay-payment-gateway' );
+            $this->render_result_page( false, $message );
+            return;
+        }
+
+        if ( ! nicepay_claim_transaction_for_approval( $transaction->id, 'standalone' ) ) {
+            nicepay_log( 'Standalone approval replay or concurrent claim rejected', $moid, 'warning' );
+            $this->render_result_page( false, __( 'This payment attempt is already being processed.', 'nicepay-payment-gateway' ) );
+            return;
+        }
+
+        if ( ! nicepay_update_transaction( $transaction->id, array(
+            'tid'        => $tx_tid,
+            'auth_token' => $auth_token,
+        ), true ) ) {
+            $abort = nicepay_abort_authenticated_payment(
+                $transaction->id,
+                $auth_data,
+                $this->api,
+                'auth_context_persistence_failed_before_approval'
+            );
+            nicepay_log( 'Standalone auth context could not be persisted before approval', $transaction->id, 'error' );
+            if ( ! $abort['persisted'] ) {
+                nicepay_log( 'Standalone pre-approval abort audit could not be persisted', $transaction->id, 'error' );
+            }
+            $message = $abort['needs_reconciliation']
+                ? __( 'We could not confirm the payment outcome. Please contact the merchant before retrying.', 'nicepay-payment-gateway' )
+                : __( 'Payment approval was not started and the authorization hold was reversed. You may try again.', 'nicepay-payment-gateway' );
+            $this->render_result_page( false, $message );
+            return;
+        }
+
+        // Bind the approval response to this claimed transaction.
+        $transaction->tid = $tx_tid;
 
         $result = $this->api->request_approval( $auth_data );
 
         if ( is_wp_error( $result ) ) {
-            if ( $transaction ) {
-                nicepay_update_transaction( $transaction->id, array(
-                    'status'      => 'failed',
-                    'result_code' => 'NET_ERROR',
-                    'result_msg'  => $result->get_error_message(),
-                ) );
-            }
+            $abort_audit          = nicepay_get_approval_error_audit( $result );
+            $needs_reconciliation = $abort_audit['needs_reconciliation'];
+            nicepay_update_transaction( $transaction->id, array(
+                'status'                => $needs_reconciliation ? 'needs_reconciliation' : 'failed',
+                'approval_state'        => $needs_reconciliation ? 'needs_reconciliation' : 'failed',
+                'reconciliation_status' => $needs_reconciliation ? 'required' : 'not_required',
+                'reconciliation_note'   => $result->get_error_code(),
+                'result_code'           => 'APPROVAL_ERROR',
+                'result_msg'            => '',
+                'net_cancel_status'         => $abort_audit['net_cancel_status'],
+                'net_cancel_result_code'    => $abort_audit['net_cancel_result_code'],
+                'net_cancel_result_msg'     => $abort_audit['net_cancel_result_msg'],
+                'net_cancel_requested_at'   => $abort_audit['net_cancel_requested_at'],
+                'net_cancel_completed_at'   => $abort_audit['net_cancel_completed_at'],
+                'active_attempt_key'        => null,
+                'auth_token'            => $needs_reconciliation ? $auth_token : '',
+            ) );
 
-            $this->render_result_page( false, $result->get_error_message() );
+            $this->render_result_page( false, __( 'We could not confirm the payment outcome. Please contact the merchant before retrying.', 'nicepay-payment-gateway' ) );
+            return;
+        }
+
+        $approval_binding = NicePay_Inbound_Validator::validate_approval_response(
+            $transaction,
+            $pay_method,
+            $result,
+            $this->api
+        );
+        if ( is_wp_error( $approval_binding ) ) {
+            $net_cancel = $this->api->request_net_cancel( $auth_data );
+            nicepay_update_transaction(
+                $transaction->id,
+                nicepay_get_mismatched_approval_audit( $approval_binding, $net_cancel, $auth_token ),
+                true
+            );
+
+            nicepay_log( 'Standalone approval binding failed', $approval_binding->get_error_code(), 'error' );
+            $this->render_result_page( false, __( 'We could not confirm the payment outcome. Please contact the merchant before retrying.', 'nicepay-payment-gateway' ) );
             return;
         }
 
@@ -121,47 +170,88 @@ class NicePay_Return_Handler {
             'pay_method_name' => NicePay_API::get_payment_method_name( $result_method ),
             'result_code'     => $result_code,
             'result_msg'      => $result_msg,
-            'auth_token'      => $auth_token,
-            'payment_data'    => $result,
+            'auth_token'      => '',
+            'payment_data'    => nicepay_filter_payment_data( $result ),
         );
+        $update_data = array_merge( $update_data, nicepay_get_refund_capability_fields( $result ) );
 
         if ( ! empty( $result['CardCode'] ) ) {
             $update_data['card_code']  = $result['CardCode'];
             $update_data['card_name']  = isset( $result['CardName'] ) ? $result['CardName'] : '';
-            $update_data['card_no']    = isset( $result['CardNo'] ) ? $result['CardNo'] : '';
             $update_data['card_quota'] = isset( $result['CardQuota'] ) ? $result['CardQuota'] : '';
         }
 
-        if ( ! empty( $result['VbankBankCode'] ) ) {
-            $update_data['bank_code']      = $result['VbankBankCode'];
-            $update_data['bank_name']      = isset( $result['VbankBankName'] ) ? $result['VbankBankName'] : '';
-            $update_data['vbank_num']      = isset( $result['VbankNum'] ) ? $result['VbankNum'] : '';
-            $update_data['vbank_exp_date'] = isset( $result['VbankExpDate'] ) ? $result['VbankExpDate'] : '';
-        }
-
         if ( $this->api->is_success_code( $result_code, $result_method ) ) {
-            $update_data['status'] = ( $result_method === 'VBANK' ) ? 'waiting' : 'paid';
+            $update_data['status']                = 'paid';
+            $update_data['approval_state']        = 'approved';
+            $update_data['approved_at']           = gmdate( 'Y-m-d H:i:s' );
+            $update_data['captured_amount']       = $transaction->amount;
+            $update_data['remaining_amount']      = $transaction->amount;
+            $update_data['reconciliation_status'] = 'not_required';
+            $update_data['active_attempt_key']    = null;
 
-            if ( $transaction ) {
-                nicepay_update_transaction( $transaction->id, $update_data );
+            if ( ! nicepay_update_transaction( $transaction->id, $update_data, true ) ) {
+                $abort = nicepay_abort_authenticated_payment(
+                    $transaction->id,
+                    $auth_data,
+                    $this->api,
+                    'approval_persistence_failed_after_capture'
+                );
+                nicepay_log(
+                    'Standalone approval persistence failed after capture',
+                    $abort['net_cancel_result_code'],
+                    'error'
+                );
+                $this->render_result_page( false, __( 'We could not confirm the payment outcome. Please contact the merchant before retrying.', 'nicepay-payment-gateway' ) );
+                return;
             }
 
-            $this->render_result_page( true, $result_msg, $result );
+            $receipt      = nicepay_issue_standalone_receipt( $transaction->id );
+            $receipt_data = nicepay_filter_payment_data( $result );
+            if ( is_array( $receipt ) ) {
+                $receipt_data['ReceiptURL'] = $receipt['url'];
+                if ( ! nicepay_send_standalone_receipt_email( $transaction, $receipt['url'] ) ) {
+                    nicepay_log( 'Standalone receipt email could not be sent', $transaction->id, 'warning' );
+                }
+            }
+
+            $this->render_result_page( true, __( 'Payment completed successfully.', 'nicepay-payment-gateway' ), $receipt_data );
         } else {
-            $update_data['status'] = 'failed';
+            $update_data['status']         = 'failed';
+            $update_data['approval_state'] = 'failed';
+            $update_data['active_attempt_key'] = null;
+            nicepay_update_transaction( $transaction->id, $update_data );
 
-            if ( $transaction ) {
-                nicepay_update_transaction( $transaction->id, $update_data );
-            }
-
-            $this->render_result_page( false, $result_msg );
+            $this->render_result_page( false, __( 'Payment was declined. Please try another payment method.', 'nicepay-payment-gateway' ) );
         }
+    }
+
+    /**
+     * Render a previously issued standalone receipt without exposing PII.
+     *
+     * @param object $transaction Safe receipt projection from the repository.
+     */
+    public function render_saved_receipt( $transaction ) {
+        $this->render_result_page(
+            true,
+            __( 'Payment completed successfully.', 'nicepay-payment-gateway' ),
+            array(
+                'TID'       => isset( $transaction->tid ) ? $transaction->tid : '',
+                'Moid'      => isset( $transaction->moid ) ? $transaction->moid : '',
+                'Amt'       => isset( $transaction->amount ) ? $transaction->amount : '',
+                'Currency'  => isset( $transaction->currency ) ? $transaction->currency : 'KRW',
+                'PayMethod' => isset( $transaction->payment_method ) ? $transaction->payment_method : '',
+            )
+        );
     }
 
     /**
      * Render result page
      */
     private function render_result_page( $success, $message, $data = array() ) {
+        if ( function_exists( 'status_header' ) ) {
+            status_header( $success ? 200 : 400 );
+        }
         $page_title = $success
             ? __( 'Payment Successful', 'nicepay-payment-gateway' )
             : __( 'Payment Failed', 'nicepay-payment-gateway' );
@@ -201,6 +291,7 @@ class NicePay_Return_Handler {
                 @keyframes box-appear { from { opacity: 0; transform: translateY(16px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
                 @keyframes icon-pop { from { transform: scale(0); } 60% { transform: scale(1.15); } to { transform: scale(1); } }
                 @media (max-width: 480px) { .result-box { padding: 32px 24px 28px; } .result-details dl, .result-vbank dl { grid-template-columns: 1fr; } }
+                @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; } }
             </style>
         </head>
         <body>
@@ -244,6 +335,10 @@ class NicePay_Return_Handler {
                                 <dt><?php esc_html_e( 'Transaction ID', 'nicepay-payment-gateway' ); ?></dt>
                                 <dd><?php echo esc_html( $data['TID'] ); ?></dd>
                             <?php endif; ?>
+                            <?php if ( ! empty( $data['Moid'] ) ) : ?>
+                                <dt><?php esc_html_e( 'Payment Reference', 'nicepay-payment-gateway' ); ?></dt>
+                                <dd><?php echo esc_html( $data['Moid'] ); ?></dd>
+                            <?php endif; ?>
                             <?php if ( ! empty( $data['Amt'] ) ) : ?>
                                 <dt><?php esc_html_e( 'Amount', 'nicepay-payment-gateway' ); ?></dt>
                                 <dd><?php echo esc_html( nicepay_format_amount( $data['Amt'] ) ); ?></dd>
@@ -257,6 +352,16 @@ class NicePay_Return_Handler {
                 <?php endif; ?>
 
                 <div class="result-actions">
+                    <?php if ( $success && ! empty( $data['ReceiptURL'] ) ) : ?>
+                        <a href="<?php echo esc_url( $data['ReceiptURL'] ); ?>" class="result-btn result-btn-secondary">
+                            <?php esc_html_e( 'Open Saved Receipt', 'nicepay-payment-gateway' ); ?>
+                        </a>
+                    <?php endif; ?>
+                    <?php if ( $success ) : ?>
+                        <button type="button" class="result-btn result-btn-secondary" onclick="window.print()">
+                            <?php esc_html_e( 'Print Receipt', 'nicepay-payment-gateway' ); ?>
+                        </button>
+                    <?php endif; ?>
                     <a href="<?php echo esc_url( home_url() ); ?>" class="result-btn">
                         <?php esc_html_e( 'Return to Home', 'nicepay-payment-gateway' ); ?>
                     </a>
