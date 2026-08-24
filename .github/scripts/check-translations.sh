@@ -2,6 +2,14 @@
 set -euo pipefail
 
 repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+host_uid="$(id -u)"
+host_gid="$(id -g)"
+
+if ! [[ "$host_uid" =~ ^[0-9]+$ && "$host_gid" =~ ^[0-9]+$ ]]; then
+	echo "Error: Could not determine the numeric host user and group IDs." >&2
+	exit 1
+fi
+
 temporary_root="$(mktemp -d "${TMPDIR:-/tmp}/nicepay-i18n.XXXXXX")"
 wp_cli_image='wordpress@sha256:837d55d02196b5f4c92d236317c6d089ab1471348b31d1708888d444a0390979'
 english_catalog="$repository_root/languages/nicepay-payment-gateway-en_US.po"
@@ -20,14 +28,15 @@ cleanup() {
 trap cleanup EXIT
 
 docker run --rm \
-    --volume "$repository_root:/work:ro" \
-    --volume "$temporary_root:/output" \
-    --workdir /work \
-    "$wp_cli_image" \
-    wp i18n make-pot . /output/fresh.pot \
-        --exclude=docs,tests,vendor,node_modules \
-        --skip-js \
-        --headers='{"Report-Msgid-Bugs-To":"https://github.com/cemililik/nicepay-paymentgateway-wordpress-plugin/issues"}' >/dev/null
+	--user "${host_uid}:${host_gid}" \
+	--volume "$repository_root:/work:ro" \
+	--volume "$temporary_root:/output" \
+	--workdir /work \
+	"$wp_cli_image" \
+	wp i18n make-pot . /output/fresh.pot \
+		--exclude=docs,tests,vendor,node_modules \
+		--skip-js \
+		--headers='{"Report-Msgid-Bugs-To":"https://github.com/cemililik/nicepay-paymentgateway-wordpress-plugin/issues"}' >/dev/null
 
 # The creation timestamp is intentionally non-deterministic. Every other line,
 # including source references and plural declarations, must match the committed POT.
