@@ -21,10 +21,12 @@ if (JSON.stringify(discoveredFilenames) !== JSON.stringify(expectedFilenames)) {
 const files = [
     {
         filename: 'assets/css/nicepay-admin.css',
+        // nosemgrep: javascript_pathtraversal_rule-non-literal-fs-filename -- every path segment is a fixed repository constant.
         source: fs.readFileSync(path.join(repositoryRoot, 'assets', 'css', 'nicepay-admin.css'), 'utf8')
     },
     {
         filename: 'assets/css/nicepay.css',
+        // nosemgrep: javascript_pathtraversal_rule-non-literal-fs-filename -- every path segment is a fixed repository constant.
         source: fs.readFileSync(path.join(repositoryRoot, 'assets', 'css', 'nicepay.css'), 'utf8')
     }
 ];

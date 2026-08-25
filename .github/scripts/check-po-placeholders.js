@@ -10,9 +10,11 @@ if (catalogArguments.length === 0) {
 }
 
 const repositoryRoot = path.resolve(__dirname, '..', '..');
+// nosemgrep: javascript_pathtraversal_rule-non-literal-fs-filename -- this resolves one fixed repository directory before validating catalogs.
 const languagesRoot = fs.realpathSync(path.join(repositoryRoot, 'languages'));
 
 function resolveCatalog(argument) {
+    // nosemgrep: javascript_pathtraversal_rule-non-literal-fs-filename,javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal -- the resulting real path is confined to languagesRoot below.
     const file = fs.realpathSync(path.resolve(argument));
     const relative = path.relative(languagesRoot, file);
     const outsideLanguages = relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative);

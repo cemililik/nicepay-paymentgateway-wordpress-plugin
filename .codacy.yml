@@ -8,6 +8,7 @@ engines:
   # PHP security remains covered by Opengrep, SonarCloud, and the PHP CI matrix.
   phpcs:
     exclude_paths:
+      - "*.php"
       - "**/*.php"
 exclude_paths:
   - "build/**"
