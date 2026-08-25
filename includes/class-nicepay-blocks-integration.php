@@ -39,7 +39,7 @@ final class NicePay_Blocks_Integration extends AbstractPaymentMethodType {
         wp_register_script(
             $handle,
             NICEPAY_PLUGIN_URL . 'assets/js/nicepay-blocks.js',
-            array( 'wc-blocks-registry', 'wc-settings', 'wp-element', 'wp-html-entities' ),
+            array( 'wc-blocks-registry', 'wc-settings', 'wp-element' ),
             NICEPAY_VERSION,
             true
         );

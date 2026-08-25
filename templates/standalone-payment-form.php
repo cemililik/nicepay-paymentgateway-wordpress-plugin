@@ -88,9 +88,9 @@ $show_buyer_fields = empty( $preset_name ) || empty( $preset_email ) || empty( $
 
 <div class="<?php echo $is_modal ? 'nicepay-payment-wrapper' : 'nicepay-standalone-wrapper nicepay-payment-wrapper'; ?>" id="<?php echo esc_attr( $form_id . '-wrapper' ); ?>">
     <?php if ( 'test' === get_option( 'nicepay_mode', 'test' ) ) : ?>
-        <div class="nicepay-notice" role="status">
+        <output class="nicepay-notice" aria-live="polite">
             <span><?php esc_html_e( 'Test mode — no real payment will be collected.', 'nicepay-payment-gateway' ); ?></span>
-        </div>
+        </output>
     <?php endif; ?>
 
     <!-- Payment Summary -->

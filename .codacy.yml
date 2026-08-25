@@ -1,0 +1,11 @@
+---
+# Production code and CI verification scripts remain in scope. Generated,
+# third-party, report, catalog, and test-fixture trees have their own gates and
+# must not affect the production static-analysis rating.
+exclude_paths:
+  - "build/**"
+  - "docs/analysis/**"
+  - "languages/**"
+  - "node_modules/**"
+  - "tests/**"
+  - "vendor/**"

@@ -8,12 +8,36 @@
 (function($) {
     'use strict';
 
+    var adminConfig = window.nicepayAdmin && typeof window.nicepayAdmin === 'object'
+        ? window.nicepayAdmin
+        : { ajaxUrl: '', shortcodeNonce: '' };
+
     function getConfig() {
         return typeof window.nicepayShortcodeAdmin !== 'undefined' ? window.nicepayShortcodeAdmin : null;
     }
 
     function text(config, key, fallback) {
-        return config.i18n && config.i18n[key] ? config.i18n[key] : fallback;
+        if (!config.i18n || typeof config.i18n !== 'object') {
+            return fallback;
+        }
+
+        switch (key) {
+            case 'referenceShortcode': return config.i18n.referenceShortcode || fallback;
+            case 'payNow': return config.i18n.payNow || fallback;
+            case 'productName': return config.i18n.productName || fallback;
+            case 'amountRequired': return config.i18n.amountRequired || fallback;
+            case 'productNameRequired': return config.i18n.productNameRequired || fallback;
+            case 'copy': return config.i18n.copy || fallback;
+            case 'copied': return config.i18n.copied || fallback;
+            case 'copyFailed': return config.i18n.copyFailed || fallback;
+            case 'saving': return config.i18n.saving || fallback;
+            case 'saveShortcode': return config.i18n.saveShortcode || fallback;
+            case 'updateShortcode': return config.i18n.updateShortcode || fallback;
+            case 'saved': return config.i18n.saved || fallback;
+            case 'error': return config.i18n.error || fallback;
+            case 'requestFailed': return config.i18n.requestFailed || fallback;
+            default: return fallback;
+        }
     }
 
     function restoreSaveButton(button, config, editId) {
@@ -23,6 +47,15 @@
     function showToast(message, type) {
         if (typeof window.NicePayToast !== 'undefined') {
             window.NicePayToast.show(message, type);
+        }
+    }
+
+    function sameOriginUrl(value) {
+        try {
+            var url = new URL(String(value || ''), window.location.href);
+            return url.origin === window.location.origin ? url.href : '';
+        } catch {
+            return '';
         }
     }
 
@@ -82,9 +115,10 @@
         function renderMethodOptions() {
             var container = $('#sc-pv-method-options').empty();
             (config.enabledMethods || []).forEach(function(method) {
-                var option = $('<div class="nicepay-sc-pv-method-option"></div>');
-                option.append(method.icon || '');
-                option.append(document.createTextNode(' ' + (method.label || '')));
+                var optionNode = document.createElement('div');
+                var option = $(optionNode);
+                option.addClass('nicepay-sc-pv-method-option');
+                optionNode.textContent = String(method && method.label ? method.label : '');
                 container.append(option);
             });
         }
@@ -140,33 +174,41 @@
                 return;
             }
 
-            var values = {
-                name: fields.name,
-                amount: fields.amount,
-                goods_name: fields.goodsName,
-                goods_class: fields.goodsClass,
-                buyer_name: fields.buyerName,
-                buyer_email: fields.buyerEmail,
-                buyer_tel: fields.buyerTel,
-                button_text: fields.buttonText,
-                button_class: fields.buttonClass,
-                currency: fields.currency,
-                language: fields.language
-            };
+            var values = [
+                { value: data.name, selector: fields.name },
+                { value: data.amount, selector: fields.amount },
+                { value: data.goods_name, selector: fields.goodsName },
+                { value: data.goods_class, selector: fields.goodsClass },
+                { value: data.buyer_name, selector: fields.buyerName },
+                { value: data.buyer_email, selector: fields.buyerEmail },
+                { value: data.buyer_tel, selector: fields.buyerTel },
+                { value: data.button_text, selector: fields.buttonText },
+                { value: data.button_class, selector: fields.buttonClass },
+                { value: data.currency, selector: fields.currency },
+                { value: data.language, selector: fields.language }
+            ];
 
-            Object.keys(values).forEach(function(key) {
-                if (data[key] !== undefined && data[key] !== null && data[key] !== '') {
-                    $(values[key]).val(data[key]);
+            values.forEach(function(entry) {
+                if (entry.value !== undefined && entry.value !== null && entry.value !== '') {
+                    $(entry.selector).val(entry.value);
                 }
             });
             if (data.button_color) {
                 $(fields.buttonColor).val(data.button_color).trigger('input');
             }
             if (data.display_mode) {
-                $('input[name="sc-display-mode"][value="' + data.display_mode + '"]').prop('checked', true).trigger('change');
+                $('input[name="sc-display-mode"]').each(function() {
+                    if (this.value === data.display_mode) {
+                        $(this).prop('checked', true).trigger('change');
+                    }
+                });
             }
             if (data.pay_method) {
-                $('input[name="sc-pay-method"][value="' + data.pay_method + '"]').prop('checked', true).trigger('change');
+                $('input[name="sc-pay-method"]').each(function() {
+                    if (this.value === data.pay_method) {
+                        $(this).prop('checked', true).trigger('change');
+                    }
+                });
             }
         }
 
@@ -227,9 +269,9 @@
             $(fields.name).removeClass('is-invalid').removeAttr('aria-invalid');
 
             button.prop('disabled', true).text(text(config, 'saving', 'Saving...'));
-            $.post(nicepayAdmin.ajaxUrl, {
+            $.post(adminConfig.ajaxUrl, {
                 action: 'nicepay_save_shortcode',
-                nonce: nicepayAdmin.shortcodeNonce,
+                nonce: adminConfig.shortcodeNonce,
                 edit_id: editId,
                 name: name,
                 display_mode: selectedValue(fields.displayMode) || 'inline',
@@ -249,7 +291,10 @@
                 if (response && response.success) {
                     showToast(response.data && response.data.message ? response.data.message : text(config, 'saved', 'Saved.'), 'success');
                     setTimeout(function() {
-                        window.location.href = config.redirectUrl;
+                        const redirectUrl = sameOriginUrl(config.redirectUrl);
+                        if (redirectUrl) {
+                            window.location.assign(redirectUrl);
+                        }
                     }, 800);
                     return;
                 }

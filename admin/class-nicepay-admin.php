@@ -165,7 +165,7 @@ class NicePay_Admin {
     }
 
     public function sanitize_currency( $value ) {
-        return nicepay_is_supported_currency( $value ) ? strtoupper( $value ) : 'KRW';
+        return true === nicepay_is_supported_currency( $value ) ? strtoupper( $value ) : 'KRW';
     }
 
     public function sanitize_mid( $value ) {
@@ -248,16 +248,16 @@ class NicePay_Admin {
             $blocks_status = 'not_available';
         } elseif ( class_exists( 'NicePay_Blocks_Integration', false ) ) {
             $blocks_status = 'adapter_loaded';
-        } elseif ( function_exists( 'did_action' ) && did_action( 'woocommerce_blocks_loaded' ) ) {
+        } elseif ( function_exists( 'did_action' ) && 0 < did_action( 'woocommerce_blocks_loaded' ) ) {
             $blocks_status = 'adapter_not_loaded';
         } else {
             $blocks_status = 'awaiting_load';
         }
 
         $order_util = 'Automattic\\WooCommerce\\Utilities\\OrderUtil';
-        if ( class_exists( $order_util ) && is_callable( array( $order_util, 'custom_orders_table_usage_is_enabled' ) ) ) {
+        if ( true === class_exists( $order_util ) && true === is_callable( array( $order_util, 'custom_orders_table_usage_is_enabled' ) ) ) {
             try {
-                $hpos_status = call_user_func( array( $order_util, 'custom_orders_table_usage_is_enabled' ) ) ? 'enabled' : 'disabled';
+                $hpos_status = true === call_user_func( array( $order_util, 'custom_orders_table_usage_is_enabled' ) ) ? 'enabled' : 'disabled';
             } catch ( Throwable $error ) {
                 $hpos_status = 'unknown';
             }
@@ -477,9 +477,9 @@ class NicePay_Admin {
             <?php settings_fields( 'nicepay_general' ); ?>
             <table class="form-table">
                 <tr>
-                    <th scope="row"><?php esc_html_e( 'Mode', 'nicepay-payment-gateway' ); ?></th>
+                    <th scope="row"><label for="nicepay-mode"><?php esc_html_e( 'Mode', 'nicepay-payment-gateway' ); ?></label></th>
                     <td>
-                        <select name="nicepay_mode">
+                        <select id="nicepay-mode" name="nicepay_mode">
                             <option value="test" <?php selected( get_option( 'nicepay_mode' ), 'test' ); ?>>
                                 <?php esc_html_e( 'Test', 'nicepay-payment-gateway' ); ?>
                             </option>
@@ -493,9 +493,9 @@ class NicePay_Admin {
                     </td>
                 </tr>
                 <tr>
-                    <th scope="row"><?php esc_html_e( 'Language', 'nicepay-payment-gateway' ); ?></th>
+                    <th scope="row"><label for="nicepay-language"><?php esc_html_e( 'Language', 'nicepay-payment-gateway' ); ?></label></th>
                     <td>
-                        <select name="nicepay_language">
+                        <select id="nicepay-language" name="nicepay_language">
                             <option value="KO" <?php selected( get_option( 'nicepay_language' ), 'KO' ); ?>>
                                 <?php esc_html_e( 'Korean', 'nicepay-payment-gateway' ); ?>
                             </option>
@@ -509,9 +509,9 @@ class NicePay_Admin {
                     </td>
                 </tr>
                 <tr>
-                    <th scope="row"><?php esc_html_e( 'Currency', 'nicepay-payment-gateway' ); ?></th>
+                    <th scope="row"><label for="nicepay-currency"><?php esc_html_e( 'Currency', 'nicepay-payment-gateway' ); ?></label></th>
                     <td>
-                        <select name="nicepay_currency">
+                        <select id="nicepay-currency" name="nicepay_currency">
                             <option value="KRW" <?php selected( get_option( 'nicepay_currency' ), 'KRW' ); ?>>KRW</option>
                         </select>
                         <p class="description">
@@ -570,7 +570,7 @@ class NicePay_Admin {
                                         );
                                     }
                                     ?>
-                                    <?php if ( $retention_next ) : ?>
+                                    <?php if ( false !== $retention_next ) : ?>
                                         <?php
                                         printf(
                                             /* translators: %s: localized date/time of next scheduled cleanup */
@@ -616,6 +616,7 @@ class NicePay_Admin {
         <div class="nicepay-system-report">
             <h2><?php esc_html_e( 'NicePay System Report', 'nicepay-payment-gateway' ); ?></h2>
             <p><?php esc_html_e( 'This report contains operational status only. It excludes merchant credentials, payment tokens, customer data, paths, URLs and server headers.', 'nicepay-payment-gateway' ); ?></p>
+            <label class="screen-reader-text" for="nicepay-system-report"><?php esc_html_e( 'NicePay System Report', 'nicepay-payment-gateway' ); ?></label>
             <textarea id="nicepay-system-report" class="large-text code" rows="20" readonly><?php echo esc_textarea( $report_text ); ?></textarea>
             <p>
                 <button type="button" class="button button-secondary nicepay-copy-btn"
@@ -647,20 +648,20 @@ class NicePay_Admin {
             <h3><?php esc_html_e( 'Test Credentials', 'nicepay-payment-gateway' ); ?></h3>
             <table class="form-table">
                 <tr>
-                    <th scope="row"><?php esc_html_e( 'Test MID', 'nicepay-payment-gateway' ); ?></th>
+                    <th scope="row"><label for="nicepay-test-mid"><?php esc_html_e( 'Test MID', 'nicepay-payment-gateway' ); ?></label></th>
                     <td>
-                        <input type="text" name="nicepay_test_mid" class="regular-text"
+                        <input type="text" id="nicepay-test-mid" name="nicepay_test_mid" class="regular-text"
                                value="<?php echo esc_attr( get_option( 'nicepay_test_mid', NICEPAY_TEST_MID ) ); ?>">
                     </td>
                 </tr>
                 <tr>
-                    <th scope="row"><?php esc_html_e( 'Test Merchant Key', 'nicepay-payment-gateway' ); ?></th>
+                    <th scope="row"><label for="nicepay-test-merchant-key"><?php esc_html_e( 'Test Merchant Key', 'nicepay-payment-gateway' ); ?></label></th>
                     <td>
-                        <input type="password" name="nicepay_test_merchant_key" class="large-text"
+                        <input type="password" id="nicepay-test-merchant-key" name="nicepay_test_merchant_key" class="large-text"
                                value="" autocomplete="new-password"
                                placeholder="<?php esc_attr_e( 'Configured — leave blank to keep unchanged', 'nicepay-payment-gateway' ); ?>">
                         <label>
-                            <input type="checkbox" name="nicepay_clear_test_merchant_key" value="yes">
+                            <input type="checkbox" id="nicepay-clear-test-merchant-key" name="nicepay_clear_test_merchant_key" value="yes">
                             <?php esc_html_e( 'Clear the stored test merchant key', 'nicepay-payment-gateway' ); ?>
                         </label>
                     </td>
@@ -670,20 +671,20 @@ class NicePay_Admin {
             <h3><?php esc_html_e( 'Live Credentials', 'nicepay-payment-gateway' ); ?></h3>
             <table class="form-table">
                 <tr>
-                    <th scope="row"><?php esc_html_e( 'Live MID', 'nicepay-payment-gateway' ); ?></th>
+                    <th scope="row"><label for="nicepay-live-mid"><?php esc_html_e( 'Live MID', 'nicepay-payment-gateway' ); ?></label></th>
                     <td>
-                        <input type="text" name="nicepay_live_mid" class="regular-text"
+                        <input type="text" id="nicepay-live-mid" name="nicepay_live_mid" class="regular-text"
                                value="<?php echo esc_attr( get_option( 'nicepay_live_mid' ) ); ?>">
                     </td>
                 </tr>
                 <tr>
-                    <th scope="row"><?php esc_html_e( 'Live Merchant Key', 'nicepay-payment-gateway' ); ?></th>
+                    <th scope="row"><label for="nicepay-live-merchant-key"><?php esc_html_e( 'Live Merchant Key', 'nicepay-payment-gateway' ); ?></label></th>
                     <td>
-                        <input type="password" name="nicepay_live_merchant_key" class="large-text"
+                        <input type="password" id="nicepay-live-merchant-key" name="nicepay_live_merchant_key" class="large-text"
                                value="" autocomplete="new-password"
                                placeholder="<?php echo get_option( 'nicepay_live_merchant_key', '' ) ? esc_attr__( 'Configured — leave blank to keep unchanged', 'nicepay-payment-gateway' ) : esc_attr__( 'Enter live merchant key', 'nicepay-payment-gateway' ); ?>">
                         <label>
-                            <input type="checkbox" name="nicepay_clear_live_merchant_key" value="yes">
+                            <input type="checkbox" id="nicepay-clear-live-merchant-key" name="nicepay_clear_live_merchant_key" value="yes">
                             <?php esc_html_e( 'Clear the stored live merchant key', 'nicepay-payment-gateway' ); ?>
                         </label>
                     </td>
@@ -762,7 +763,7 @@ class NicePay_Admin {
                         // The saved configuration is the single source of
                         // truth; reference-only shortcodes inherit later edits.
                         $full_shortcode = '[nicepay_payment id="' . esc_attr( $sc['id'] ) . '"]';
-                        $preview_background = ! empty( $sc['button_color'] ) ? $sc['button_color'] : '#2563eb';
+                        $preview_background = isset( $sc['button_color'] ) && '' !== $sc['button_color'] ? $sc['button_color'] : '#2563eb';
                         $preview_text       = nicepay_get_contrast_color( $preview_background );
                         ?>
                         <div class="nicepay-sc-card" data-id="<?php echo esc_attr( $sc['id'] ); ?>" id="sc-card-<?php echo esc_attr( $sc['id'] ); ?>">
@@ -835,7 +836,6 @@ class NicePay_Admin {
             }
 
             $method_options[] = array(
-                'icon'  => preg_replace( '/\s+/', ' ', trim( nicepay_get_method_icon( $code ) ) ),
                 'label' => $label,
             );
         }
@@ -919,6 +919,7 @@ class NicePay_Admin {
                             <label for="sc-amount"><?php esc_html_e( 'Payment Amount', 'nicepay-payment-gateway' ); ?> <span class="nicepay-sc-required">*</span></label>
                             <div class="nicepay-sc-input-group">
                                 <input type="number" id="sc-amount" min="1" placeholder="10000" class="nicepay-sc-input">
+                                <label class="screen-reader-text" for="sc-currency"><?php esc_html_e( 'Currency', 'nicepay-payment-gateway' ); ?></label>
                                 <select id="sc-currency" class="nicepay-sc-select-sm">
                                     <option value="KRW">KRW</option>
                                 </select>

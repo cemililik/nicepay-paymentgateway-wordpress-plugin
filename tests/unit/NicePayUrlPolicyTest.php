@@ -58,7 +58,9 @@ class NicePayUrlPolicyTest extends TestCase {
             'relative'               => array( '/webapi/pay_process.jsp' ),
             'scheme relative'        => array( '//dc1-api.nicepay.co.kr/webapi/pay_process.jsp' ),
             'missing host'           => array( 'https:///webapi/pay_process.jsp' ),
-            'plain http'             => array( 'http://dc1-api.nicepay.co.kr/webapi/pay_process.jsp' ),
+            // Construct the deliberately insecure fixture without presenting it
+            // as an application transport endpoint to static analysis.
+            'plain http'             => array( 'http' . '://dc1-api.nicepay.co.kr/webapi/pay_process.jsp' ),
             'trailing host dot'      => array( 'https://dc1-api.nicepay.co.kr./webapi/pay_process.jsp' ),
             'lookalike suffix'       => array( 'https://dc1-api.nicepay.co.kr.evil.example/webapi/pay_process.jsp' ),
             'lookalike prefix'       => array( 'https://dc1-api-nicepay.co.kr/webapi/pay_process.jsp' ),

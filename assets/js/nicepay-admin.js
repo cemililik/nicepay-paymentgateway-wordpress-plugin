@@ -6,6 +6,24 @@
 (function($) {
     'use strict';
 
+    var adminConfig = window.nicepayAdmin && typeof window.nicepayAdmin === 'object'
+        ? window.nicepayAdmin
+        : { ajaxUrl: '', i18n: {} };
+    var adminI18n = adminConfig.i18n && typeof adminConfig.i18n === 'object'
+        ? adminConfig.i18n
+        : {};
+
+    function element(tagName, className, text) {
+        var node = document.createElement(tagName);
+        if (className) {
+            node.className = className;
+        }
+        if (text !== undefined && text !== null) {
+            node.textContent = String(text);
+        }
+        return node;
+    }
+
     /* ==========================================
        Toast Notifications
        ========================================== */
@@ -14,8 +32,9 @@
 
         init: function() {
             if (!this.container) {
-                this.container = $('<div class="nicepay-toast-container" id="nicepay-toast-root"></div>');
-                $('body').append(this.container);
+                this.container = element('div', 'nicepay-toast-container');
+                this.container.id = 'nicepay-toast-root';
+                document.body.appendChild(this.container);
             }
         },
 
@@ -24,19 +43,27 @@
             type = type || 'info';
             duration = duration || 4000;
 
-            var icons = {
-                success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>',
-                error: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>',
-                info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>'
-            };
-
-            var toast = $('<div class="nicepay-toast nicepay-toast-' + type + '" role="status" aria-live="polite"></div>');
-            toast.html((icons[type] || '') + '<span>' + $('<span>').text(message).html() + '</span>');
-
-            this.container.append(toast);
+            var safeType = 'info';
+            var iconText = 'i';
+            if ('success' === type) {
+                safeType = 'success';
+                iconText = '✓';
+            } else if ('error' === type) {
+                safeType = 'error';
+                iconText = '!';
+            }
+            var toast = element('div', 'nicepay-toast nicepay-toast-' + safeType);
+            var icon = element('span', 'nicepay-toast-icon', iconText);
+            var text = element('span', '', message);
+            icon.setAttribute('aria-hidden', 'true');
+            toast.setAttribute('role', 'status');
+            toast.setAttribute('aria-live', 'polite');
+            toast.appendChild(icon);
+            toast.appendChild(text);
+            this.container.appendChild(toast);
 
             setTimeout(function() {
-                toast.addClass('is-leaving');
+                toast.classList.add('is-leaving');
                 setTimeout(function() { toast.remove(); }, 300);
             }, duration);
         }
@@ -62,8 +89,8 @@
                 message: '',
                 inputLabel: '',
                 inputPlaceholder: '',
-                confirmText: nicepayAdmin.i18n.confirm || 'Confirm',
-                cancelText: nicepayAdmin.i18n.cancel || 'Cancel',
+                confirmText: adminI18n.confirm || 'Confirm',
+                cancelText: adminI18n.cancel || 'Cancel',
                 confirmClass: 'nicepay-modal-btn-danger',
                 onConfirm: function() {}
             }, options);
@@ -71,26 +98,59 @@
             this.close();
             self.lastFocus = document.activeElement;
 
-            var html = '<div class="nicepay-modal-overlay is-active" id="nicepay-modal">' +
-                '<div class="nicepay-modal" role="dialog" aria-modal="true" aria-labelledby="nicepay-modal-title" aria-busy="false">' +
-                    '<div class="nicepay-modal-header">' +
-                        '<h3 class="nicepay-modal-title" id="nicepay-modal-title">' + $('<span>').text(opts.title).html() + '</h3>' +
-                    '</div>' +
-                    '<div class="nicepay-modal-body">' +
-                        (opts.message ? '<p>' + $('<span>').text(opts.message).html() + '</p>' : '') +
-                        (opts.inputLabel ? '<label for="nicepay-modal-input" style="display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:#374151;">' + $('<span>').text(opts.inputLabel).html() + '</label>' : '') +
-                        (opts.inputLabel ? '<input type="text" id="nicepay-modal-input" placeholder="' + $('<span>').text(opts.inputPlaceholder).html() + '" autocomplete="off" aria-describedby="nicepay-modal-error">' : '') +
-                        '<p class="nicepay-modal-error" id="nicepay-modal-error" role="alert" aria-live="assertive" hidden></p>' +
-                    '</div>' +
-                    '<div class="nicepay-modal-footer">' +
-                        '<button type="button" class="nicepay-modal-btn nicepay-modal-btn-secondary" id="nicepay-modal-cancel">' + $('<span>').text(opts.cancelText).html() + '</button>' +
-                        '<button type="button" class="nicepay-modal-btn ' + opts.confirmClass + '" id="nicepay-modal-confirm">' + $('<span>').text(opts.confirmText).html() + '</button>' +
-                    '</div>' +
-                '</div>' +
-            '</div>';
+            var overlay = element('div', 'nicepay-modal-overlay is-active');
+            var dialog = element('div', 'nicepay-modal');
+            var header = element('div', 'nicepay-modal-header');
+            var title = element('h3', 'nicepay-modal-title', opts.title);
+            var body = element('div', 'nicepay-modal-body');
+            var footer = element('div', 'nicepay-modal-footer');
+            var cancelButton = element('button', 'nicepay-modal-btn nicepay-modal-btn-secondary', opts.cancelText);
+            var confirmClass = 'nicepay-modal-btn-danger' === opts.confirmClass ? ' nicepay-modal-btn-danger' : '';
+            var confirmButton = element('button', 'nicepay-modal-btn' + confirmClass, opts.confirmText);
+            var error = element('p', 'nicepay-modal-error');
 
-            $('body').append(html);
-            this.overlay = $('#nicepay-modal');
+            overlay.id = 'nicepay-modal';
+            dialog.setAttribute('role', 'dialog');
+            dialog.setAttribute('aria-modal', 'true');
+            dialog.setAttribute('aria-labelledby', 'nicepay-modal-title');
+            dialog.setAttribute('aria-busy', 'false');
+            title.id = 'nicepay-modal-title';
+            header.appendChild(title);
+
+            if (opts.message) {
+                body.appendChild(element('p', '', opts.message));
+            }
+            if (opts.inputLabel) {
+                var label = element('label', 'nicepay-modal-input-label', opts.inputLabel);
+                var input = element('input');
+                label.setAttribute('for', 'nicepay-modal-input');
+                input.type = 'text';
+                input.id = 'nicepay-modal-input';
+                input.placeholder = String(opts.inputPlaceholder || '');
+                input.autocomplete = 'off';
+                input.setAttribute('aria-describedby', 'nicepay-modal-error');
+                body.appendChild(label);
+                body.appendChild(input);
+            }
+
+            error.id = 'nicepay-modal-error';
+            error.setAttribute('role', 'alert');
+            error.setAttribute('aria-live', 'assertive');
+            error.hidden = true;
+            body.appendChild(error);
+
+            cancelButton.type = 'button';
+            cancelButton.id = 'nicepay-modal-cancel';
+            confirmButton.type = 'button';
+            confirmButton.id = 'nicepay-modal-confirm';
+            footer.appendChild(cancelButton);
+            footer.appendChild(confirmButton);
+            dialog.appendChild(header);
+            dialog.appendChild(body);
+            dialog.appendChild(footer);
+            overlay.appendChild(dialog);
+            document.body.appendChild(overlay);
+            this.overlay = $(overlay);
 
             var firstControl = self.overlay.find('#nicepay-modal-input').first();
             if (!firstControl.length) {
@@ -111,12 +171,12 @@
                     self.close();
                 }
                 if (e.key === 'Tab' && self.overlay) {
-                    var focusable = self.overlay.find('button:not(:disabled), input:not(:disabled), a[href]').filter(function() {
+                    const focusable = self.overlay.find('button:not(:disabled), input:not(:disabled), a[href]').filter(function() {
                         return $(this).attr('aria-hidden') !== 'true';
                     });
                     if (!focusable.length) return;
-                    var first = focusable.first()[0];
-                    var last = focusable.last()[0];
+                    const first = focusable.first()[0];
+                    const last = focusable.last()[0];
                     if (e.shiftKey && document.activeElement === first) {
                         e.preventDefault();
                         last.focus();
@@ -153,7 +213,7 @@
 
         showError: function(message) {
             var error = $('#nicepay-modal-error');
-            error.text(message || nicepayAdmin.i18n.cancelFailed || 'Cancellation failed.').prop('hidden', false);
+            error.text(message || adminI18n.cancelFailed || 'Cancellation failed.').prop('hidden', false);
             $('#nicepay-modal-input').attr('aria-invalid', 'true').css('border-color', '#dc2626').focus();
         },
 
@@ -187,21 +247,21 @@
         var nonce = btn.data('nonce');
 
         NicePayModal.open({
-            title: nicepayAdmin.i18n.cancelTitle || 'Cancel Transaction',
-            message: nicepayAdmin.i18n.cancelMessage || 'This action cannot be undone.',
-            inputLabel: nicepayAdmin.i18n.cancelReasonLabel || 'Cancellation reason',
-            inputPlaceholder: nicepayAdmin.i18n.cancelReasonPlaceholder || 'Enter reason...',
-            confirmText: nicepayAdmin.i18n.cancelConfirm || 'Cancel Transaction',
+            title: adminI18n.cancelTitle || 'Cancel Transaction',
+            message: adminI18n.cancelMessage || 'This action cannot be undone.',
+            inputLabel: adminI18n.cancelReasonLabel || 'Cancellation reason',
+            inputPlaceholder: adminI18n.cancelReasonPlaceholder || 'Enter reason...',
+            confirmText: adminI18n.cancelConfirm || 'Cancel Transaction',
             onConfirm: function(reason, modal) {
                 if (!reason || !reason.trim()) {
-                    modal.showError(nicepayAdmin.i18n.cancelReasonRequired || 'A cancellation reason is required.');
+                    modal.showError(adminI18n.cancelReasonRequired || 'A cancellation reason is required.');
                     return;
                 }
 
                 modal.clearError();
                 modal.setLoading(true);
 
-                $.post(nicepayAdmin.ajaxUrl, {
+                $.post(adminConfig.ajaxUrl, {
                     action: 'nicepay_cancel_transaction',
                     tid: tid,
                     id: id,
@@ -214,16 +274,16 @@
                         btn.closest('tr').find('.nicepay-status')
                             .removeClass('nicepay-status-paid nicepay-status-partially_refunded')
                             .addClass('nicepay-status-refunded')
-                            .text(nicepayAdmin.i18n.statusRefunded || 'REFUNDED');
+                            .text(adminI18n.statusRefunded || 'REFUNDED');
                         btn.remove();
                     } else {
-                        var message = response && response.data && response.data.message ? response.data.message : nicepayAdmin.i18n.cancelFailed;
+                        const message = response && response.data && response.data.message ? response.data.message : adminI18n.cancelFailed;
                         modal.setLoading(false);
                         modal.showError(message);
                         NicePayToast.show(message, 'error');
                     }
                 }).fail(function() {
-                    var message = nicepayAdmin.i18n.requestFailed || 'Request failed.';
+                    const message = adminI18n.requestFailed || 'Request failed.';
                     modal.setLoading(false);
                     modal.showError(message);
                     NicePayToast.show(message, 'error');
@@ -240,15 +300,15 @@
         var text = btn.data('shortcode');
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(text).then(function() {
-                NicePayToast.show(nicepayAdmin.i18n.copied || 'Copied!', 'success', 2000);
+                NicePayToast.show(adminI18n.copied || 'Copied!', 'success', 2000);
             }).catch(function() {
                 NicePayToast.show('Copy failed', 'error', 2000);
             });
         } else {
-            var temp = $('<textarea>').val(text).appendTo('body').select();
+            var temp = $(element('textarea')).val(text).appendTo('body').select();
             var ok = document.execCommand('copy');
             temp.remove();
-            NicePayToast.show(ok ? (nicepayAdmin.i18n.copied || 'Copied!') : 'Copy failed', ok ? 'success' : 'error', 2000);
+            NicePayToast.show(ok ? (adminI18n.copied || 'Copied!') : 'Copy failed', ok ? 'success' : 'error', 2000);
         }
     });
 
@@ -261,28 +321,28 @@
         var nonce = btn.data('nonce');
 
         NicePayModal.open({
-            title: nicepayAdmin.i18n.deleteConfirmTitle || 'Delete Shortcode',
-            message: nicepayAdmin.i18n.deleteConfirmMsg || 'Are you sure?',
+            title: adminI18n.deleteConfirmTitle || 'Delete Shortcode',
+            message: adminI18n.deleteConfirmMsg || 'Are you sure?',
             inputPlaceholder: '',
-            confirmText: nicepayAdmin.i18n.delete || 'Delete',
+            confirmText: adminI18n.delete || 'Delete',
             confirmClass: 'nicepay-modal-btn-danger',
             onConfirm: function(val, modal) {
                 modal.setLoading(true);
-                $.post(nicepayAdmin.ajaxUrl, {
+                $.post(adminConfig.ajaxUrl, {
                     action: 'nicepay_delete_shortcode',
                     id: id,
                     nonce: nonce
                 }, function(resp) {
                     modal.close();
                     if (resp.success) {
-                        NicePayToast.show(nicepayAdmin.i18n.shortcodeDeleted || 'Deleted.', 'success');
-                        $('#sc-card-' + id).fadeOut(300, function() { $(this).remove(); });
+                        NicePayToast.show(adminI18n.shortcodeDeleted || 'Deleted.', 'success');
+                        $(document.getElementById('sc-card-' + String(id))).fadeOut(300, function() { $(this).remove(); });
                     } else {
                         NicePayToast.show(resp.data.message || 'Error', 'error');
                     }
                 }).fail(function() {
                     modal.close();
-                    NicePayToast.show(nicepayAdmin.i18n.requestFailed || 'Failed.', 'error');
+                    NicePayToast.show(adminI18n.requestFailed || 'Failed.', 'error');
                 });
             }
         });
@@ -298,18 +358,18 @@
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(text).then(function() {
                 btn.addClass('is-copied');
-                NicePayToast.show(nicepayAdmin.i18n.copied || 'Copied!', 'success', 2000);
+                NicePayToast.show(adminI18n.copied || 'Copied!', 'success', 2000);
                 setTimeout(function() { btn.removeClass('is-copied'); }, 2000);
             }).catch(function() {
                 NicePayToast.show('Copy failed', 'error', 2000);
             });
         } else {
-            var temp = $('<input>').val(text).appendTo('body').select();
+            var temp = $(element('input')).val(text).appendTo('body').select();
             var ok = document.execCommand('copy');
             temp.remove();
             if (ok) {
                 btn.addClass('is-copied');
-                NicePayToast.show(nicepayAdmin.i18n.copied || 'Copied!', 'success', 2000);
+                NicePayToast.show(adminI18n.copied || 'Copied!', 'success', 2000);
                 setTimeout(function() { btn.removeClass('is-copied'); }, 2000);
             } else {
                 NicePayToast.show('Copy failed', 'error', 2000);

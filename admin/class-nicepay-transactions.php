@@ -11,6 +11,14 @@ class NicePay_Transactions {
 
     const CSV_BATCH_SIZE = 250;
     const CSV_MAX_ROWS   = 10000;
+    const REDACTED_VALUE = '[redacted]';
+
+    /** Fixed-shape filter predicates; every request-derived value is bound. */
+    const FILTER_SQL = "(%s = '' OR status = %s)
+                        AND (%s = '' OR payment_method = %s)
+                        AND (%s = '' OR created_at >= %s)
+                        AND (%s = '' OR created_at <= %s)
+                        AND (%s = '' OR (tid LIKE %s OR moid LIKE %s OR buyer_name LIKE %s OR goods_name LIKE %s))";
 
     public function __construct() {
         add_action( 'wp_ajax_nicepay_cancel_transaction', array( $this, 'ajax_cancel_transaction' ) );
@@ -88,20 +96,21 @@ class NicePay_Transactions {
     public static function get_financial_summary( $filters ) {
         global $wpdb;
 
-        $where = self::build_where_clause( $filters );
-        $table = $wpdb->prefix . 'nicepay_transactions';
-        $sql   = "SELECT currency, COUNT(*) AS transaction_count,
+        $table = NicePay_Installer::table_name( $wpdb );
+        if ( ! preg_match( '/\A[A-Za-z0-9_]+\z/', $table ) ) {
+            return array();
+        }
+
+        $sql = "SELECT currency, COUNT(*) AS transaction_count,
                          COALESCE(SUM(captured_amount), 0) AS total_amount,
                          COALESCE(SUM(refunded_amount), 0) AS refunded_amount,
                          COALESCE(SUM(remaining_amount), 0) AS remaining_amount
                   FROM {$table}
-                  WHERE {$where['sql']}
+                  WHERE " . self::FILTER_SQL . "
                   GROUP BY currency
                   ORDER BY currency ASC";
 
-        if ( ! empty( $where['values'] ) ) {
-            $sql = $wpdb->prepare( $sql, $where['values'] );
-        }
+        $sql  = $wpdb->prepare( $sql, self::filter_query_values( $filters ) );
 
         $rows = $wpdb->get_results( $sql );
         return is_array( $rows ) ? $rows : array();
@@ -125,8 +134,10 @@ class NicePay_Transactions {
 
         $max_rows   = max( 1, min( self::CSV_MAX_ROWS, absint( $max_rows ) ) );
         $batch_size = max( 1, min( self::CSV_BATCH_SIZE, absint( $batch_size ) ) );
-        $where      = self::build_where_clause( $filters );
-        $table      = $wpdb->prefix . 'nicepay_transactions';
+        $table      = NicePay_Installer::table_name( $wpdb );
+        if ( ! preg_match( '/\A[A-Za-z0-9_]+\z/', $table ) ) {
+            return 0;
+        }
         $columns    = array(
             'id', 'tid', 'wc_order_id', 'moid', 'flow', 'currency', 'amount',
             'captured_amount', 'refunded_amount', 'remaining_amount',
@@ -145,17 +156,15 @@ class NicePay_Transactions {
         $cursor_id     = 0;
         while ( $scanned < $max_rows ) {
             $limit  = min( $batch_size, $max_rows - $scanned );
-            $values = $where['values'];
-            $cursor_sql = '';
-            if ( '' !== $cursor_date && $cursor_id > 0 ) {
-                $cursor_sql = ' AND (created_at < %s OR (created_at = %s AND id < %d))';
-                $values[] = $cursor_date;
-                $values[] = $cursor_date;
-                $values[] = $cursor_id;
-            }
+            $values   = self::filter_query_values( $filters );
+            $values[] = $cursor_date;
+            $values[] = $cursor_date;
+            $values[] = $cursor_date;
+            $values[] = $cursor_id;
             $values[] = $limit;
             $sql = 'SELECT ' . implode( ', ', $columns ) . " FROM {$table}
-                    WHERE {$where['sql']}{$cursor_sql}
+                    WHERE " . self::FILTER_SQL . "
+                    AND (%s = '' OR created_at < %s OR (created_at = %s AND id < %d))
                     ORDER BY created_at DESC, id DESC
                     LIMIT %d";
             $rows = $wpdb->get_results( $wpdb->prepare( $sql, $values ), 'ARRAY_A' );
@@ -177,9 +186,9 @@ class NicePay_Transactions {
                     if ( 'result_code' === $column && is_scalar( $value ) && '' !== (string) $value ) {
                         $value = self::sanitize_result_code( $value );
                     } elseif ( 'result_code' === $column && ! is_scalar( $value ) ) {
-                        $value = '[redacted]';
+                        $value = self::REDACTED_VALUE;
                     } elseif ( 'mode' === $column && ! in_array( $value, array( 'test', 'live', '' ), true ) ) {
-                        $value = '[redacted]';
+                        $value = self::REDACTED_VALUE;
                     }
                     $csv_row[] = self::sanitize_csv_cell( $value );
                 }
@@ -277,10 +286,10 @@ class NicePay_Transactions {
      * @return string
      */
     private static function request_scalar( $source, $key, &$valid ) {
-        if ( ! isset( $source[ $key ] ) ) {
+        if ( false === isset( $source[ $key ] ) ) {
             return '';
         }
-        if ( ! is_scalar( $source[ $key ] ) ) {
+        if ( false === is_scalar( $source[ $key ] ) ) {
             $valid = false;
             return '';
         }
@@ -289,53 +298,53 @@ class NicePay_Transactions {
 
     /** @return bool */
     private static function is_valid_date( $date ) {
-        if ( ! preg_match( '/\A(\d{4})-(\d{2})-(\d{2})\z/', (string) $date, $parts ) ) {
+        if ( 1 !== preg_match( '/\A(\d{4})-(\d{2})-(\d{2})\z/', (string) $date, $parts ) ) {
             return false;
         }
         return checkdate( (int) $parts[2], (int) $parts[3], (int) $parts[1] );
     }
 
     /**
-     * Reproduce nicepay_get_transactions() WHERE semantics for aggregate/export queries.
+     * Return the values for FILTER_SQL after revalidating the canonical filters.
      *
      * @param array<string,string> $filters Canonical filters.
-     * @return array{sql:string,values:array<int,string>}
+     * @return array<int,string>
      */
-    private static function build_where_clause( $filters ) {
+    private static function filter_query_values( $filters ) {
         global $wpdb;
 
         $filters = is_array( $filters ) ? $filters : array();
-        $where   = array( '1=1' );
-        $values  = array();
-
-        if ( ! empty( $filters['status'] ) ) {
-            $where[]  = 'status = %s';
-            $values[] = $filters['status'];
-        }
-        if ( ! empty( $filters['payment_method'] ) ) {
-            $where[]  = 'payment_method = %s';
-            $values[] = $filters['payment_method'];
-        }
-        if ( ! empty( $filters['date_from'] ) ) {
-            $where[]  = 'created_at >= %s';
-            $values[] = $filters['date_from'] . ' 00:00:00';
-        }
-        if ( ! empty( $filters['date_to'] ) ) {
-            $where[]  = 'created_at <= %s';
-            $values[] = $filters['date_to'] . ' 23:59:59';
-        }
-        if ( ! empty( $filters['search'] ) ) {
-            $like     = '%' . $wpdb->esc_like( $filters['search'] ) . '%';
-            $where[]  = '(tid LIKE %s OR moid LIKE %s OR buyer_name LIKE %s OR goods_name LIKE %s)';
-            $values[] = $like;
-            $values[] = $like;
-            $values[] = $like;
-            $values[] = $like;
-        }
+        $status  = isset( $filters['status'] ) && in_array( $filters['status'], self::allowed_statuses(), true )
+            ? $filters['status']
+            : '';
+        $method  = isset( $filters['payment_method'] ) && in_array( $filters['payment_method'], array_keys( NicePay_API::get_available_methods() ), true )
+            ? $filters['payment_method']
+            : '';
+        $from    = isset( $filters['date_from'] ) && self::is_valid_date( $filters['date_from'] )
+            ? $filters['date_from']
+            : '';
+        $to      = isset( $filters['date_to'] ) && self::is_valid_date( $filters['date_to'] )
+            ? $filters['date_to']
+            : '';
+        $search  = isset( $filters['search'] ) && is_scalar( $filters['search'] )
+            ? nicepay_utf8_byte_cut( sanitize_text_field( (string) $filters['search'] ), 100 )
+            : '';
+        $like    = '' !== $search ? '%' . $wpdb->esc_like( $search ) . '%' : '';
 
         return array(
-            'sql'    => implode( ' AND ', $where ),
-            'values' => $values,
+            $status,
+            $status,
+            $method,
+            $method,
+            $from,
+            '' !== $from ? $from . ' 00:00:00' : '',
+            $to,
+            '' !== $to ? $to . ' 23:59:59' : '',
+            $search,
+            $like,
+            $like,
+            $like,
+            $like,
         );
     }
 
@@ -479,11 +488,11 @@ class NicePay_Transactions {
      */
     private static function sanitize_result_code( $value ) {
         if ( ! is_scalar( $value ) ) {
-            return '[redacted]';
+            return self::REDACTED_VALUE;
         }
 
         $value = self::redact_sensitive_text( $value, 64 );
-        return preg_match( '/^[A-Za-z0-9._:\-]{1,64}$/', $value ) ? $value : '[redacted]';
+        return preg_match( '/^[A-Za-z0-9._:\-]{1,64}$/', $value ) ? $value : self::REDACTED_VALUE;
     }
 
     /**
@@ -514,7 +523,7 @@ class NicePay_Transactions {
             '/\b(?:[A-F0-9]{32,}|[A-Za-z0-9+\/_\-]{40,}={0,2})\b/i',
         );
 
-        $text = preg_replace( $patterns, '[redacted]', $text );
+        $text = preg_replace( $patterns, self::REDACTED_VALUE, $text );
         if ( null === $text ) {
             return '';
         }
@@ -648,7 +657,8 @@ class NicePay_Transactions {
             <form method="get" class="nicepay-filters">
                 <input type="hidden" name="page" value="nicepay-transactions">
 
-                <select name="filter_status">
+                <label class="screen-reader-text" for="nicepay-filter-status"><?php esc_html_e( 'All Statuses', 'nicepay-payment-gateway' ); ?></label>
+                <select id="nicepay-filter-status" name="filter_status">
                     <option value=""><?php esc_html_e( 'All Statuses', 'nicepay-payment-gateway' ); ?></option>
                     <?php foreach ( self::allowed_statuses() as $s ) : ?>
                         <option value="<?php echo esc_attr( $s ); ?>" <?php selected( $args['status'], $s ); ?>>
@@ -657,7 +667,8 @@ class NicePay_Transactions {
                     <?php endforeach; ?>
                 </select>
 
-                <select name="filter_method">
+                <label class="screen-reader-text" for="nicepay-filter-method"><?php esc_html_e( 'All Methods', 'nicepay-payment-gateway' ); ?></label>
+                <select id="nicepay-filter-method" name="filter_method">
                     <option value=""><?php esc_html_e( 'All Methods', 'nicepay-payment-gateway' ); ?></option>
                     <?php foreach ( NicePay_API::get_available_methods() as $code => $label ) : ?>
                         <option value="<?php echo esc_attr( $code ); ?>" <?php selected( $args['payment_method'], $code ); ?>>
@@ -666,13 +677,16 @@ class NicePay_Transactions {
                     <?php endforeach; ?>
                 </select>
 
-                <input type="date" name="date_from" value="<?php echo esc_attr( $args['date_from'] ); ?>" placeholder="<?php esc_attr_e( 'From', 'nicepay-payment-gateway' ); ?>">
-                <input type="date" name="date_to" value="<?php echo esc_attr( $args['date_to'] ); ?>" placeholder="<?php esc_attr_e( 'To', 'nicepay-payment-gateway' ); ?>">
-                <input type="search" name="s" value="<?php echo esc_attr( $args['search'] ); ?>" placeholder="<?php esc_attr_e( 'Search...', 'nicepay-payment-gateway' ); ?>">
+                <label class="screen-reader-text" for="nicepay-date-from"><?php esc_html_e( 'From', 'nicepay-payment-gateway' ); ?></label>
+                <input type="date" id="nicepay-date-from" name="date_from" value="<?php echo esc_attr( $args['date_from'] ); ?>" placeholder="<?php esc_attr_e( 'From', 'nicepay-payment-gateway' ); ?>">
+                <label class="screen-reader-text" for="nicepay-date-to"><?php esc_html_e( 'To', 'nicepay-payment-gateway' ); ?></label>
+                <input type="date" id="nicepay-date-to" name="date_to" value="<?php echo esc_attr( $args['date_to'] ); ?>" placeholder="<?php esc_attr_e( 'To', 'nicepay-payment-gateway' ); ?>">
+                <label class="screen-reader-text" for="nicepay-filter-search"><?php esc_html_e( 'Search...', 'nicepay-payment-gateway' ); ?></label>
+                <input type="search" id="nicepay-filter-search" name="s" value="<?php echo esc_attr( $args['search'] ); ?>" placeholder="<?php esc_attr_e( 'Search...', 'nicepay-payment-gateway' ); ?>">
 
                 <?php submit_button( __( 'Filter', 'nicepay-payment-gateway' ), 'secondary', 'filter', false ); ?>
                 <?php if ( $filter_state['valid'] ) : ?>
-                    <a class="button button-secondary" href="<?php echo esc_url( $export_url ); ?>">
+                    <?php printf( '<a class="button button-secondary" href="%s">', esc_url( $export_url ) ); ?>
                         <?php esc_html_e( 'Export filtered CSV', 'nicepay-payment-gateway' ); ?>
                     </a>
                     <span class="description">
@@ -766,12 +780,16 @@ class NicePay_Transactions {
                             $order = ! empty( $item->wc_order_id ) && function_exists( 'wc_get_order' )
                                 ? wc_get_order( $item->wc_order_id )
                                 : null;
-                            $order_edit_url = $order && method_exists( $order, 'get_edit_order_url' )
-                                ? $order->get_edit_order_url()
-                                : ( $order ? admin_url( 'post.php?post=' . $order->get_id() . '&action=edit' ) : '' );
-                            $order_number = $order && method_exists( $order, 'get_order_number' )
-                                ? $order->get_order_number()
-                                : ( $order ? $order->get_id() : '' );
+                            $order_edit_url = '';
+                            $order_number   = '';
+                            if ( $order ) {
+                                $order_edit_url = method_exists( $order, 'get_edit_order_url' )
+                                    ? $order->get_edit_order_url()
+                                    : admin_url( 'post.php?post=' . $order->get_id() . '&action=edit' );
+                                $order_number = method_exists( $order, 'get_order_number' )
+                                    ? $order->get_order_number()
+                                    : $order->get_id();
+                            }
                             $created_at = function_exists( 'get_date_from_gmt' )
                                 ? get_date_from_gmt( $item->created_at, 'Y-m-d H:i:s' )
                                 : $item->created_at;
@@ -832,7 +850,7 @@ class NicePay_Transactions {
                                 </td>
                                 <td>
                                     <?php if ( $order ) : ?>
-                                        <a href="<?php echo esc_url( $order_edit_url ); ?>">
+                                        <?php printf( '<a href="%s">', esc_url( $order_edit_url ) ); ?>
                                             #<?php echo esc_html( $order_number ); ?>
                                         </a>
                                     <?php elseif ( $item->wc_order_id ) : ?>
@@ -911,8 +929,13 @@ class NicePay_Transactions {
                                             <?php esc_html_e( 'Refund', 'nicepay-payment-gateway' ); ?>
                                         </button>
                                     <?php endif; ?>
-                                    <a class="button button-small" href="<?php echo esc_url( $view_details_url ); ?>"
-                                       aria-label="<?php echo esc_attr( $view_details_label ); ?>">
+                                    <?php
+                                    printf(
+                                        '<a class="button button-small" href="%1$s" aria-label="%2$s">',
+                                        esc_url( $view_details_url ),
+                                        esc_attr( $view_details_label )
+                                    );
+                                    ?>
                                         <?php esc_html_e( 'Details', 'nicepay-payment-gateway' ); ?>
                                     </a>
                                 </td>

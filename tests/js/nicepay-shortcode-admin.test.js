@@ -44,7 +44,7 @@ test('shortcode generator is a standalone asset and restores saved configuration
     window.nicepayShortcodeAdmin = {
         editId: 'saved-card',
         editData: { name: 'Card order', amount: '1200', goods_name: 'Membership', goods_class: '1', pay_method: 'CARD', display_mode: 'modal', button_text: 'Pay membership', currency: 'KRW' },
-        enabledMethods: [{ icon: '<svg aria-hidden="true"></svg>', label: 'Card' }],
+        enabledMethods: [{ icon: '<svg onload="window.__nicepayXss=true"></svg>', label: 'Card' }],
         redirectUrl: '/shortcodes',
         i18n: { payNow: 'Pay Now', productName: 'Product Name', amountRequired: 'Amount is required', productNameRequired: 'Product name is required', referenceShortcode: 'Save first', copy: 'Copy', copied: 'Copied!', saving: 'Saving...', saveShortcode: 'Save Shortcode', updateShortcode: 'Update Shortcode' }
     };
@@ -63,6 +63,9 @@ test('shortcode generator is a standalone asset and restores saved configuration
     assert.equal(window.document.getElementById('sc-preview-btn').style.getPropertyValue('--nicepay-button-text'), '#ffffff');
     assert.equal(window.document.querySelector('input[name="sc-pay-method"][value="CARD"]').checked, true);
     assert.equal(window.document.querySelector('input[name="sc-display-mode"][value="modal"]').checked, true);
+    assert.equal(window.document.getElementById('sc-pv-method-options').textContent, 'Card');
+    assert.equal(window.document.querySelector('#sc-pv-method-options svg'), null);
+    assert.equal(window.__nicepayXss, undefined);
 
     $('#sc-name').val('');
     $('#sc-save-btn').trigger('click');

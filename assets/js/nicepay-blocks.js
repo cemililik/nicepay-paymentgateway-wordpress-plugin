@@ -7,17 +7,14 @@
 
     var settings = window.wc.wcSettings.getSetting( 'nicepay_data', {} );
     var createElement = window.wp.element.createElement;
-    var decodeEntities = window.wp.htmlEntities && window.wp.htmlEntities.decodeEntities
-        ? window.wp.htmlEntities.decodeEntities
-        : function ( value ) { return value; };
-    var title = decodeEntities( settings.title || 'NicePay' );
-    var description = decodeEntities( settings.description || '' );
+    var title = String( settings.title || 'NicePay' );
+    var description = String( settings.description || '' );
 
     var Label = function ( props ) {
         return createElement(
             'span',
             { className: 'nicepay-blocks-label' },
-            props && props.components && props.components.PaymentMethodLabel
+            props?.components?.PaymentMethodLabel
                 ? createElement( props.components.PaymentMethodLabel, { text: title } )
                 : title
         );
@@ -30,7 +27,7 @@
                 createElement(
                     'strong',
                     { key: 'test-mode', className: 'nicepay-blocks-test-mode' },
-                    ' ' + decodeEntities( settings.test_mode_label || '' )
+                    ' ' + String( settings.test_mode_label || '' )
                 )
             );
         }
@@ -44,7 +41,7 @@
         content: createElement( Content, null ),
         edit: createElement( Content, null ),
         canMakePayment: function () { return settings.is_available === true; },
-        placeOrderButtonLabel: decodeEntities( settings.place_order_label || 'Continue to NicePay' ),
+        placeOrderButtonLabel: String( settings.place_order_label || 'Continue to NicePay' ),
         supports: {
             features: Array.isArray( settings.supports ) ? settings.supports : [ 'products' ],
             showSavedCards: false,

@@ -18,7 +18,7 @@ function tick() {
     });
 }
 
-function createEnvironment(postResponse) {
+function createEnvironment(postResponse, i18nOverrides) {
     const dom = new JSDOM(
         '<!doctype html><html><body><table><tbody><tr><td><span class="nicepay-status nicepay-status-paid">PAID</span></td><td><button type="button" class="nicepay-cancel-btn" data-tid="TID-1" data-id="1" data-nonce="nonce">Refund</button></td></tr></tbody></table></body></html>',
         { runScripts: 'outside-only', url: 'https://merchant.example/wp-admin/' }
@@ -31,7 +31,7 @@ function createEnvironment(postResponse) {
     window.$ = $;
     window.nicepayAdmin = {
         ajaxUrl: 'https://merchant.example/wp-admin/admin-ajax.php',
-        i18n: {
+        i18n: Object.assign({
             confirm: 'Confirm',
             cancel: 'Cancel',
             cancelTitle: 'Refund transaction',
@@ -43,7 +43,7 @@ function createEnvironment(postResponse) {
             cancelFailed: 'Refund failed.',
             requestFailed: 'Request failed.',
             statusRefunded: 'REFUNDED'
-        }
+        }, i18nOverrides || {})
     };
     $.post = function(url, data, callback) {
         posts.push({ url, data });
@@ -114,6 +114,29 @@ test('modal traps keyboard focus and toast notifications can coexist', async () 
     $('#nicepay-modal-cancel').trigger('click');
     assert.equal(window.document.getElementById('nicepay-modal'), null);
     assert.equal(window.document.activeElement, refundButton);
+
+    environment.dom.window.close();
+});
+
+test('localized modal and toast text cannot create executable markup', async () => {
+    const attack = '<img src=x onerror="window.__nicepayXss=true">';
+    const environment = createEnvironment(
+        { success: false, data: { message: attack } },
+        { cancelTitle: attack, cancelMessage: attack, cancelReasonPlaceholder: attack }
+    );
+    const { window, $ } = environment;
+
+    $('.nicepay-cancel-btn').trigger('click');
+    await tick();
+
+    assert.equal(window.document.querySelector('.nicepay-modal-title').textContent, attack);
+    assert.equal(window.document.getElementById('nicepay-modal-input').placeholder, attack);
+    assert.equal(window.document.querySelector('#nicepay-modal img'), null);
+
+    window.NicePayToast.show(attack, 'success', 10000);
+    assert.equal(window.document.querySelector('.nicepay-toast').textContent.includes(attack), true);
+    assert.equal(window.document.querySelector('.nicepay-toast img'), null);
+    assert.equal(window.__nicepayXss, undefined);
 
     environment.dom.window.close();
 });

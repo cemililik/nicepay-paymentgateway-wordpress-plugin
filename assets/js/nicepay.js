@@ -7,7 +7,22 @@
     'use strict';
 
     var activePaymentForm = null;
-    var modalState = {};
+    var modalState = new Map();
+    var paymentConfig = window.nicepayParams && typeof window.nicepayParams === 'object'
+        ? window.nicepayParams
+        : { ajaxUrl: '', initNonce: '', i18n: {} };
+    var paymentI18n = paymentConfig.i18n && typeof paymentConfig.i18n === 'object'
+        ? paymentConfig.i18n
+        : {};
+
+    function sameOriginHttpsUrl(value) {
+        try {
+            var url = new URL(String(value || ''), window.location.href);
+            return url.protocol === 'https:' && url.origin === window.location.origin ? url.href : '';
+        } catch {
+            return '';
+        }
+    }
 
     var NicePayHandler = {
         init: function() {
@@ -38,7 +53,7 @@
 
             if (!payMethod || !form) {
                 this.showNotice(
-                    typeof nicepayParams !== 'undefined' ? nicepayParams.i18n.selectMethod : 'Please select a payment method.',
+                    paymentI18n.selectMethod || 'Please select a payment method.',
                     'error'
                 );
                 return;
@@ -50,21 +65,21 @@
             $('.nicepay-pay-button').addClass('is-loading').prop('disabled', true);
             $('.nicepay-loading-overlay').addClass('is-active');
 
-            if (typeof nicepayStart === 'function') {
+            if (typeof window.nicepayStart === 'function') {
                 try {
-                    nicepayStart();
+                    window.nicepayStart();
                 } catch (e) {
                     console.error('[NicePay] nicepayStart() threw:', e);
                     this.hideLoading();
                     this.showNotice(
-                        typeof nicepayParams !== 'undefined' ? nicepayParams.i18n.error : 'Payment error occurred.',
+                        paymentI18n.error || 'Payment error occurred.',
                         'error'
                     );
                 }
             } else {
                 this.hideLoading();
                 this.showNotice(
-                    typeof nicepayParams !== 'undefined' ? nicepayParams.i18n.error : 'Payment system unavailable.',
+                    paymentI18n.error || 'Payment system unavailable.',
                     'error'
                 );
             }
@@ -86,8 +101,19 @@
             }
             wrapper.find('.nicepay-notice').remove();
 
-            var icon = '<span class="nicepay-notice-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></span>';
-            var notice = $('<div class="nicepay-notice nicepay-notice-' + type + '" role="alert">' + icon + '<span>' + $('<span>').text(message).html() + '</span></div>');
+            var safeType = 'error' === type ? 'error' : 'info';
+            var noticeNode = document.createElement('div');
+            var icon = document.createElement('span');
+            var text = document.createElement('span');
+            noticeNode.className = 'nicepay-notice nicepay-notice-' + safeType;
+            noticeNode.setAttribute('role', 'alert');
+            icon.className = 'nicepay-notice-icon';
+            icon.setAttribute('aria-hidden', 'true');
+            icon.textContent = '!';
+            text.textContent = String(message || '');
+            noticeNode.appendChild(icon);
+            noticeNode.appendChild(text);
+            var notice = $(noticeNode);
 
             // Insert before submit button or at end of wrapper
             var anchor = wrapper.find('.nicepay-submit-wrapper, form > button, form > .nicepay-submit-wrapper').first();
@@ -104,10 +130,19 @@
     };
 
     function translated(key, fallback) {
-        if (typeof nicepayParams !== 'undefined' && nicepayParams.i18n && nicepayParams.i18n[key]) {
-            return nicepayParams.i18n[key];
+        switch (key) {
+            case 'connectionError': return paymentI18n.connectionError || fallback;
+            case 'fieldTooLong': return paymentI18n.fieldTooLong || fallback;
+            case 'initializationFailed': return paymentI18n.initializationFailed || fallback;
+            case 'invalidEmail': return paymentI18n.invalidEmail || fallback;
+            case 'invalidPhone': return paymentI18n.invalidPhone || fallback;
+            case 'paymentInProgress': return paymentI18n.paymentInProgress || fallback;
+            case 'requiredField': return paymentI18n.requiredField || fallback;
+            case 'sessionExpired': return paymentI18n.sessionExpired || fallback;
+            case 'systemUnavailable': return paymentI18n.systemUnavailable || fallback;
+            case 'unexpectedError': return paymentI18n.unexpectedError || fallback;
+            default: return fallback;
         }
-        return fallback;
     }
 
     function standaloneField(form, name) {
@@ -166,10 +201,10 @@
             input.classList.remove('is-invalid');
             input.removeAttribute('aria-invalid');
             input.removeAttribute('aria-describedby');
-            var value = input.value.trim();
-            var errorMessage = '';
-            var maxBytes = parseInt(input.getAttribute('data-max-bytes') || '0', 10);
-            var byteLength = typeof TextEncoder !== 'undefined'
+            const value = input.value.trim();
+            let errorMessage = '';
+            const maxBytes = parseInt(input.getAttribute('data-max-bytes') || '0', 10);
+            const byteLength = typeof TextEncoder !== 'undefined'
                 ? new TextEncoder().encode(value).length
                 : unescape(encodeURIComponent(value)).length;
 
@@ -187,7 +222,7 @@
                 valid = false;
                 input.classList.add('is-invalid');
                 input.setAttribute('aria-invalid', 'true');
-                var error = document.createElement('div');
+                const error = document.createElement('div');
                 error.className = 'nicepay-field-error';
                 error.setAttribute('role', 'alert');
                 error.id = input.id + '-error';
@@ -203,31 +238,35 @@
     }
 
     function populateStandaloneForm(form, authoritative) {
-        var required = ['edi_date', 'moid', 'sign_data', 'amount', 'currency', 'goods_name', 'pay_method', 'mid', 'return_url'];
-        for (var index = 0; index < required.length; index++) {
-            if (!authoritative[required[index]]) return false;
-        }
+        if (!authoritative.edi_date || !authoritative.moid || !authoritative.sign_data ||
+            !authoritative.amount || !authoritative.currency || !authoritative.goods_name ||
+            !authoritative.pay_method || !authoritative.mid || !authoritative.return_url) return false;
         if (authoritative.pay_method === 'CELLPHONE' && authoritative.goods_class !== '0' && authoritative.goods_class !== '1') {
             return false;
         }
 
-        var values = {
-            EdiDate: authoritative.edi_date,
-            Moid: authoritative.moid,
-            SignData: authoritative.sign_data,
-            Amt: authoritative.amount,
-            CurrencyCode: authoritative.currency,
-            GoodsName: authoritative.goods_name,
-            PayMethod: authoritative.pay_method,
-            MID: authoritative.mid,
-            ReturnURL: authoritative.return_url,
-            CharSet: authoritative.charset || 'utf-8'
-        };
-        Object.keys(values).forEach(function(name) {
-            var input = standaloneField(form, name);
-            if (input) input.value = values[name];
+        var returnUrl = sameOriginHttpsUrl(authoritative.return_url);
+        if (!returnUrl) {
+            return false;
+        }
+
+        var values = [
+            { name: 'EdiDate', value: authoritative.edi_date },
+            { name: 'Moid', value: authoritative.moid },
+            { name: 'SignData', value: authoritative.sign_data },
+            { name: 'Amt', value: authoritative.amount },
+            { name: 'CurrencyCode', value: authoritative.currency },
+            { name: 'GoodsName', value: authoritative.goods_name },
+            { name: 'PayMethod', value: authoritative.pay_method },
+            { name: 'MID', value: authoritative.mid },
+            { name: 'ReturnURL', value: returnUrl },
+            { name: 'CharSet', value: authoritative.charset || 'utf-8' }
+        ];
+        values.forEach(function(entry) {
+            const input = standaloneField(form, entry.name);
+            if (input) input.value = entry.value;
         });
-        form.action = authoritative.return_url;
+        form.action = returnUrl;
 
         var goodsClass = form.querySelector('[data-nicepay-goods-class]');
         if (authoritative.pay_method === 'CELLPHONE') {
@@ -241,7 +280,7 @@
     }
 
     function requestStandaloneInitialization(form, wrapper, nonce, wasRetried) {
-        var ajaxUrl = typeof nicepayParams !== 'undefined' ? nicepayParams.ajaxUrl : '';
+        var ajaxUrl = sameOriginHttpsUrl(paymentConfig.ajaxUrl);
         var methodInput = standaloneField(form, 'PayMethod');
         if (!ajaxUrl || !methodInput) {
             releaseStandalone(form);
@@ -265,7 +304,7 @@
         };
         request.onload = function() {
             if (request.status === 403 && !wasRetried) {
-                var refresh = new XMLHttpRequest();
+                const refresh = new XMLHttpRequest();
                 refresh.open('POST', ajaxUrl);
                 refresh.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
                 refresh.onerror = function() {
@@ -274,7 +313,7 @@
                 };
                 refresh.onload = function() {
                     try {
-                        var nonceResponse = JSON.parse(refresh.responseText);
+                        const nonceResponse = JSON.parse(refresh.responseText);
                         if (refresh.status >= 200 && refresh.status < 300 && nonceResponse.success && nonceResponse.data && nonceResponse.data.nonce) {
                             form.setAttribute('data-nicepay-init-nonce', nonceResponse.data.nonce);
                             requestStandaloneInitialization(form, wrapper, nonceResponse.data.nonce, true);
@@ -291,10 +330,10 @@
             try {
                 var response = JSON.parse(request.responseText);
                 if (request.status >= 200 && request.status < 300 && response.success && populateStandaloneForm(form, response.data || {})) {
-                    if (typeof nicepayStart !== 'function') {
+                    if (typeof window.nicepayStart !== 'function') {
                         throw new Error('NicePay library unavailable');
                     }
-                    nicepayStart();
+                    window.nicepayStart();
                     return;
                 }
 
@@ -325,11 +364,15 @@
         }
         if (!validateStandaloneBuyerFields(wrapper)) return;
 
-        ['BuyerName', 'BuyerEmail', 'BuyerTel'].forEach(function(name) {
-            var visible = wrapper.querySelector('[data-field="' + name + '"]');
-            if (visible) standaloneField(form, name).value = visible.value.trim();
+        wrapper.querySelectorAll('[data-field]').forEach(function(visible) {
+            const fieldName = visible.getAttribute('data-field');
+            let target = null;
+            if (fieldName === 'BuyerName') target = standaloneField(form, 'BuyerName');
+            if (fieldName === 'BuyerEmail') target = standaloneField(form, 'BuyerEmail');
+            if (fieldName === 'BuyerTel') target = standaloneField(form, 'BuyerTel');
+            if (target) target.value = visible.value.trim();
         });
-        var checkedMethod = wrapper.querySelector('input[name="nicepay_method_' + formId + '"]:checked');
+        const checkedMethod = wrapper.querySelector('.nicepay-methods input[type="radio"]:checked');
         if (checkedMethod) standaloneField(form, 'PayMethod').value = checkedMethod.value;
 
         activePaymentForm = form;
@@ -342,7 +385,7 @@
             form,
             wrapper,
             form.getAttribute('data-nicepay-init-nonce') ||
-                (typeof nicepayParams !== 'undefined' ? nicepayParams.initNonce : ''),
+                paymentConfig.initNonce,
             false
         );
     }
@@ -350,7 +393,7 @@
     function openModal(formId) {
         var modal = document.getElementById(formId + '-modal');
         if (!modal) return;
-        modalState[formId] = {
+        var state = {
             trigger: document.activeElement,
             bodyOverflow: document.body.style.overflow
         };
@@ -362,14 +405,14 @@
                 return;
             }
             if (event.key !== 'Tab') return;
-            var focusable = modal.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href]');
+            const focusable = modal.querySelectorAll('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href]');
             if (!focusable.length) {
                 event.preventDefault();
                 modal.querySelector('.nicepay-payment-modal').focus();
                 return;
             }
-            var first = focusable[0];
-            var last = focusable[focusable.length - 1];
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
             if (event.shiftKey && document.activeElement === first) {
                 event.preventDefault();
                 last.focus();
@@ -378,7 +421,8 @@
                 first.focus();
             }
         };
-        modalState[formId].keyHandler = keyHandler;
+        state.keyHandler = keyHandler;
+        modalState.set(formId, state);
         document.addEventListener('keydown', keyHandler);
         var firstControl = modal.querySelector('button, input, select, textarea, a[href]');
         (firstControl || modal.querySelector('.nicepay-payment-modal')).focus();
@@ -386,13 +430,13 @@
 
     function closeModal(formId) {
         var modal = document.getElementById(formId + '-modal');
-        var state = modalState[formId];
+        var state = modalState.get(formId);
         if (modal) modal.style.display = 'none';
         document.body.style.overflow = state ? state.bodyOverflow : '';
         if (state) {
             document.removeEventListener('keydown', state.keyHandler);
             if (state.trigger && document.contains(state.trigger)) state.trigger.focus();
-            delete modalState[formId];
+            modalState.delete(formId);
         }
     }
 
@@ -448,7 +492,8 @@
         var wrapper = form ? form.closest('.nicepay-payment-wrapper') : null;
         var checkoutUrl = wrapper ? wrapper.getAttribute('data-nicepay-checkout-url') : '';
         NicePayHandler.hideLoading();
-        if (checkoutUrl) window.location.href = checkoutUrl;
+        checkoutUrl = sameOriginHttpsUrl(checkoutUrl);
+        if (checkoutUrl) window.location.assign(checkoutUrl);
     };
 
 })(jQuery);

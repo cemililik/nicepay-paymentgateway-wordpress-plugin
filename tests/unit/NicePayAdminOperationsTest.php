@@ -228,6 +228,23 @@ class NicePayAdminOperationsTest extends TestCase {
         $this->assertStringNotContainsString( 'SELECT *', $query );
     }
 
+    public function test_financial_summary_revalidates_direct_filters_and_binds_search_text(): void {
+        global $wpdb;
+
+        NicePay_Transactions::get_financial_summary(
+            array(
+                'status' => "paid' OR 1=1 --",
+                'search' => "merchant' OR 1=1 --",
+            )
+        );
+        $query = end( $wpdb->queries );
+
+        $this->assertStringNotContainsString( "status = 'paid' OR 1=1", $query );
+        $this->assertStringContainsString( "status = ''", $query );
+        $this->assertStringContainsString( "merchant\\' OR 1=1 --", $query );
+        $this->assertStringNotContainsString( 'WHERE 1=1', $query );
+    }
+
     public function test_csv_is_allowlisted_formula_safe_filtered_paginated_and_bounded(): void {
         global $wpdb;
 

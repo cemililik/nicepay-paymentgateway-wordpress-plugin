@@ -36,7 +36,7 @@ function formMarkup(id, configId) {
         </div>`;
 }
 
-function createEnvironment() {
+function createEnvironment(returnUrl) {
     const dom = new JSDOM(
         `<!doctype html><html><body>${formMarkup('form-a', 'config-a')}${formMarkup('form-b', 'config-b')}</body></html>`,
         { runScripts: 'outside-only', url: 'https://merchant.example/pay' }
@@ -80,7 +80,7 @@ function createEnvironment() {
                     goods_class: '1',
                     pay_method: 'CARD',
                     mid: 'nicepay00m',
-                    return_url: 'https://merchant.example/nicepay-return/',
+                    return_url: returnUrl || 'https://merchant.example/nicepay-return/',
                     charset: 'utf-8'
                 }
             });
@@ -139,6 +139,20 @@ test('buyer validation enforces UTF-8 byte limits and focuses the first invalid 
     assert.equal(name.getAttribute('aria-invalid'), 'true');
     assert.equal(name.getAttribute('aria-describedby'), 'form-a-visible-name-error');
     assert.equal(document.getElementById('form-a-visible-name-error').textContent, 'This field exceeds the payment provider limit.');
+
+    environment.dom.window.close();
+});
+
+test('standalone initialization rejects a provider response with an external return URL', () => {
+    const environment = createEnvironment('https://attacker.example/capture');
+    const { window, starts } = environment;
+    const document = window.document;
+
+    document.querySelector('[data-nicepay-start="form-a"]').click();
+
+    assert.deepEqual(starts, []);
+    assert.equal(document.querySelector('#form-a [name="ReturnURL"]').value, '');
+    assert.equal(document.querySelector('#form-a-wrapper [role="alert"]').textContent, '!Payment initialization failed.');
 
     environment.dom.window.close();
 });

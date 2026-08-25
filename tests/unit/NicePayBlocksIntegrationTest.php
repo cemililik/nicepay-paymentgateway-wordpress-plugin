@@ -6,7 +6,7 @@
 use PHPUnit\Framework\TestCase;
 
 if ( ! class_exists( 'Automattic\\WooCommerce\\Blocks\\Payments\\Integrations\\AbstractPaymentMethodType' ) ) {
-    eval( 'namespace Automattic\\WooCommerce\\Blocks\\Payments\\Integrations; abstract class AbstractPaymentMethodType { protected $name = ""; abstract public function initialize(); abstract public function is_active(); abstract public function get_payment_method_script_handles(); abstract public function get_payment_method_data(); }' );
+    require_once NICEPAY_PLUGIN_DIR . 'tests/fixtures/blocks-abstract-payment-method-type.php';
 }
 
 if ( ! function_exists( 'add_action' ) ) {
@@ -145,7 +145,7 @@ class NicePayBlocksIntegrationTest extends TestCase {
         $this->assertSame( array( 'nicepay-checkout-blocks' ), $handles );
         $script = $nicepay_registered_scripts['nicepay-checkout-blocks'];
         $this->assertSame(
-            array( 'wc-blocks-registry', 'wc-settings', 'wp-element', 'wp-html-entities' ),
+            array( 'wc-blocks-registry', 'wc-settings', 'wp-element' ),
             $script['dependencies']
         );
 

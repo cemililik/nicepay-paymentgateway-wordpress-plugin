@@ -23,7 +23,7 @@ function parseCatalog(file) {
     let activeField = null;
 
     function finishEntry() {
-        if (entry && Object.prototype.hasOwnProperty.call(entry, 'msgid')) {
+        if (entry && Object.hasOwn(entry, 'msgid')) {
             entries.push(entry);
         }
         entry = null;
@@ -70,9 +70,10 @@ function placeholders(value) {
 function htmlTags(value) {
     const tags = [];
     const expression = /<(\/)?([A-Za-z][A-Za-z0-9:-]*)\b[^>]*>/g;
-    let match;
-    while ((match = expression.exec(value)) !== null) {
+    let match = expression.exec(value);
+    while (match !== null) {
         tags.push(`${match[1] ? '/' : ''}${match[2].toLowerCase()}`);
+        match = expression.exec(value);
     }
     return tags.sort();
 }

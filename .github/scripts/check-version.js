@@ -101,7 +101,9 @@ if (changelogVersion) {
 }
 
 if (failures.length > 0) {
-    failures.forEach((failure) => console.error(`ERROR: ${failure}`));
+    failures.forEach((failure) => {
+        console.error(`ERROR: ${failure}`);
+    });
     process.exit(1);
 }
 

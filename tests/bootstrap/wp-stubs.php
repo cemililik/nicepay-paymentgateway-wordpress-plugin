@@ -121,7 +121,7 @@ if ( ! function_exists( 'get_option' ) ) {
 }
 
 if ( ! function_exists( 'update_option' ) ) {
-    function update_option( $option, $value ) {
+    function update_option( $option, $value, $autoload = null ) {
         global $wp_options;
         $wp_options[ $option ] = $value;
         return true;
@@ -244,7 +244,9 @@ if ( ! function_exists( 'wp_remote_post' ) ) {
         );
 
         if ( function_exists( 'curl_init' ) ) {
-            $handle = curl_init( $url );
+            // The stub never performs network I/O; the URL is passed separately
+            // so the transport hook can be exercised without configuring cURL.
+            $handle = curl_init();
             if ( false !== $handle ) {
                 do_action( 'http_api_curl', $handle, $args, $url );
                 $wp_http_api_curl_test_invocations++;

@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-08-24T15:40:43+00:00\n"
+"POT-Creation-Date: 2026-08-25T06:49:55+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: nicepay-payment-gateway\n"
@@ -47,7 +47,7 @@ msgstr ""
 
 #: admin/class-nicepay-admin.php:32
 #: admin/class-nicepay-admin.php:33
-#: admin/class-nicepay-transactions.php:708
+#: admin/class-nicepay-transactions.php:722
 msgid "Transactions"
 msgstr ""
 
@@ -118,7 +118,7 @@ msgid "Are you sure? This cannot be undone."
 msgstr ""
 
 #: admin/class-nicepay-admin.php:94
-#: admin/class-nicepay-admin.php:806
+#: admin/class-nicepay-admin.php:807
 msgid "Delete"
 msgstr ""
 
@@ -184,7 +184,8 @@ msgstr ""
 
 #: admin/class-nicepay-admin.php:437
 #: admin/class-nicepay-admin.php:512
-#: admin/class-nicepay-transactions.php:707
+#: admin/class-nicepay-admin.php:922
+#: admin/class-nicepay-transactions.php:721
 msgid "Currency"
 msgstr ""
 
@@ -233,12 +234,12 @@ msgid "Mode"
 msgstr ""
 
 #: admin/class-nicepay-admin.php:484
-#: admin/class-nicepay-transactions.php:379
+#: admin/class-nicepay-transactions.php:388
 msgid "Test"
 msgstr ""
 
 #: admin/class-nicepay-admin.php:487
-#: admin/class-nicepay-transactions.php:380
+#: admin/class-nicepay-transactions.php:389
 msgid "Live"
 msgstr ""
 
@@ -247,22 +248,22 @@ msgid "Use Test mode for development. Switch to Live for production."
 msgstr ""
 
 #: admin/class-nicepay-admin.php:496
-#: admin/class-nicepay-admin.php:1000
+#: admin/class-nicepay-admin.php:1001
 msgid "Language"
 msgstr ""
 
 #: admin/class-nicepay-admin.php:500
-#: admin/class-nicepay-admin.php:1003
+#: admin/class-nicepay-admin.php:1004
 msgid "Korean"
 msgstr ""
 
 #: admin/class-nicepay-admin.php:503
-#: admin/class-nicepay-admin.php:1004
+#: admin/class-nicepay-admin.php:1005
 msgid "English"
 msgstr ""
 
 #: admin/class-nicepay-admin.php:506
-#: admin/class-nicepay-admin.php:1005
+#: admin/class-nicepay-admin.php:1006
 msgid "Chinese"
 msgstr ""
 
@@ -342,6 +343,7 @@ msgid "none"
 msgstr ""
 
 #: admin/class-nicepay-admin.php:617
+#: admin/class-nicepay-admin.php:619
 msgid "NicePay System Report"
 msgstr ""
 
@@ -349,98 +351,98 @@ msgstr ""
 msgid "This report contains operational status only. It excludes merchant credentials, payment tokens, customer data, paths, URLs and server headers."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:624
+#: admin/class-nicepay-admin.php:625
 msgid "Copy system report"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:639
+#: admin/class-nicepay-admin.php:640
 msgid "You are currently in Test mode."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:643
+#: admin/class-nicepay-admin.php:644
 msgid "You are currently in Live mode. Payments will be processed with real money."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:647
+#: admin/class-nicepay-admin.php:648
 msgid "Test Credentials"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:650
+#: admin/class-nicepay-admin.php:651
 msgid "Test MID"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:657
+#: admin/class-nicepay-admin.php:658
 msgid "Test Merchant Key"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:661
-#: admin/class-nicepay-admin.php:684
+#: admin/class-nicepay-admin.php:662
+#: admin/class-nicepay-admin.php:685
 msgid "Configured — leave blank to keep unchanged"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:664
+#: admin/class-nicepay-admin.php:665
 msgid "Clear the stored test merchant key"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:670
+#: admin/class-nicepay-admin.php:671
 msgid "Live Credentials"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:673
+#: admin/class-nicepay-admin.php:674
 msgid "Live MID"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:680
+#: admin/class-nicepay-admin.php:681
 msgid "Live Merchant Key"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:684
+#: admin/class-nicepay-admin.php:685
 msgid "Enter live merchant key"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:687
+#: admin/class-nicepay-admin.php:688
 msgid "Clear the stored live merchant key"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:705
+#: admin/class-nicepay-admin.php:706
 msgid "Standalone payment forms"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:711
+#: admin/class-nicepay-admin.php:712
 msgid "Enable saved NicePay shortcode payment forms"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:714
+#: admin/class-nicepay-admin.php:715
 msgid "Enable only after reviewing credentials, currency, fixed prices, and return routing."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:719
+#: admin/class-nicepay-admin.php:720
 msgid "Enabled Payment Methods"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:746
+#: admin/class-nicepay-admin.php:747
 msgid "Manage your saved payment shortcodes. Copy and paste them into any page or post."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:748
+#: admin/class-nicepay-admin.php:749
 msgid "Create New"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:755
+#: admin/class-nicepay-admin.php:756
 msgid "No shortcodes yet"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:756
+#: admin/class-nicepay-admin.php:757
 msgid "Create your first payment shortcode to get started."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:795
+#: admin/class-nicepay-admin.php:796
 msgid "Edit"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:800
+#: admin/class-nicepay-admin.php:801
 #: admin/class-nicepay-admin.php:854
-#: admin/class-nicepay-admin.php:1092
+#: admin/class-nicepay-admin.php:1093
 msgid "Copy"
 msgstr ""
 
@@ -449,14 +451,14 @@ msgid "Save the configuration to generate its reference shortcode."
 msgstr ""
 
 #: admin/class-nicepay-admin.php:850
-#: admin/class-nicepay-admin.php:1081
+#: admin/class-nicepay-admin.php:1082
 #: includes/nicepay-functions.php:1825
 #: nicepay-payment-gateway.php:446
 msgid "Pay Now"
 msgstr ""
 
 #: admin/class-nicepay-admin.php:851
-#: admin/class-nicepay-admin.php:1053
+#: admin/class-nicepay-admin.php:1054
 msgid "Product Name"
 msgstr ""
 
@@ -481,12 +483,12 @@ msgid "Saving..."
 msgstr ""
 
 #: admin/class-nicepay-admin.php:858
-#: admin/class-nicepay-admin.php:1034
+#: admin/class-nicepay-admin.php:1035
 msgid "Save Shortcode"
 msgstr ""
 
 #: admin/class-nicepay-admin.php:859
-#: admin/class-nicepay-admin.php:1034
+#: admin/class-nicepay-admin.php:1035
 msgid "Update Shortcode"
 msgstr ""
 
@@ -503,8 +505,8 @@ msgid "Shortcode Name"
 msgstr ""
 
 #: admin/class-nicepay-admin.php:877
-#: admin/class-nicepay-admin.php:974
-#: admin/class-nicepay-admin.php:1066
+#: admin/class-nicepay-admin.php:975
+#: admin/class-nicepay-admin.php:1067
 #: templates/standalone-payment-form.php:127
 msgid "Name"
 msgstr ""
@@ -541,365 +543,370 @@ msgstr ""
 msgid "Payment Amount"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:928
+#: admin/class-nicepay-admin.php:929
 msgid "Product / Service Name"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:929
+#: admin/class-nicepay-admin.php:930
 msgid "e.g. Premium Plan"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:932
+#: admin/class-nicepay-admin.php:933
 msgid "Mobile Payment Goods Type"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:934
+#: admin/class-nicepay-admin.php:935
 msgid "Digital content or service"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:935
+#: admin/class-nicepay-admin.php:936
 msgid "Physical goods"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:937
+#: admin/class-nicepay-admin.php:938
 msgid "Required by the carrier when mobile payment is selected."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:944
-#: admin/class-nicepay-admin.php:1059
+#: admin/class-nicepay-admin.php:945
+#: admin/class-nicepay-admin.php:1060
 #: templates/standalone-payment-form.php:106
 msgid "Payment Method"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:949
+#: admin/class-nicepay-admin.php:950
 msgid "All Enabled"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:966
+#: admin/class-nicepay-admin.php:967
 msgid "Buyer Information"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:967
+#: admin/class-nicepay-admin.php:968
 msgid "Pre-fill or leave empty"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:970
+#: admin/class-nicepay-admin.php:971
 msgid "If left empty, the buyer will fill these fields in the payment form. If provided, the fields will be pre-filled and hidden."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:975
-#: admin/class-nicepay-admin.php:979
-#: admin/class-nicepay-admin.php:984
+#: admin/class-nicepay-admin.php:976
+#: admin/class-nicepay-admin.php:980
+#: admin/class-nicepay-admin.php:985
 msgid "Buyer fills in"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:978
-#: admin/class-nicepay-admin.php:1074
+#: admin/class-nicepay-admin.php:979
+#: admin/class-nicepay-admin.php:1075
 #: templates/standalone-payment-form.php:145
 msgid "Phone"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:983
-#: admin/class-nicepay-admin.php:1070
+#: admin/class-nicepay-admin.php:984
+#: admin/class-nicepay-admin.php:1071
 #: templates/standalone-payment-form.php:136
 msgid "Email"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:991
+#: admin/class-nicepay-admin.php:992
 msgid "Appearance"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:992
+#: admin/class-nicepay-admin.php:993
 msgid "Optional"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:996
+#: admin/class-nicepay-admin.php:997
 msgid "Button Text"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:1002
+#: admin/class-nicepay-admin.php:1003
 msgid "Default"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:1011
+#: admin/class-nicepay-admin.php:1012
 msgid "Button Color"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:1025
+#: admin/class-nicepay-admin.php:1026
 msgid "CSS Class"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:1038
+#: admin/class-nicepay-admin.php:1039
 msgid "or create new"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:1049
+#: admin/class-nicepay-admin.php:1050
 msgid "Live Preview"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:1089
+#: admin/class-nicepay-admin.php:1090
 msgid "Generated Shortcode"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:1090
+#: admin/class-nicepay-admin.php:1091
 msgid "Copy to clipboard"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:1167
+#: admin/class-nicepay-admin.php:1168
 msgid "NicePay payment"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:1169
+#: admin/class-nicepay-admin.php:1170
 msgid "Ledger status:"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:1173
+#: admin/class-nicepay-admin.php:1174
 msgid "Captured:"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:1175
+#: admin/class-nicepay-admin.php:1176
 msgid "Refunded:"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:1177
+#: admin/class-nicepay-admin.php:1178
 msgid "Remaining:"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:1190
+#: admin/class-nicepay-admin.php:1191
 msgid "View NicePay transaction"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:234
+#: admin/class-nicepay-transactions.php:243
 msgid "You are not allowed to export NicePay transactions."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:240
+#: admin/class-nicepay-transactions.php:249
 msgid "NicePay transaction storage is not ready."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:245
+#: admin/class-nicepay-transactions.php:254
 msgid "The transaction export filters are invalid."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:258
+#: admin/class-nicepay-transactions.php:267
 msgid "The CSV output stream could not be opened."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:360
+#: admin/class-nicepay-transactions.php:369
 msgid "Provider result code"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:367
+#: admin/class-nicepay-transactions.php:376
 msgid "Provider result message"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:377
+#: admin/class-nicepay-transactions.php:386
 msgid "Environment"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:387
+#: admin/class-nicepay-transactions.php:396
 msgid "Payment instrument"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:415
+#: admin/class-nicepay-transactions.php:424
 msgid "Card"
 msgstr ""
 
 #. translators: %s: stored card installment quota
-#: admin/class-nicepay-transactions.php:435
+#: admin/class-nicepay-transactions.php:444
 #, php-format
 msgid "installment %s"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:440
+#: admin/class-nicepay-transactions.php:449
 msgid "Bank transfer"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:531
+#: admin/class-nicepay-transactions.php:540
 msgid "NicePay transaction storage is not ready. Resolve the database migration error before using this screen."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:590
+#: admin/class-nicepay-transactions.php:599
 msgid "NicePay Transactions"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:594
+#: admin/class-nicepay-transactions.php:603
 msgid "The requested transaction detail is unavailable."
 msgstr ""
 
 #. translators: %d: internal NicePay transaction row ID
-#: admin/class-nicepay-transactions.php:602
+#: admin/class-nicepay-transactions.php:611
 #, php-format
 msgid "Transaction details #%d"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:615
+#: admin/class-nicepay-transactions.php:624
 msgid "No safe provider diagnostics were recorded for this transaction."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:619
+#: admin/class-nicepay-transactions.php:628
 msgid "Close details"
 msgstr ""
 
 #. translators: %d: number of transactions requiring manual reconciliation
-#: admin/class-nicepay-transactions.php:631
+#: admin/class-nicepay-transactions.php:640
 #, php-format
 msgid "%d transaction requires manual reconciliation before retrying any payment or refund."
 msgid_plural "%d transactions require manual reconciliation before retrying any payment or refund."
 msgstr[0] ""
 msgstr[1] ""
 
-#: admin/class-nicepay-transactions.php:636
+#: admin/class-nicepay-transactions.php:645
 msgid "Review now"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:644
+#: admin/class-nicepay-transactions.php:653
 msgid "One or more transaction filters are invalid. No transactions or totals were loaded."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:652
+#: admin/class-nicepay-transactions.php:660
+#: admin/class-nicepay-transactions.php:662
 msgid "All Statuses"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:661
+#: admin/class-nicepay-transactions.php:670
+#: admin/class-nicepay-transactions.php:672
 msgid "All Methods"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:669
+#: admin/class-nicepay-transactions.php:680
+#: admin/class-nicepay-transactions.php:681
 msgid "From"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:670
+#: admin/class-nicepay-transactions.php:682
+#: admin/class-nicepay-transactions.php:683
 msgid "To"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:671
+#: admin/class-nicepay-transactions.php:684
+#: admin/class-nicepay-transactions.php:685
 msgid "Search..."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:673
+#: admin/class-nicepay-transactions.php:687
 msgid "Filter"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:676
+#: admin/class-nicepay-transactions.php:690
 msgid "Export filtered CSV"
 msgstr ""
 
 #. translators: %s: maximum number of rows in one CSV export
-#: admin/class-nicepay-transactions.php:682
+#: admin/class-nicepay-transactions.php:696
 #, php-format
 msgid "Exports up to %s matching rows."
 msgstr ""
 
 #. translators: %d: total number of transactions
-#: admin/class-nicepay-transactions.php:695
+#: admin/class-nicepay-transactions.php:709
 #, php-format
 msgid "Total: %d transaction"
 msgid_plural "Total: %d transactions"
 msgstr[0] ""
 msgstr[1] ""
 
-#: admin/class-nicepay-transactions.php:704
+#: admin/class-nicepay-transactions.php:718
 msgid "Filtered NicePay financial totals by currency"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:709
+#: admin/class-nicepay-transactions.php:723
 msgid "Captured total"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:710
+#: admin/class-nicepay-transactions.php:724
 msgid "Refunded total"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:711
+#: admin/class-nicepay-transactions.php:725
 msgid "Remaining total"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:724
+#: admin/class-nicepay-transactions.php:738
 msgid "Not recorded"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:736
+#: admin/class-nicepay-transactions.php:750
 msgid "NicePay transaction ledger"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:739
+#: admin/class-nicepay-transactions.php:753
 msgid "ID"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:740
+#: admin/class-nicepay-transactions.php:754
 msgid "TID"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:741
+#: admin/class-nicepay-transactions.php:755
 msgid "Order"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:742
+#: admin/class-nicepay-transactions.php:756
 msgid "Balance"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:743
+#: admin/class-nicepay-transactions.php:757
 #: includes/class-nicepay-return-handler.php:347
 msgid "Method"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:744
+#: admin/class-nicepay-transactions.php:758
 msgid "Status"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:745
+#: admin/class-nicepay-transactions.php:759
 msgid "Buyer"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:746
+#: admin/class-nicepay-transactions.php:760
 msgid "Date"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:747
+#: admin/class-nicepay-transactions.php:761
 msgid "Actions"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:758
+#: admin/class-nicepay-transactions.php:772
 msgid "No transactions found"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:759
+#: admin/class-nicepay-transactions.php:773
 msgid "Transactions will appear here once payments are made."
 msgstr ""
 
 #. translators: %s: NicePay transaction ID
-#: admin/class-nicepay-transactions.php:794
+#: admin/class-nicepay-transactions.php:812
 #, php-format
 msgid "Copy TID %s"
 msgstr ""
 
 #. translators: %s: NicePay transaction ID
-#: admin/class-nicepay-transactions.php:801
+#: admin/class-nicepay-transactions.php:819
 #, php-format
 msgid "Cancel transaction %s"
 msgstr ""
 
 #. translators: %d: internal NicePay transaction row ID
-#: admin/class-nicepay-transactions.php:807
+#: admin/class-nicepay-transactions.php:825
 #, php-format
 msgid "View details for transaction %d"
 msgstr ""
 
 #. translators: %d: deleted or unavailable WooCommerce order ID
-#: admin/class-nicepay-transactions.php:842
+#: admin/class-nicepay-transactions.php:860
 #, php-format
 msgid "Order #%d unavailable"
 msgstr ""
 
 #. translators: %1$s: refunded amount, %2$s: remaining amount
-#: admin/class-nicepay-transactions.php:856
+#: admin/class-nicepay-transactions.php:874
 #, php-format
 msgid "Refunded: %1$s · Remaining: %2$s"
 msgstr ""
 
 #. translators: %d: number of refund attempts
-#: admin/class-nicepay-transactions.php:869
+#: admin/class-nicepay-transactions.php:887
 #, php-format
 msgid "%d refund attempt"
 msgid_plural "%d refund attempts"
@@ -907,54 +914,54 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %1$s: refund status, %2$s: amount, %3$s: result code
-#: admin/class-nicepay-transactions.php:881
+#: admin/class-nicepay-transactions.php:899
 #, php-format
 msgid "%1$s — %2$s — code %3$s"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:899
+#: admin/class-nicepay-transactions.php:917
 msgid "Manual review required"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:911
+#: admin/class-nicepay-transactions.php:929
 msgid "Refund"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:916
+#: admin/class-nicepay-transactions.php:939
 msgid "Details"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:952
+#: admin/class-nicepay-transactions.php:975
 #: nicepay-payment-gateway.php:660
 #: nicepay-payment-gateway.php:775
 msgid "Unauthorized."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:958
+#: admin/class-nicepay-transactions.php:981
 msgid "Transaction not found."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:963
+#: admin/class-nicepay-transactions.php:986
 msgid "Standalone cancellation is unavailable until its reconciliation workflow is configured."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:969
+#: admin/class-nicepay-transactions.php:992
 msgid "WooCommerce order not found."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:978
+#: admin/class-nicepay-transactions.php:1001
 msgid "This transaction is not in a safe state for refund."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:984
+#: admin/class-nicepay-transactions.php:1007
 msgid "This payment has no refundable balance."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:999
+#: admin/class-nicepay-transactions.php:1022
 msgid "Refund could not be completed. Review the order notes before retrying."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:1003
+#: admin/class-nicepay-transactions.php:1026
 msgid "Refund completed successfully."
 msgstr ""
 
