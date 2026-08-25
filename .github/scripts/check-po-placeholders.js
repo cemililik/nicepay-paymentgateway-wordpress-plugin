@@ -1,12 +1,30 @@
 'use strict';
 
 const fs = require('fs');
+const path = require('path');
 
-const catalogs = process.argv.slice(2);
-if (catalogs.length === 0) {
+const catalogArguments = process.argv.slice(2);
+if (catalogArguments.length === 0) {
     process.stderr.write('Usage: check-po-placeholders.js <catalog.po> [...]\n');
     process.exit(2);
 }
+
+const repositoryRoot = path.resolve(__dirname, '..', '..');
+const languagesRoot = fs.realpathSync(path.join(repositoryRoot, 'languages'));
+
+function resolveCatalog(argument) {
+    const file = fs.realpathSync(path.resolve(argument));
+    const relative = path.relative(languagesRoot, file);
+    const outsideLanguages = relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative);
+
+    if (outsideLanguages || path.extname(file).toLowerCase() !== '.po') {
+        throw new Error(`${argument}: catalog must be a .po file inside the languages directory`);
+    }
+
+    return file;
+}
+
+const catalogs = catalogArguments.map(resolveCatalog);
 
 function decodeQuoted(line, file, lineNumber) {
     const quote = line.indexOf('"');
@@ -17,6 +35,7 @@ function decodeQuoted(line, file, lineNumber) {
 }
 
 function parseCatalog(file) {
+    // nosemgrep: javascript_pathtraversal_rule-non-literal-fs-filename -- resolveCatalog confines real paths to languages/*.po.
     const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/);
     const entries = [];
     let entry = null;

@@ -353,7 +353,7 @@ class NicePay_Return_Handler {
 
                 <div class="result-actions">
                     <?php if ( $success && ! empty( $data['ReceiptURL'] ) ) : ?>
-                        <a href="<?php echo esc_url( $data['ReceiptURL'] ); ?>" class="result-btn result-btn-secondary">
+                        <?php printf( '<a href="%s" class="result-btn result-btn-secondary">', esc_url( $data['ReceiptURL'] ) ); ?>
                             <?php esc_html_e( 'Open Saved Receipt', 'nicepay-payment-gateway' ); ?>
                         </a>
                     <?php endif; ?>

@@ -17,7 +17,7 @@
 
     function sameOriginHttpsUrl(value) {
         try {
-            var url = new URL(String(value || ''), window.location.href);
+            const url = new URL(String(value || ''), window.location.href);
             return url.protocol === 'https:' && url.origin === window.location.origin ? url.href : '';
         } catch {
             return '';
@@ -328,7 +328,7 @@
             }
 
             try {
-                var response = JSON.parse(request.responseText);
+                const response = JSON.parse(request.responseText);
                 if (request.status >= 200 && request.status < 300 && response.success && populateStandaloneForm(form, response.data || {})) {
                     if (typeof window.nicepayStart !== 'function') {
                         throw new Error('NicePay library unavailable');

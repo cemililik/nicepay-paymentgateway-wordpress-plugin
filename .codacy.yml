@@ -2,6 +2,13 @@
 # Production code and CI verification scripts remain in scope. Generated,
 # third-party, report, catalog, and test-fixture trees have their own gates and
 # must not affect the production static-analysis rating.
+engines:
+  # Codacy's bundled PHPCS profile does not include WordPress Coding Standards
+  # and currently enables a Squiz rule that prohibits idiomatic boolean checks.
+  # PHP security remains covered by Opengrep, SonarCloud, and the PHP CI matrix.
+  phpcs:
+    exclude_paths:
+      - "**/*.php"
 exclude_paths:
   - "build/**"
   - "docs/analysis/**"

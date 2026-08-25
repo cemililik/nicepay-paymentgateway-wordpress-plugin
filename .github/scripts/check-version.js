@@ -6,11 +6,13 @@ const path = require('path');
 const repositoryRoot = path.resolve(__dirname, '..', '..');
 const failures = [];
 
-function read(relativePath) {
+function read(filename, absolutePath) {
     try {
-        return fs.readFileSync(path.join(repositoryRoot, relativePath), 'utf8');
+        // The caller passes only fixed repository paths declared below.
+        // nosemgrep: javascript_pathtraversal_rule-non-literal-fs-filename,javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal
+        return fs.readFileSync(absolutePath, 'utf8');
     } catch (error) {
-        failures.push(`${relativePath}: file could not be read (${error.message})`);
+        failures.push(`${filename}: file could not be read (${error.message})`);
         return '';
     }
 }
@@ -26,10 +28,19 @@ function capture(content, pattern, label) {
     return match[1];
 }
 
-const plugin = read('nicepay-payment-gateway.php');
-const changelog = read('CHANGELOG.md');
-const bootstrap = read('tests/bootstrap/bootstrap.php');
-const pot = read('languages/nicepay-payment-gateway.pot');
+const plugin = read(
+    'nicepay-payment-gateway.php',
+    path.join(repositoryRoot, 'nicepay-payment-gateway.php')
+);
+const changelog = read('CHANGELOG.md', path.join(repositoryRoot, 'CHANGELOG.md'));
+const bootstrap = read(
+    'tests/bootstrap/bootstrap.php',
+    path.join(repositoryRoot, 'tests', 'bootstrap', 'bootstrap.php')
+);
+const pot = read(
+    'languages/nicepay-payment-gateway.pot',
+    path.join(repositoryRoot, 'languages', 'nicepay-payment-gateway.pot')
+);
 const headerVersion = capture(plugin, /^\s*\*\s*Version:\s*([^\s]+)\s*$/m, 'Plugin header');
 const constantVersion = capture(
     plugin,
@@ -84,9 +95,8 @@ if (!minimumWordPressMatch || minimumWordPressMatch[1] !== '5.8') {
 });
 
 if (changelogVersion) {
-    const escapedVersion = changelogVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const headingPattern = new RegExp(`^## \\[${escapedVersion}\\].*$`, 'm');
-    const heading = changelog.match(headingPattern);
+    const heading = Array.from(changelog.matchAll(/^## \[([^\]]+)\].*$/gm))
+        .find((match) => match[1] === changelogVersion);
     let releaseNotes = '';
 
     if (heading && typeof heading.index === 'number') {

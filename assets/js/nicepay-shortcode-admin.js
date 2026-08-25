@@ -52,7 +52,7 @@
 
     function sameOriginUrl(value) {
         try {
-            var url = new URL(String(value || ''), window.location.href);
+            const url = new URL(String(value || ''), window.location.href);
             return url.origin === window.location.origin ? url.href : '';
         } catch {
             return '';

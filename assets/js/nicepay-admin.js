@@ -121,8 +121,8 @@
                 body.appendChild(element('p', '', opts.message));
             }
             if (opts.inputLabel) {
-                var label = element('label', 'nicepay-modal-input-label', opts.inputLabel);
-                var input = element('input');
+                const label = element('label', 'nicepay-modal-input-label', opts.inputLabel);
+                const input = element('input');
                 label.setAttribute('for', 'nicepay-modal-input');
                 input.type = 'text';
                 input.id = 'nicepay-modal-input';
@@ -305,7 +305,7 @@
                 NicePayToast.show('Copy failed', 'error', 2000);
             });
         } else {
-            var temp = $(element('textarea')).val(text).appendTo('body').select();
+            const temp = $(element('textarea')).val(text).appendTo('body').select();
             var ok = document.execCommand('copy');
             temp.remove();
             NicePayToast.show(ok ? (adminI18n.copied || 'Copied!') : 'Copy failed', ok ? 'success' : 'error', 2000);
@@ -364,7 +364,7 @@
                 NicePayToast.show('Copy failed', 'error', 2000);
             });
         } else {
-            var temp = $(element('input')).val(text).appendTo('body').select();
+            const temp = $(element('input')).val(text).appendTo('body').select();
             var ok = document.execCommand('copy');
             temp.remove();
             if (ok) {

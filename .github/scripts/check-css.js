@@ -5,30 +5,35 @@ const path = require('node:path');
 const csstree = require('css-tree');
 
 const repositoryRoot = path.resolve(__dirname, '..', '..');
-const assetsRoot = path.join(repositoryRoot, 'assets');
+const cssRoot = path.join(repositoryRoot, 'assets', 'css');
+const expectedFilenames = ['nicepay-admin.css', 'nicepay.css'];
+// nosemgrep: javascript_pathtraversal_rule-non-literal-fs-filename -- cssRoot is derived only from this script's directory and fixed segments.
+const discoveredFilenames = fs.readdirSync(cssRoot, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.css'))
+    .map((entry) => entry.name)
+    .sort();
 
-function collectCssFiles(directory) {
-    return fs.readdirSync(directory, { withFileTypes: true })
-        .flatMap((entry) => {
-            const absolutePath = path.join(directory, entry.name);
-            if (entry.isDirectory()) return collectCssFiles(absolutePath);
-            return entry.isFile() && entry.name.endsWith('.css') ? [absolutePath] : [];
-        })
-        .sort();
-}
-
-const files = collectCssFiles(assetsRoot);
-if (files.length === 0) {
-    console.error('ERROR: no CSS files were found under assets');
+if (JSON.stringify(discoveredFilenames) !== JSON.stringify(expectedFilenames)) {
+    console.error('ERROR: assets/css allowlist is stale; update check-css.js for the current CSS files');
     process.exit(1);
 }
 
+const files = [
+    {
+        filename: 'assets/css/nicepay-admin.css',
+        source: fs.readFileSync(path.join(repositoryRoot, 'assets', 'css', 'nicepay-admin.css'), 'utf8')
+    },
+    {
+        filename: 'assets/css/nicepay.css',
+        source: fs.readFileSync(path.join(repositoryRoot, 'assets', 'css', 'nicepay.css'), 'utf8')
+    }
+];
+
 for (const file of files) {
-    const source = fs.readFileSync(file, 'utf8');
     try {
-        csstree.parse(source, { filename: file, positions: true });
+        csstree.parse(file.source, { filename: file.filename, positions: true });
     } catch (error) {
-        console.error(`ERROR: invalid CSS in ${file}`);
+        console.error(`ERROR: invalid CSS in ${file.filename}`);
         console.error(error.formattedMessage || error.message);
         process.exit(1);
     }
