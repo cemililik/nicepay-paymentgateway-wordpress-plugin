@@ -2,7 +2,7 @@
     "name": "cemililik/nicepay-payment-gateway",
     "description": "NicePay Payment Gateway integration for WordPress and WooCommerce",
     "type": "wordpress-plugin",
-    "license": "MIT",
+    "license": "GPL-2.0-or-later",
     "authors": [
         {
             "name": "cemililik",
@@ -22,7 +22,7 @@
     },
     "scripts": {
         "test": "phpunit --configuration phpunit.xml",
-        "test-coverage": "phpunit --configuration phpunit.xml --coverage-html tests/coverage",
+        "test-coverage": "phpunit --configuration phpunit.xml --coverage-html tests/coverage --coverage-clover tests/coverage/clover.xml && node .github/scripts/check-coverage.js tests/coverage/clover.xml 51",
         "test-filter": "phpunit --configuration phpunit.xml --filter",
         "lint:php": "bash .github/scripts/lint-php.sh",
         "lint:js": "node .github/scripts/check-js.js",

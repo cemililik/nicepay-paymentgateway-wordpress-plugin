@@ -28,12 +28,10 @@ class NicePayStandaloneTemplateTest extends TestCase {
             "form.getAttribute('data-nicepay-config-id')",
             $script
         );
-        $this->assertStringContainsString(
-            "startStandalone(startButton.getAttribute('data-nicepay-start'))",
-            $script
-        );
+		$this->assertStringContainsString( "document.addEventListener('submit'", $script );
+		$this->assertStringContainsString( 'startStandalone(form.id)', $script );
         $this->assertStringContainsString( 'activePaymentForm && activePaymentForm !== form', $script );
         $this->assertStringContainsString( "form.setAttribute('name', 'payForm')", $script );
-        $this->assertStringNotContainsString( 'nicepayStartStandalone', $script );
+		$this->assertStringNotContainsString( 'nicepayStartStandalone', $script );
     }
 }

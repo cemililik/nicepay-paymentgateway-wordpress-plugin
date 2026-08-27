@@ -1,5 +1,8 @@
 # NicePay düzeltme programı — uygulama ve kapanış durumu
 
+> [!WARNING]
+> **Donmuş tarihsel kayıt.** Bu durum tablosu `5855db1` tabanından başlayan 2026-08-20 anlık görüntüsüdür; güncel kodun kapanış defteri veya sevkiyat kapısı değildir. Güncel kararlar için `docs/analysis/pr-review2/` ve mevcut testler kullanılmalıdır.
+
 **Son güncelleme:** 2026-08-20
 **Çalışma dalı:** `development`
 **Başlangıç tabanı:** `5855db1ac0fffe7c98e0c354158d9071fc32d420`

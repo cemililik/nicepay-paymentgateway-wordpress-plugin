@@ -78,6 +78,24 @@ class NicePayInboundValidatorTest extends TestCase {
 		$this->assertSame( 'pending', $transaction->approval_state );
 	}
 
+	public function test_auth_return_accepts_signed_fixed_width_amount_for_numeric_binding(): void {
+		$transaction      = $this->transaction();
+		$this->wpdb->rows = array( $transaction );
+		$amount           = '000000001004';
+		$token            = 'NICETOKNF435F661A2D54ED799BFB9F4B3F7E369';
+		$payload          = $this->auth_payload(
+			array(
+				'Amt'       => $amount,
+				'Signature' => hash( 'sha256', $token . NICEPAY_TEST_MID . $amount . NICEPAY_TEST_MERCHANT_KEY ),
+			)
+		);
+
+		$this->assertSame(
+			$transaction,
+			NicePay_Inbound_Validator::validate_auth_return( 'standalone', $payload, $this->api )
+		);
+	}
+
 	public function test_auth_return_rejects_cheap_signature_repointed_to_expensive_order(): void {
 		$this->wpdb->rows = array( $this->transaction( array( 'amount' => '50000' ) ) );
 
@@ -100,6 +118,20 @@ class NicePayInboundValidatorTest extends TestCase {
 		);
 
 		$this->assertErrorCode( 'nicepay_inbound_transaction_not_found', $result );
+	}
+
+	public function test_auth_return_rejects_valid_same_amount_authentication_from_another_attempt(): void {
+		$this->wpdb->rows = array(
+			$this->transaction( array( 'binding_token_hash' => hash( 'sha256', 'victim-binding-token' ) ) ),
+		);
+
+		$result = NicePay_Inbound_Validator::validate_auth_return(
+			'standalone',
+			$this->auth_payload( array( 'ReqReserved' => 'attacker-binding-token' ) ),
+			$this->api
+		);
+
+		$this->assertErrorCode( 'nicepay_inbound_binding_mismatch', $result );
 	}
 
 	public function test_auth_return_distinguishes_wrong_flow_from_unknown_moid(): void {
@@ -261,7 +293,7 @@ class NicePayInboundValidatorTest extends TestCase {
 			function ( $field ) {
 				return array( $field );
 			},
-			array( 'Moid', 'MID', 'Amt', 'PayMethod', 'AuthResultCode', 'AuthToken', 'TxTid', 'Signature', 'NextAppURL', 'NetCancelURL' )
+			array( 'Moid', 'MID', 'Amt', 'PayMethod', 'AuthResultCode', 'AuthToken', 'TxTid', 'Signature', 'NextAppURL', 'NetCancelURL', 'ReqReserved' )
 		);
 	}
 
@@ -388,6 +420,7 @@ class NicePayInboundValidatorTest extends TestCase {
 				'amount'           => '1004.00',
 				'expected_method'  => 'CARD',
 				'allowed_methods'   => 'CARD',
+				'binding_token_hash'=> hash( 'sha256', 'payment-binding-token' ),
 				'payment_method'    => '',
 				'status'            => 'pending',
 				'approval_state'    => 'pending',
@@ -410,6 +443,7 @@ class NicePayInboundValidatorTest extends TestCase {
 				'Signature'     => 'cc94db193780ffb83d79845bb001b26da397cb5855dd285a3b85a4acc1fa55fe',
 				'NextAppURL'    => 'https://dc1-api.nicepay.co.kr/webapi/pay_process.jsp',
 				'NetCancelURL'  => 'https://dc1-api.nicepay.co.kr/webapi/cancel_process.jsp',
+				'ReqReserved'   => 'payment-binding-token',
 			),
 			$changes
 		);

@@ -40,7 +40,7 @@ function nicepay_log( $message, $data = null, $level = 'debug' ) {
         } else {
             $logger->log( $level, $log_entry, array( 'source' => 'nicepay' ) );
         }
-    } elseif ( 'error' === $level || 'warning' === $level ) {
+	} else {
         error_log( $log_entry );
     }
 }
@@ -228,14 +228,17 @@ function nicepay_get_mismatched_approval_audit( $binding_error, $net_cancel, $au
  * Reverse an authenticated payment after a local post-authentication failure.
  *
  * @param int         $transaction_id Transaction row ID.
- * @param array       $auth_data      Verified authentication context.
+ * @param array       $auth_data      Deprecated browser context; deliberately ignored.
  * @param NicePay_API $api            Configured API client.
  * @param string      $reason         Stable internal failure code.
  * @return array<string,mixed> Reversal and persistence outcome.
  */
 function nicepay_abort_authenticated_payment( $transaction_id, array $auth_data, $api, $reason ) {
     $requested_at = gmdate( 'Y-m-d H:i:s' );
-    $net_cancel   = $api->request_net_cancel( $auth_data );
+	$local_context = nicepay_get_authenticated_payment_context( $transaction_id );
+	$net_cancel    = is_wp_error( $local_context )
+		? $local_context
+		: $api->request_net_cancel( $local_context );
     $unknown      = is_wp_error( $net_cancel );
     $result_code  = $unknown
         ? $net_cancel->get_error_code()
@@ -256,7 +259,7 @@ function nicepay_abort_authenticated_payment( $transaction_id, array $auth_data,
             'net_cancel_result_msg'     => $result_msg,
             'net_cancel_requested_at'   => $requested_at,
             'net_cancel_completed_at'   => $unknown ? null : gmdate( 'Y-m-d H:i:s' ),
-            'auth_token'                => $unknown && isset( $auth_data['AuthToken'] ) ? $auth_data['AuthToken'] : '',
+			'auth_token'                => $unknown && ! is_wp_error( $local_context ) ? $local_context['AuthToken'] : '',
             'active_attempt_key'        => null,
         ),
         true
@@ -292,9 +295,10 @@ function nicepay_check_public_rate_limit( $scope, $limit = 20, $window = 60 ) {
         ? trim( (string) wp_unslash( $_SERVER['REMOTE_ADDR'] ) )
         : '';
     if ( false === filter_var( $remote_addr, FILTER_VALIDATE_IP ) ) {
-        // A missing server address is an environment/configuration problem.
-        // Fail open here rather than creating one shared global denial key.
-        return true;
+		// Missing/invalid network identity must not collapse anonymous traffic
+		// into an unlimited global bucket. Hosts with a trusted proxy may opt in
+		// only after supplying their own deployment-specific policy.
+		return (bool) apply_filters( 'nicepay_rate_limit_unknown_ip_policy', false, $scope );
     }
 
     $identity = hash_hmac( 'sha256', $remote_addr, wp_salt( 'nonce' ) );
@@ -305,7 +309,7 @@ function nicepay_check_public_rate_limit( $scope, $limit = 20, $window = 60 ) {
     }
 
     if ( '' === $identity || '' === $scope ) {
-        return true;
+		return false;
     }
 
     $key       = 'nicepay_rl_' . substr( hash( 'sha256', $scope . '|' . $identity ), 0, 40 );
@@ -367,6 +371,9 @@ function nicepay_save_transaction( $data ) {
     );
 
     $data = wp_parse_args( $data, $defaults );
+	$now  = gmdate( 'Y-m-d H:i:s' );
+	$data['created_at'] = $now;
+	$data['updated_at'] = $now;
 
     if ( is_array( $data['payment_data'] ) ) {
         $data['payment_data'] = wp_json_encode( $data['payment_data'], JSON_UNESCAPED_UNICODE );
@@ -403,6 +410,7 @@ function nicepay_update_transaction( $id, $data, $require_change = false ) {
     if ( isset( $data['payment_data'] ) && is_array( $data['payment_data'] ) ) {
         $data['payment_data'] = wp_json_encode( $data['payment_data'], JSON_UNESCAPED_UNICODE );
     }
+	$data['updated_at'] = gmdate( 'Y-m-d H:i:s' );
 
     $prepared = NicePay_Transaction_Schema::prepare_write( $data );
     if ( empty( $prepared['data'] ) ) {
@@ -447,7 +455,7 @@ function nicepay_get_transaction_by_tid( $tid, $wc_order_id = 0 ) {
     if ( $wc_order_id > 0 ) {
         return $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT * FROM {$table} WHERE tid = %s AND wc_order_id = %d AND flow = 'woocommerce' LIMIT 1",
+                "SELECT * FROM {$table} WHERE tid = %s AND wc_order_id = %d AND flow IN ('', 'woocommerce') LIMIT 1",
                 $tid,
                 $wc_order_id
             )
@@ -473,6 +481,49 @@ function nicepay_get_transaction( $id ) {
 
     $table = $wpdb->prefix . 'nicepay_transactions';
     return $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d LIMIT 1", $id ) );
+}
+
+/**
+ * Load the provider context used for approval reversal from the claimed ledger.
+ *
+ * Browser POST fields are never used here. This prevents a valid signature for
+ * one browser authentication from turning the merchant endpoint into a cancel
+ * oracle for a different transaction under the same MID.
+ *
+ * @param int $transaction_id Claimed transaction row ID.
+ * @return array<string,string>|WP_Error
+ */
+function nicepay_get_authenticated_payment_context( $transaction_id ) {
+	$transaction = nicepay_get_transaction( $transaction_id );
+	if ( ! is_object( $transaction ) ||
+		'approving' !== (string) $transaction->status ||
+		'approving' !== (string) $transaction->approval_state ) {
+		return new WP_Error( 'nicepay_local_auth_context_missing', __( 'The claimed payment context is unavailable.', 'nicepay-payment-gateway' ) );
+	}
+
+	$amount = nicepay_normalize_amount( isset( $transaction->amount ) ? $transaction->amount : '', 'KRW' );
+	$fields = array(
+		'NextAppURL'   => isset( $transaction->next_app_url ) ? (string) $transaction->next_app_url : '',
+		'NetCancelURL' => isset( $transaction->net_cancel_url ) ? (string) $transaction->net_cancel_url : '',
+		'TxTid'        => isset( $transaction->tid ) ? (string) $transaction->tid : '',
+		'AuthToken'    => isset( $transaction->auth_token ) ? (string) $transaction->auth_token : '',
+		'Amt'          => false === $amount ? '' : $amount,
+		'MID'          => isset( $transaction->mid ) ? (string) $transaction->mid : '',
+		'Moid'         => isset( $transaction->moid ) ? (string) $transaction->moid : '',
+		'PayMethod'    => isset( $transaction->expected_method ) ? (string) $transaction->expected_method : '',
+	);
+
+	foreach ( array( 'NextAppURL', 'NetCancelURL', 'TxTid', 'AuthToken', 'Amt', 'MID', 'Moid' ) as $required ) {
+		if ( '' === $fields[ $required ] ) {
+			return new WP_Error(
+				'nicepay_local_auth_context_incomplete',
+				__( 'The claimed payment context is incomplete.', 'nicepay-payment-gateway' ),
+				array( 'field' => $required )
+			);
+		}
+	}
+
+	return $fields;
 }
 
 /**
@@ -551,6 +602,24 @@ function nicepay_get_standalone_return_url() {
     }
 
     return add_query_arg( 'nicepay_return', '1', home_url( '/' ) );
+}
+
+/**
+ * Generate the browser-return binding secret for a single payment attempt.
+ *
+ * Only the SHA-256 digest is persisted. The raw value is sent to NICEPAY in
+ * ReqReserved and must come back unchanged before an authentication return is
+ * allowed to claim the merchant-owned transaction row.
+ *
+ * @return string|false A 64-character hexadecimal secret, or false on failure.
+ */
+function nicepay_generate_payment_binding_token() {
+    try {
+        return bin2hex( random_bytes( 32 ) );
+    } catch ( Throwable $throwable ) {
+        nicepay_log( 'Could not generate a payment return binding token', $throwable->getMessage(), 'error' );
+        return false;
+    }
 }
 
 /**
@@ -676,7 +745,8 @@ function nicepay_claim_transaction_for_approval( $id, $flow ) {
                  candidate.approval_state = IF(candidate.id = target.id, 'approving', 'abandoned'),
                  candidate.approval_attempts = candidate.approval_attempts + IF(candidate.id = target.id, 1, 0),
                  candidate.approval_started_at = IF(candidate.id = target.id, UTC_TIMESTAMP(), candidate.approval_started_at),
-                 candidate.active_attempt_key = IF(candidate.id = target.id, candidate.active_attempt_key, NULL)
+	                 candidate.active_attempt_key = IF(candidate.id = target.id, candidate.active_attempt_key, NULL),
+	                 candidate.updated_at = UTC_TIMESTAMP()
              WHERE candidate.status = 'pending'
                AND candidate.approval_state = 'pending'",
             $id,
@@ -694,7 +764,7 @@ function nicepay_claim_transaction_for_approval( $id, $flow ) {
         "UPDATE {$table}
          SET status = 'approving', approval_state = 'approving',
              approval_attempts = approval_attempts + 1,
-             approval_started_at = UTC_TIMESTAMP()
+	             approval_started_at = UTC_TIMESTAMP(), updated_at = UTC_TIMESTAMP()
          WHERE id = %d AND flow = %s
            AND status = 'pending' AND approval_state = 'pending'",
         $id,
@@ -730,7 +800,7 @@ function nicepay_claim_transaction_for_refund( $id, $cancel_moid, $cancel_amount
     $sql   = $wpdb->prepare(
         "UPDATE {$table}
          SET cancel_moid = %s, cancel_status = 'requested', cancel_amount = %s,
-             cancel_requested_at = UTC_TIMESTAMP()
+	             cancel_requested_at = UTC_TIMESTAMP(), updated_at = UTC_TIMESTAMP()
          WHERE id = %d AND (flow = 'woocommerce' OR (flow = '' AND wc_order_id IS NOT NULL))
            AND status IN ('paid', 'partially_refunded')
            AND reconciliation_status <> 'required'
@@ -773,6 +843,7 @@ function nicepay_save_refund_attempt( array $data ) {
     $data['currency']         = 'KRW';
     $data['status']           = 'requested';
     $data['requested_at']     = isset( $data['requested_at'] ) ? $data['requested_at'] : gmdate( 'Y-m-d H:i:s' );
+	$data['created_at']       = gmdate( 'Y-m-d H:i:s' );
     $prepared                 = NicePay_Transaction_Schema::prepare_refund_write( $data );
     $table                    = $wpdb->prefix . 'nicepay_refund_attempts';
     $result                   = $wpdb->insert( $table, $prepared['data'], $prepared['formats'] );
@@ -848,13 +919,14 @@ function nicepay_release_unsent_refund_claim( $transaction_id, $cancel_moid ) {
             'cancel_result_code'  => 'LOCAL_AUDIT_WRITE_FAILED',
             'cancel_result_msg'   => '',
             'cancel_requested_at' => null,
+			'updated_at'          => gmdate( 'Y-m-d H:i:s' ),
         ),
         array(
             'id'            => absint( $transaction_id ),
             'cancel_moid'   => (string) $cancel_moid,
             'cancel_status' => 'requested',
         ),
-        array( '%s', '%s', '%s', '%s', '%s', '%s' ),
+		array( '%s', '%s', '%s', '%s', '%s', '%s', '%s' ),
         array( '%d', '%s', '%s' )
     );
 
@@ -886,6 +958,7 @@ function nicepay_complete_transaction_refund( $id, $cancel_moid, array $data ) {
     if ( isset( $data['payment_data'] ) && is_array( $data['payment_data'] ) ) {
         $data['payment_data'] = wp_json_encode( $data['payment_data'], JSON_UNESCAPED_UNICODE );
     }
+	$data['updated_at'] = gmdate( 'Y-m-d H:i:s' );
 
     $prepared = NicePay_Transaction_Schema::prepare_write( $data );
     if ( empty( $prepared['data'] ) ) {
@@ -930,7 +1003,8 @@ function nicepay_abandon_pending_transactions( $flow, $source_ref ) {
     $table = $wpdb->prefix . 'nicepay_transactions';
     $sql   = $wpdb->prepare(
         "UPDATE {$table}
-         SET status = 'abandoned', approval_state = 'abandoned', active_attempt_key = NULL
+	         SET status = 'abandoned', approval_state = 'abandoned', active_attempt_key = NULL,
+	             updated_at = UTC_TIMESTAMP()
          WHERE flow = %s AND source_ref = %s
            AND status = 'pending' AND approval_state = 'pending'",
         $flow,
@@ -952,36 +1026,74 @@ function nicepay_abandon_pending_transactions( $flow, $source_ref ) {
  * @return int Number of affected rows, or zero on failure.
  */
 function nicepay_expire_pending_transactions() {
-    global $wpdb;
+	global $wpdb;
 
-    $table = $wpdb->prefix . 'nicepay_transactions';
-    $sql   = "UPDATE {$table}
-              SET status = 'expired', approval_state = 'expired', auth_token = '', active_attempt_key = NULL
-              WHERE status = 'pending' AND approval_state = 'pending'
-                AND offer_expires_at IS NOT NULL
-                AND offer_expires_at < UTC_TIMESTAMP()";
-    $count = $wpdb->query( $sql );
+	$lock_option = 'nicepay_expiry_lock';
+	$now         = time();
+	$has_lock    = add_option( $lock_option, $now, '', false );
+	if ( ! $has_lock ) {
+		$locked_at = absint( get_option( $lock_option, 0 ) );
+		if ( $locked_at > 0 && $locked_at < ( $now - HOUR_IN_SECONDS ) ) {
+			delete_option( $lock_option );
+			$has_lock = add_option( $lock_option, $now, '', false );
+		}
+	}
+	if ( ! $has_lock ) {
+		return 0;
+	}
 
-    if ( false === $count ) {
-        nicepay_log( 'Pending payment expiry job failed', null, 'error' );
-        $count = 0;
-    }
+	$table       = $wpdb->prefix . 'nicepay_transactions';
+	$batch_size  = 500;
+	$max_batches = 20;
+	$total       = 0;
+	$updates     = array(
+		array(
+			'label' => 'Pending payment expiry job',
+			'sql'   => "UPDATE {$table}
+							SET status = 'expired', approval_state = 'expired', auth_token = '', active_attempt_key = NULL,
+							    updated_at = UTC_TIMESTAMP()
+						WHERE status = 'pending' AND approval_state = 'pending'
+						  AND offer_expires_at IS NOT NULL
+						  AND offer_expires_at < UTC_TIMESTAMP()
+						ORDER BY offer_expires_at ASC, id ASC",
+		),
+		array(
+			'label' => 'Stale NicePay approval recovery job',
+			'sql'   => "UPDATE {$table}
+						SET status = 'needs_reconciliation',
+							approval_state = 'needs_reconciliation',
+							reconciliation_status = 'required',
+							reconciliation_note = 'stale_approval_attempt',
+							active_attempt_key = NULL,
+								auth_token = '',
+								updated_at = UTC_TIMESTAMP()
+						WHERE status = 'approving' AND approval_state = 'approving'
+						  AND approval_started_at IS NOT NULL
+						  AND approval_started_at < (UTC_TIMESTAMP() - INTERVAL 30 MINUTE)
+						ORDER BY approval_started_at ASC, id ASC",
+		),
+	);
 
-    $stale_sql = "UPDATE {$table}
-                  SET status = 'needs_reconciliation',
-                      approval_state = 'needs_reconciliation',
-                      reconciliation_status = 'required',
-                      reconciliation_note = 'stale_approval_attempt'
-                  WHERE status = 'approving' AND approval_state = 'approving'
-                    AND approval_started_at IS NOT NULL
-                    AND approval_started_at < (UTC_TIMESTAMP() - INTERVAL 30 MINUTE)";
-    $stale_count = $wpdb->query( $stale_sql );
-    if ( false === $stale_count ) {
-        nicepay_log( 'Stale NicePay approval recovery job failed', null, 'error' );
-        $stale_count = 0;
-    }
+	try {
+		foreach ( $updates as $update ) {
+			for ( $batch = 0; $batch < $max_batches; $batch++ ) {
+				$count = $wpdb->query( $update['sql'] . ' LIMIT ' . $batch_size );
+				if ( false === $count ) {
+					nicepay_log( $update['label'] . ' failed', null, 'error' );
+					break;
+				}
+				$total += (int) $count;
+				if ( (int) $count < $batch_size ) {
+					break;
+				}
+			}
+		}
+	} finally {
+		delete_option( $lock_option );
+	}
 
-    return (int) $count + (int) $stale_count;
+	nicepay_log( 'NicePay expiry recovery job completed', array( 'processed' => $total ), 'info' );
+	return $total;
 }
 
 /**
@@ -1040,6 +1152,129 @@ function nicepay_get_reconciliation_count() {
                  OR net_cancel_status = 'unknown'";
 
     return max( 0, (int) $wpdb->get_var( $sql ) );
+}
+
+/**
+ * Resolve one reconciliation-required transaction and append its audit record.
+ *
+ * The state transition and audit insert share a database transaction. Only the
+ * two forward decisions that an operator can prove in the NICEPAY console are
+ * accepted: the authorization was reversed, or funds were captured.
+ *
+ * @param int    $transaction_id Transaction row ID.
+ * @param string $decision       `reversed` or `captured`.
+ * @param string $reason         Required operator explanation.
+ * @param int    $actor_id       WordPress user ID.
+ * @return array<string,string>|WP_Error
+ */
+function nicepay_resolve_reconciliation( $transaction_id, $decision, $reason, $actor_id ) {
+	global $wpdb;
+
+	$transaction_id = absint( $transaction_id );
+	$actor_id       = absint( $actor_id );
+	$decision       = sanitize_key( (string) $decision );
+	$reason         = nicepay_utf8_byte_cut( sanitize_textarea_field( (string) $reason ), 1000 );
+	if ( $transaction_id < 1 || $actor_id < 1 || ! in_array( $decision, array( 'reversed', 'captured' ), true ) ) {
+		return new WP_Error( 'nicepay_reconciliation_invalid_request', __( 'The reconciliation decision is invalid.', 'nicepay-payment-gateway' ) );
+	}
+	if ( '' === trim( $reason ) ) {
+		return new WP_Error( 'nicepay_reconciliation_reason_required', __( 'A reconciliation reason is required.', 'nicepay-payment-gateway' ) );
+	}
+
+	$table       = NicePay_Installer::table_name( $wpdb );
+	$audit_table = NicePay_Installer::reconciliation_audit_table_name( $wpdb );
+	if ( false === $wpdb->query( 'START TRANSACTION' ) ) {
+		return new WP_Error( 'nicepay_reconciliation_transaction_failed', __( 'The reconciliation update could not be started.', 'nicepay-payment-gateway' ) );
+	}
+
+	try {
+		$transaction = $wpdb->get_row(
+			$wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d FOR UPDATE", $transaction_id )
+		);
+		if ( ! is_object( $transaction ) ||
+			'needs_reconciliation' !== (string) $transaction->status ||
+			'required' !== (string) $transaction->reconciliation_status ) {
+			$wpdb->query( 'ROLLBACK' );
+			return new WP_Error( 'nicepay_reconciliation_state_changed', __( 'This transaction no longer requires reconciliation.', 'nicepay-payment-gateway' ) );
+		}
+
+		$captured = nicepay_normalize_ledger_amount( isset( $transaction->amount ) ? $transaction->amount : '' );
+		$refunded = nicepay_normalize_ledger_amount( isset( $transaction->refunded_amount ) ? $transaction->refunded_amount : '0' );
+		if ( false === $captured || false === $refunded || nicepay_compare_integer_amounts( $refunded, $captured ) > 0 ) {
+			$wpdb->query( 'ROLLBACK' );
+			return new WP_Error( 'nicepay_reconciliation_amount_invalid', __( 'The transaction amount cannot be reconciled safely.', 'nicepay-payment-gateway' ) );
+		}
+
+		$now = gmdate( 'Y-m-d H:i:s' );
+		if ( 'captured' === $decision ) {
+			$remaining = nicepay_subtract_integer_amounts( $captured, $refunded );
+			$status    = '0' === $remaining ? 'refunded' : ( '0' === $refunded ? 'paid' : 'partially_refunded' );
+			$update    = array(
+				'status'                  => $status,
+				'approval_state'          => 'approved',
+				'captured_amount'         => $captured,
+				'remaining_amount'        => $remaining,
+				'approved_at'             => $now,
+			);
+		} else {
+			$status = 'failed';
+			$update = array(
+				'status'                  => 'failed',
+				'approval_state'          => 'failed',
+				'captured_amount'         => '0',
+				'remaining_amount'        => '0',
+			);
+		}
+
+		$update = array_merge(
+			$update,
+			array(
+				'reconciliation_status'     => 'resolved',
+				'reconciliation_checked_at' => $now,
+				'reconciliation_note'       => $reason,
+				'active_attempt_key'         => null,
+				'auth_token'                => '',
+				'updated_at'                => $now,
+			)
+		);
+		$prepared = NicePay_Transaction_Schema::prepare_write( $update );
+		$changed  = $wpdb->update(
+			$table,
+			$prepared['data'],
+			array( 'id' => $transaction_id ),
+			$prepared['formats'],
+			array( '%d' )
+		);
+		if ( 1 !== (int) $changed ) {
+			$wpdb->query( 'ROLLBACK' );
+			return new WP_Error( 'nicepay_reconciliation_update_failed', __( 'The reconciliation decision could not be saved.', 'nicepay-payment-gateway' ) );
+		}
+
+		$audited = $wpdb->insert(
+			$audit_table,
+			array(
+				'transaction_id'   => $transaction_id,
+				'actor_id'         => $actor_id,
+				'action'           => $decision,
+				'reason'           => $reason,
+				'previous_status'  => 'needs_reconciliation',
+				'resulting_status' => $status,
+				'confirmed_amount' => 'captured' === $decision ? $captured : '0',
+				'created_at'       => $now,
+			),
+			array( '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s' )
+		);
+		if ( 1 !== (int) $audited || false === $wpdb->query( 'COMMIT' ) ) {
+			$wpdb->query( 'ROLLBACK' );
+			return new WP_Error( 'nicepay_reconciliation_audit_failed', __( 'The reconciliation audit record could not be saved.', 'nicepay-payment-gateway' ) );
+		}
+
+		return array( 'decision' => $decision, 'status' => $status, 'amount' => 'captured' === $decision ? $captured : '0' );
+	} catch ( Throwable $throwable ) {
+		$wpdb->query( 'ROLLBACK' );
+		nicepay_log( 'Reconciliation resolution failed', $throwable->getMessage(), 'error' );
+		return new WP_Error( 'nicepay_reconciliation_exception', __( 'The reconciliation decision could not be saved.', 'nicepay-payment-gateway' ) );
+	}
 }
 
 /**
@@ -1743,9 +1978,6 @@ function nicepay_get_default_presets() {
             'goods_name'   => 'Quick Payment',
             'goods_class'  => '0',
             'pay_method'   => '',
-            'buyer_name'   => '',
-            'buyer_email'  => '',
-            'buyer_tel'    => '',
             'button_text'  => 'Pay Now',
             'button_class' => 'nicepay-pay-button',
             'button_color' => '#2563eb',
@@ -1764,9 +1996,6 @@ function nicepay_get_default_presets() {
             'goods_name'   => 'Donation',
             'goods_class'  => '0',
             'pay_method'   => '',
-            'buyer_name'   => '',
-            'buyer_email'  => '',
-            'buyer_tel'    => '',
             'button_text'  => 'Donate',
             'button_class' => 'nicepay-pay-button',
             'button_color' => '#16a34a',
@@ -1785,9 +2014,6 @@ function nicepay_get_default_presets() {
             'goods_name'   => 'Product Purchase',
             'goods_class'  => '1',
             'pay_method'   => '',
-            'buyer_name'   => '',
-            'buyer_email'  => '',
-            'buyer_tel'    => '',
             'button_text'  => 'Buy Now',
             'button_class' => 'nicepay-pay-button',
             'button_color' => '#111827',
@@ -1890,7 +2116,15 @@ function nicepay_localize_preset( $shortcode ) {
  */
 function nicepay_prepare_shortcodes_for_storage( $shortcodes ) {
     foreach ( $shortcodes as &$shortcode ) {
-        if ( ! is_array( $shortcode ) ||
+		if ( ! is_array( $shortcode ) ) {
+			continue;
+		}
+
+		// Buyer contact data belongs to a single transaction, never to a
+		// reusable/public offer configuration. Scrub legacy option values too.
+		unset( $shortcode['buyer_name'], $shortcode['buyer_email'], $shortcode['buyer_tel'] );
+
+		if (
             true !== ( isset( $shortcode['is_preset'] ) ? $shortcode['is_preset'] : false ) ||
             1 !== ( isset( $shortcode['preset_version'] ) ? (int) $shortcode['preset_version'] : 0 ) ) {
             continue;
@@ -1938,6 +2172,12 @@ function nicepay_get_all_shortcodes() {
         nicepay_log( 'Invalid saved shortcode option; ignoring malformed value.' );
         return array();
     }
+
+	$storage_safe = nicepay_prepare_shortcodes_for_storage( $shortcodes );
+	if ( $storage_safe !== $shortcodes ) {
+		update_option( 'nicepay_saved_shortcodes', $storage_safe );
+		$shortcodes = $storage_safe;
+	}
 
     $shortcodes = array_values(
         array_filter(

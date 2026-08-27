@@ -45,12 +45,23 @@ class NicePayRateLimitTest extends TestCase {
         $this->assertTrue( nicepay_check_public_rate_limit( 'another_action', 1, 60 ) );
     }
 
-    public function test_invalid_or_missing_server_address_fails_open_without_global_key(): void {
+	public function test_invalid_or_missing_server_address_fails_closed_without_global_key(): void {
         $_SERVER['REMOTE_ADDR'] = 'not-an-ip';
-        $this->assertTrue( nicepay_check_public_rate_limit( 'standalone_init', 1, 60 ) );
-        $this->assertTrue( nicepay_check_public_rate_limit( 'standalone_init', 1, 60 ) );
+		$this->assertFalse( nicepay_check_public_rate_limit( 'standalone_init', 1, 60 ) );
 
         unset( $_SERVER['REMOTE_ADDR'] );
-        $this->assertTrue( nicepay_check_public_rate_limit( 'standalone_init', 1, 60 ) );
+		$this->assertFalse( nicepay_check_public_rate_limit( 'standalone_init', 1, 60 ) );
     }
+
+	public function test_unknown_ip_policy_requires_explicit_opt_in(): void {
+		$_SERVER['REMOTE_ADDR'] = 'not-an-ip';
+		$allow = static function ( $default, $scope ) {
+			return false === $default && 'standalone_init' === $scope;
+		};
+		add_filter( 'nicepay_rate_limit_unknown_ip_policy', $allow, 10, 2 );
+
+		$this->assertTrue( nicepay_check_public_rate_limit( 'standalone_init', 1, 60 ) );
+
+		remove_filter( 'nicepay_rate_limit_unknown_ip_policy', $allow, 10 );
+	}
 }

@@ -86,16 +86,24 @@ class WC_Gateway_NicePay extends WC_Payment_Gateway {
             return false;
         }
 
+		if ( 'test' === $this->api->get_mode() &&
+			! (bool) apply_filters( 'nicepay_allow_test_mode_checkout', false ) ) {
+			return false;
+		}
+
         if ( empty( nicepay_get_enabled_methods() ) ) {
             return false;
         }
 
-        if ( function_exists( 'get_woocommerce_currency' ) &&
-            ! nicepay_is_supported_currency( get_woocommerce_currency() ) ) {
+		if ( ! nicepay_is_supported_currency( get_woocommerce_currency() ) ) {
             return false;
         }
 
-        if ( function_exists( 'is_ssl' ) && ! is_ssl() ) {
+		if ( 0 !== (int) wc_get_price_decimals() ) {
+			return false;
+		}
+
+		if ( ! is_ssl() ) {
             return false;
         }
 
@@ -108,7 +116,33 @@ class WC_Gateway_NicePay extends WC_Payment_Gateway {
     public function process_payment( $order_id ) {
         $order = wc_get_order( $order_id );
 
-        if ( ! $order || ! $this->is_available() || 'nicepay' !== $order->get_payment_method() ) {
+		if ( ! $order ) {
+			wc_add_notice( __( 'The order could not be loaded. Please return to checkout and try again.', 'nicepay-payment-gateway' ), 'error' );
+			nicepay_log( 'NicePay process_payment could not load order', array( 'order_id' => absint( $order_id ) ), 'error' );
+			return array( 'result' => 'failure' );
+		}
+
+		if ( 'nicepay' !== $order->get_payment_method() ) {
+			wc_add_notice( __( 'NicePay is not selected for this order.', 'nicepay-payment-gateway' ), 'error' );
+			nicepay_log( 'NicePay process_payment rejected a payment-method mismatch', array( 'order_id' => $order->get_id() ), 'warning' );
+			return array( 'result' => 'failure' );
+		}
+
+		if ( ! nicepay_is_supported_currency( $order->get_currency() ) ) {
+			wc_add_notice( __( 'NicePay supports KRW orders only.', 'nicepay-payment-gateway' ), 'error' );
+			nicepay_log( 'NicePay process_payment rejected unsupported order currency', array( 'order_id' => $order->get_id(), 'currency' => $order->get_currency() ), 'warning' );
+			return array( 'result' => 'failure' );
+		}
+
+		if ( '' === nicepay_get_amount( $order->get_total(), $order->get_currency() ) ) {
+			wc_add_notice( __( 'The order total must be a positive whole KRW amount.', 'nicepay-payment-gateway' ), 'error' );
+			nicepay_log( 'NicePay process_payment rejected a non-integer KRW total', array( 'order_id' => $order->get_id() ), 'warning' );
+			return array( 'result' => 'failure' );
+		}
+
+		if ( ! $this->is_available() ) {
+			wc_add_notice( __( 'NicePay is not currently available. Please choose another payment method or contact the merchant.', 'nicepay-payment-gateway' ), 'error' );
+			nicepay_log( 'NicePay process_payment rejected an unavailable gateway', array( 'order_id' => $order->get_id() ), 'warning' );
             return array( 'result' => 'failure' );
         }
 
@@ -121,6 +155,8 @@ class WC_Gateway_NicePay extends WC_Payment_Gateway {
         }
 
         if ( ! $order->needs_payment() ) {
+			wc_add_notice( __( 'This order no longer requires payment.', 'nicepay-payment-gateway' ), 'error' );
+			nicepay_log( 'NicePay process_payment rejected a non-payable order', array( 'order_id' => $order->get_id() ), 'warning' );
             return array( 'result' => 'failure' );
         }
 
@@ -129,6 +165,26 @@ class WC_Gateway_NicePay extends WC_Payment_Gateway {
             'redirect' => $order->get_checkout_payment_url( true ),
         );
     }
+
+	/**
+	 * Validate buyer fields during checkout, before the receipt page is reached.
+	 *
+	 * @return bool
+	 */
+	public function validate_fields() {
+		$first_name = isset( $_POST['billing_first_name'] ) ? sanitize_text_field( wp_unslash( $_POST['billing_first_name'] ) ) : '';
+		$last_name  = isset( $_POST['billing_last_name'] ) ? sanitize_text_field( wp_unslash( $_POST['billing_last_name'] ) ) : '';
+		$email      = isset( $_POST['billing_email'] ) ? sanitize_email( wp_unslash( $_POST['billing_email'] ) ) : '';
+		$phone      = isset( $_POST['billing_phone'] ) ? sanitize_text_field( wp_unslash( $_POST['billing_phone'] ) ) : '';
+		$buyer      = nicepay_validate_buyer_fields( trim( $first_name . ' ' . $last_name ), $email, $phone );
+
+		if ( is_wp_error( $buyer ) ) {
+			wc_add_notice( $buyer->get_error_message(), 'error' );
+			return false;
+		}
+
+		return true;
+	}
 
     /**
      * Display payment form on receipt page
@@ -238,6 +294,12 @@ class WC_Gateway_NicePay extends WC_Payment_Gateway {
         $goods_name = nicepay_utf8_byte_cut( sanitize_text_field( $goods_name ), 40 );
 
         $sign_data = $this->api->create_auth_sign_data( $edi_date, $amount );
+		$binding_token = nicepay_generate_payment_binding_token();
+		if ( false === $binding_token ) {
+			echo '<p>' . esc_html__( 'Payment initialization failed. Please return to checkout.', 'nicepay-payment-gateway' ) . '</p>';
+			echo '<a href="' . esc_url( wc_get_checkout_url() ) . '">' . esc_html__( 'Return to Checkout', 'nicepay-payment-gateway' ) . '</a>';
+			return;
+		}
         $enabled_methods = nicepay_get_enabled_methods();
         if ( empty( $enabled_methods ) ) {
             echo '<p>' . esc_html__( 'No certified NicePay payment method is enabled.', 'nicepay-payment-gateway' ) . '</p>';
@@ -278,6 +340,7 @@ class WC_Gateway_NicePay extends WC_Payment_Gateway {
                 wp_json_encode( array( $order->get_id(), $amount, $currency, $enabled_methods ) )
             ),
             'allowed_methods' => implode( ',', $enabled_methods ),
+			'binding_token_hash' => hash( 'sha256', $binding_token ),
             'wc_order_key_hash' => hash( 'sha256', (string) $order->get_order_key() ),
             'edi_date'        => $edi_date,
             'offer_expires_at'=> gmdate( 'Y-m-d H:i:s', time() + 30 * MINUTE_IN_SECONDS ),
@@ -333,6 +396,7 @@ class WC_Gateway_NicePay extends WC_Payment_Gateway {
             'EdiDate'      => $edi_date,
             'Moid'         => $moid,
             'SignData'     => $sign_data,
+			'ReqReserved'  => $binding_token,
             'ReturnURL'    => $return_url,
             'BuyerName'    => $buyer['buyer_name'],
             'BuyerTel'     => $buyer['buyer_tel'],
@@ -377,9 +441,11 @@ class WC_Gateway_NicePay extends WC_Payment_Gateway {
         if ( function_exists( 'nocache_headers' ) ) {
             nocache_headers();
         }
-        header( 'X-Robots-Tag: noindex, nofollow', true );
-        header( 'Referrer-Policy: no-referrer', true );
-        header( 'X-Frame-Options: DENY', true );
+		if ( ! headers_sent() ) {
+			header( 'X-Robots-Tag: noindex, nofollow', true );
+			header( 'Referrer-Policy: no-referrer', true );
+			header( 'X-Frame-Options: DENY', true );
+		}
 
         $request_method = isset( $_SERVER['REQUEST_METHOD'] ) && is_string( $_SERVER['REQUEST_METHOD'] )
             ? strtoupper( wp_unslash( $_SERVER['REQUEST_METHOD'] ) )
@@ -416,6 +482,7 @@ class WC_Gateway_NicePay extends WC_Payment_Gateway {
             'Moid'         => $moid,
             'PayMethod'    => $pay_method,
             'Signature'    => $signature,
+			'ReqReserved'  => $req_reserved,
         );
 
         $transaction = NicePay_Inbound_Validator::validate_auth_return(
@@ -442,26 +509,13 @@ class WC_Gateway_NicePay extends WC_Payment_Gateway {
             exit;
         }
 
-        $order = wc_get_order( $transaction->wc_order_id );
-        if ( ! $order ) {
-            $abort = nicepay_abort_authenticated_payment(
-                $transaction->id,
-                $auth_data,
-                $this->api,
-                'woocommerce_order_missing_after_auth'
-            );
-            nicepay_log( 'Return handler: WC order not found', $transaction->wc_order_id, 'error' );
-            if ( ! $abort['persisted'] ) {
-                nicepay_log( 'Missing-order auth abort audit could not be persisted', $transaction->id, 'error' );
-            }
-            wp_die( esc_html__( 'Order not found.', 'nicepay-payment-gateway' ), 'NicePay Error', array( 'response' => 404 ) );
-            return;
-        }
-
         if ( ! nicepay_update_transaction( $transaction->id, array(
-            'tid'        => $tx_tid,
-            'auth_token' => $auth_token,
+			'tid'            => $tx_tid,
+			'auth_token'     => $auth_token,
+			'next_app_url'   => $next_app_url,
+			'net_cancel_url' => $net_cancel_url,
         ), true ) ) {
+			$order = wc_get_order( $transaction->wc_order_id );
             $abort = nicepay_abort_authenticated_payment(
                 $transaction->id,
                 $auth_data,
@@ -469,18 +523,50 @@ class WC_Gateway_NicePay extends WC_Payment_Gateway {
                 'auth_context_persistence_failed_before_approval'
             );
             nicepay_log( 'WooCommerce auth context could not be persisted before approval', $transaction->id, 'error' );
-            if ( $abort['needs_reconciliation'] ) {
+			if ( $order && $abort['needs_reconciliation'] ) {
                 $order->update_status( 'on-hold', __( 'NicePay authentication succeeded, but its reversal could not be confirmed. Reconcile this order before retrying.', 'nicepay-payment-gateway' ) );
-            } else {
+			} elseif ( $order ) {
                 $order->add_order_note( __( 'NicePay approval was not attempted and the authentication hold was reversed. The order remains payable.', 'nicepay-payment-gateway' ) );
             }
-            $order->save();
+			if ( $order ) {
+				$order->save();
+			}
             wc_add_notice( __( 'Payment processing could not be completed safely.', 'nicepay-payment-gateway' ), 'error' );
-            wp_safe_redirect( $abort['needs_reconciliation'] ? $this->get_return_url( $order ) : $order->get_checkout_payment_url( true ) );
+			wp_safe_redirect(
+				$order
+					? ( $abort['needs_reconciliation'] ? $this->get_return_url( $order ) : $order->get_checkout_payment_url( true ) )
+					: wc_get_checkout_url()
+			);
             exit;
         }
 
-        $transaction->tid = $tx_tid;
+		$order = wc_get_order( $transaction->wc_order_id );
+		if ( ! $order ) {
+			$abort = nicepay_abort_authenticated_payment(
+				$transaction->id,
+				array(),
+				$this->api,
+				'woocommerce_order_missing_after_auth'
+			);
+			nicepay_log( 'Return handler: WC order not found', $transaction->wc_order_id, 'error' );
+			if ( ! $abort['persisted'] ) {
+				nicepay_log( 'Missing-order auth abort audit could not be persisted', $transaction->id, 'error' );
+			}
+			wp_die( esc_html__( 'Order not found.', 'nicepay-payment-gateway' ), 'NicePay Error', array( 'response' => 404 ) );
+			return;
+		}
+
+		$auth_data = nicepay_get_authenticated_payment_context( $transaction->id );
+		if ( is_wp_error( $auth_data ) ) {
+			$abort = nicepay_abort_authenticated_payment( $transaction->id, array(), $this->api, $auth_data->get_error_code() );
+			$order->update_status( 'on-hold', __( 'NicePay authentication succeeded, but its locally stored reversal context is incomplete. Manual reconciliation is required.', 'nicepay-payment-gateway' ) );
+			$order->save();
+			nicepay_log( 'WooCommerce local auth context could not be reloaded', $transaction->id, 'error' );
+			wp_safe_redirect( $this->get_return_url( $order ) );
+			exit;
+		}
+
+		$transaction->tid = $auth_data['TxTid'];
 
         $order_amount = nicepay_get_amount( $order->get_total(), $order->get_currency() );
         $stored_amount = nicepay_normalize_amount( $transaction->amount, $transaction->currency );
@@ -636,13 +722,24 @@ class WC_Gateway_NicePay extends WC_Payment_Gateway {
                     $order->update_meta_data( '_nicepay_auth_code', $result['AuthCode'] );
                 }
 
-                $order->payment_complete( $tid );
-                $order->add_order_note( sprintf(
-                    /* translators: %1$s: payment method, %2$s: TID */
-                    __( 'NicePay payment completed. Method: %1$s, TID: %2$s', 'nicepay-payment-gateway' ),
-                    NicePay_API::get_payment_method_name( $result_method ),
-                    $tid
-                ) );
+				if ( 'test' === $this->api->get_mode() ) {
+					$order->update_meta_data( '_nicepay_test_payment', 'yes' );
+					$order->update_status( 'on-hold', __( 'NicePay sandbox payment approved. This is a test transaction; do not fulfill the order.', 'nicepay-payment-gateway' ) );
+					$order->add_order_note( sprintf(
+						/* translators: %1$s: payment method, %2$s: sandbox TID */
+						__( 'NicePay TEST payment approved. Method: %1$s, sandbox TID: %2$s. No real payment was collected.', 'nicepay-payment-gateway' ),
+						NicePay_API::get_payment_method_name( $result_method ),
+						$tid
+					) );
+				} else {
+					$order->payment_complete( $tid );
+					$order->add_order_note( sprintf(
+						/* translators: %1$s: payment method, %2$s: TID */
+						__( 'NicePay payment completed. Method: %1$s, TID: %2$s', 'nicepay-payment-gateway' ),
+						NicePay_API::get_payment_method_name( $result_method ),
+						$tid
+					) );
+				}
                 $order->save();
             } catch ( Throwable $throwable ) {
                 nicepay_update_transaction( $transaction->id, array(
@@ -720,10 +817,12 @@ class WC_Gateway_NicePay extends WC_Payment_Gateway {
             return new WP_Error( 'nicepay_refund_context_error', __( 'The original payment context does not match the active NicePay configuration.', 'nicepay-payment-gateway' ) );
         }
 
-        $captured = nicepay_normalize_amount(
-            ! empty( $transaction->captured_amount ) ? $transaction->captured_amount : $transaction->amount,
-            'KRW'
-        );
+		$captured = nicepay_normalize_ledger_amount(
+			isset( $transaction->captured_amount ) ? $transaction->captured_amount : '0'
+		);
+		if ( false === $captured || '0' === $captured ) {
+			$captured = nicepay_normalize_amount( $transaction->amount, 'KRW' );
+		}
         $refunded = nicepay_normalize_ledger_amount(
             isset( $transaction->refunded_amount ) ? $transaction->refunded_amount : '0'
         );

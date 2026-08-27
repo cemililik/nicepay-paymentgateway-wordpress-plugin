@@ -416,6 +416,9 @@ class NicePayFunctionsTest extends TestCase {
         $this->assertSame( 'Quick Payment', $stored[0]['goods_name'] );
         $this->assertSame( 'Pay Now', $stored[0]['button_text'] );
         $this->assertSame( 1, $stored[0]['preset_version'] );
+		$this->assertArrayNotHasKey( 'buyer_name', $stored[0] );
+		$this->assertArrayNotHasKey( 'buyer_email', $stored[0] );
+		$this->assertArrayNotHasKey( 'buyer_tel', $stored[0] );
         $this->assertSame( 'translated:Quick Payment', $runtime[0]['name'] );
         $this->assertSame( 'translated:Quick Payment', $runtime[0]['goods_name'] );
         $this->assertSame( 'translated:Pay Now', $runtime[0]['button_text'] );
@@ -450,6 +453,26 @@ class NicePayFunctionsTest extends TestCase {
         $this->assertSame( array( $legacy ), nicepay_get_all_shortcodes() );
         $this->assertSame( array( $legacy ), nicepay_prepare_shortcodes_for_storage( array( $legacy ) ) );
     }
+
+	public function test_legacy_saved_offer_contact_is_scrubbed_from_reusable_configuration(): void {
+		global $wp_options;
+
+		$legacy = array(
+			'id'          => 'merchant-offer',
+			'name'        => 'Merchant offer',
+			'buyer_name'  => 'Legacy Buyer',
+			'buyer_email' => 'legacy@example.com',
+			'buyer_tel'   => '01012345678',
+		);
+		update_option( 'nicepay_saved_shortcodes', array( $legacy ) );
+
+		$result = nicepay_get_all_shortcodes();
+
+		$this->assertArrayNotHasKey( 'buyer_name', $result[0] );
+		$this->assertArrayNotHasKey( 'buyer_email', $result[0] );
+		$this->assertArrayNotHasKey( 'buyer_tel', $result[0] );
+		$this->assertSame( $result, $wp_options['nicepay_saved_shortcodes'] );
+	}
 
     public function test_saved_shortcodes_reject_malformed_option_values(): void {
         update_option( 'nicepay_saved_shortcodes', 'not-an-array' );

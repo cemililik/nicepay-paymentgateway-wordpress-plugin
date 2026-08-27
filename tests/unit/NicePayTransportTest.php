@@ -81,6 +81,7 @@ class NicePayTransportTest extends TestCase {
         $this->assertSame( 'nicepay00m01012006221311045107', $request['args']['body']['TID'] );
         $this->assertSame( '1004', $request['args']['body']['Amt'] );
         $this->assertSame( 'utf-8', $request['args']['body']['CharSet'] );
+		$this->assertSame( 'JSON', $request['args']['body']['EdiType'] );
         $this->assertMatchesRegularExpression( '/^[0-9a-f]{64}$/', $request['args']['body']['SignData'] );
     }
 
@@ -140,6 +141,7 @@ class NicePayTransportTest extends TestCase {
         $this->assertSame( '1', $request['args']['body']['NetCancel'] );
         $this->assertSame( '1004', $request['args']['body']['Amt'] );
         $this->assertSame( 'utf-8', $request['args']['body']['CharSet'] );
+		$this->assertSame( 'JSON', $request['args']['body']['EdiType'] );
         $this->assertMatchesRegularExpression( '/^[0-9a-f]{64}$/', $request['args']['body']['SignData'] );
     }
 
@@ -162,6 +164,7 @@ class NicePayTransportTest extends TestCase {
         $this->assertSame( '1004', $request['args']['body']['CancelAmt'] );
         $this->assertSame( 'SP_ORDER_1', $request['args']['body']['Moid'] );
         $this->assertSame( 'utf-8', $request['args']['body']['CharSet'] );
+		$this->assertSame( 'JSON', $request['args']['body']['EdiType'] );
         $this->assertMatchesRegularExpression( '/^[0-9a-f]{64}$/', $request['args']['body']['SignData'] );
     }
 

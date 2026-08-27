@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 <div id="nicepay-payment-wrapper" class="nicepay-payment-wrapper" data-nicepay-checkout-url="<?php echo esc_url( wc_get_checkout_url() ); ?>">
     <?php if ( $is_test_mode ) : ?>
-        <output class="nicepay-notice" aria-live="polite">
+		<output class="nicepay-notice nicepay-notice-warning" aria-live="polite">
             <?php esc_html_e( 'Test mode — no real payment will be collected.', 'nicepay-payment-gateway' ); ?>
         </output>
     <?php endif; ?>

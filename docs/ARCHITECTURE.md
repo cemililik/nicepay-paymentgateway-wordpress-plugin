@@ -64,6 +64,7 @@ graph TB
 ```
 nicepay-payment-gateway/
 ├── nicepay-payment-gateway.php      # Plugin entry point, bootstrap, AJAX handlers
+├── uninstall.php                    # Explicit opt-in multisite-aware data removal
 ├── includes/
 │   ├── class-nicepay-api.php        # NicePay API communication layer
 │   ├── class-nicepay-gateway.php    # WooCommerce payment gateway
@@ -72,6 +73,9 @@ nicepay-payment-gateway/
 │   ├── class-nicepay-inbound-validator.php # Return/approval binding policy
 │   ├── class-nicepay-installer.php        # Versioned dbDelta schema installer
 │   ├── class-nicepay-transaction-schema.php # Pure schema/write map
+│   ├── class-nicepay-retention.php      # Bounded financial-retention lifecycle
+│   ├── class-nicepay-privacy.php        # WordPress exporter/eraser integration
+│   ├── class-nicepay-blocks-integration.php # WooCommerce Checkout Blocks adapter
 │   ├── nicepay-functions.php        # Helper functions, DB operations, shortcode helpers
 │   └── nicepay-icons.php            # SVG icons for payment methods
 ├── admin/
@@ -300,7 +304,7 @@ flowchart TD
 
 ### `wp_nicepay_transactions`
 
-Stores all transaction records regardless of source (WooCommerce or standalone).
+Stores all transaction records regardless of source (WooCommerce or standalone). The authoritative schema is `NicePay_Transaction_Schema::columns()`; schema target `2026.08.27.3` contains 72 columns. They are grouped below so every persisted field has an explicit architectural owner.
 
 ```mermaid
 erDiagram
@@ -310,27 +314,28 @@ erDiagram
         varchar order_id "Merchant order ID"
         bigint wc_order_id FK "WooCommerce order ID (nullable)"
         varchar moid "Merchant Order ID (Moid)"
-        decimal amount "Transaction amount"
+        varchar flow "woocommerce or standalone"
+        varchar source_ref "Merchant-owned source binding"
+        varchar active_attempt_key "Unique active WC attempt lock"
+        char binding_token_hash "ReqReserved SHA-256 binding"
+        varchar mid "Persisted merchant context"
+        varchar mode "Persisted test/live context"
+        char currency "KRW"
+        decimal amount "Requested amount"
+        decimal captured_amount "Confirmed captured amount"
+        decimal refunded_amount "Confirmed refunded amount"
+        decimal remaining_amount "Refundable balance"
         varchar payment_method "CARD, BANK, CELLPHONE for new payments"
         varchar pay_method_name "Display name"
-        varchar status "pending, approving, paid, failed, partially_refunded, refunded, needs_reconciliation"
+        varchar status "Canonical transaction state"
         varchar result_code "NicePay result code"
         text result_msg "Result message"
         varchar auth_token "Temporary; retained only for unresolved reconciliation"
-        varchar buyer_name "Buyer name"
-        varchar buyer_email "Buyer email"
-        varchar buyer_tel "Buyer phone"
-        varchar goods_name "Product name"
-        varchar card_code "Card company code"
-        varchar card_name "Card company name"
-        varchar card_quota "Installment months"
-        char cc_part_cl "Provider partial-refund capability"
-        varchar clickpay_cl "Simple-pay service code"
-        varchar card_type "Personal/corporate/overseas card type"
-        varchar bank_code "Bank code"
-        varchar bank_name "Bank name"
-        varchar vbank_num "Virtual account number"
-        varchar vbank_exp_date "VBank expiry date"
+        varchar approval_state "Approval state-machine state"
+        varchar reconciliation_status "not_required or required/resolved"
+        varchar cancel_status "Refund request state"
+        varchar net_cancel_status "Network reversal state"
+        char receipt_token_hash "Standalone receipt bearer hash"
         longtext payment_data "Allowlisted reconciliation fields only"
         datetime created_at "Creation timestamp"
         datetime updated_at "Last update timestamp"
@@ -339,12 +344,32 @@ erDiagram
     wc_orders ||--o{ nicepay_transactions : "wc_order_id"
 ```
 
+Complete transaction-column ownership:
+
+- Identity and binding: `id`, `tid`, `order_id`, `wc_order_id`, `moid`, `flow`, `source_ref`, `active_attempt_key`, `config_fingerprint`, `expected_method`, `allowed_methods`, `binding_token_hash`, `wc_order_key_hash`, `edi_date`, `next_app_url`, `net_cancel_url`, `offer_expires_at`, `mid`, `mode`.
+- Money and primary state: `currency`, `amount`, `captured_amount`, `refunded_amount`, `remaining_amount`, `payment_method`, `pay_method_name`, `status`, `result_code`, `result_msg`, `auth_token`, `approval_state`, `approval_attempts`, `approval_started_at`, `approved_at`.
+- Reconciliation and receipt: `reconciliation_status`, `reconciliation_checked_at`, `reconciliation_note`, `receipt_token_hash`, `receipt_issued_at`.
+- Buyer/goods and allowlisted instrument summary: `buyer_name`, `buyer_email`, `buyer_tel`, `goods_name`, `card_code`, `card_name`, `card_quota`, `cc_part_cl`, `clickpay_cl`, `card_type`, `bank_code`, `bank_name`.
+- Disabled legacy virtual-account surface: `vbank_num`, `vbank_exp_date`, `vbank_issued_at`, `vbank_expires_at`, `vbank_deposited_at`. These columns do not imply that VBANK is certified or enabled.
+- Refund/network-cancel audit: `otid`, `cancel_moid`, `cancel_status`, `cancel_amount`, `cancel_result_code`, `cancel_result_msg`, `cancel_requested_at`, `cancel_completed_at`, `net_cancel_status`, `net_cancel_result_code`, `net_cancel_result_msg`, `net_cancel_requested_at`, `net_cancel_completed_at`.
+- Safe payload and timestamps: `payment_data`, `created_at`, `updated_at`.
+
+All new transaction and refund-attempt timestamps are written explicitly in UTC; they never inherit the MySQL session timezone. Admin date inputs are interpreted in the WordPress site timezone and converted to UTC query bounds. Historical rows are not offset-adjusted during migration because their original database session timezone cannot be recovered safely. Retention age is measured from `created_at`, not from later administrative updates.
+
+### Child ledgers
+
+`wp_nicepay_refund_attempts` is an append-oriented request ledger with 15 columns: `id`, `transaction_id`, `wc_order_id`, `tid`, `cancel_moid`, `requested_amount`, `currency`, `reason`, `status`, `result_code`, `result_msg`, `response_data`, `requested_at`, `completed_at`, `created_at`. `cancel_moid` is unique.
+
+`wp_nicepay_reconciliation_audit` is the append-only operator decision ledger with 9 columns: `id`, `transaction_id`, `actor_id`, `action`, `reason`, `previous_status`, `resulting_status`, `confirmed_amount`, `created_at`. A reconciliation resolution and its audit row commit atomically under `SELECT ... FOR UPDATE`.
+
 ### Transaction Status Lifecycle
 
 ```mermaid
 stateDiagram-v2
     [*] --> pending : Transaction created
     pending --> approving : Atomic approval claim
+    pending --> abandoned : Newer attempt replaces it
+    pending --> expired : Offer timeout recovery
     approving --> paid : Bound approval success (CARD, BANK, CELLPHONE)
     pending --> failed : Known authentication decline
     approving --> failed : Known approval decline / confirmed rollback
@@ -353,6 +378,8 @@ stateDiagram-v2
     partially_refunded --> partially_refunded : Additional partial WC refund
     paid --> refunded : Full WC refund
     partially_refunded --> refunded : Remaining balance refunded
+    needs_reconciliation --> failed : Operator confirms reversal
+    needs_reconciliation --> paid : Operator confirms capture
     refunded --> [*]
     needs_reconciliation --> [*] : Merchant review required
     failed --> [*]
@@ -398,7 +425,7 @@ flowchart LR
 | **Transport** | All API calls use HTTPS (port 443) |
 | **Data Integrity** | SHA-256 signature on every request/response |
 | **Authentication** | MID + MerchantKey pair identifies the merchant |
-| **Authorization** | WordPress `manage_options` capability for admin actions |
+| **Authorization** | Read/operations require the configured payment-management capability; refunds and reconciliation additionally require `edit_shop_orders` |
 | **CSRF Protection** | WordPress nonce verification on admin AJAX actions |
 | **Input Validation** | `sanitize_text_field()`, `esc_attr()`, `absint()` on all inputs |
 | **Timing-safe Compare** | `hash_equals()` for signature comparison (prevents timing attacks) |
@@ -422,9 +449,14 @@ flowchart LR
 | `plugin_action_links_*` | Filter | Add settings link to plugins page |
 | `wp_ajax_nicepay_init_payment` | Action | AJAX: Initialize standalone payment |
 | `wp_ajax_nopriv_nicepay_init_payment` | Action | AJAX: Same (public) |
+| `wp_ajax_nicepay_refresh_nonce` / `wp_ajax_nopriv_nicepay_refresh_nonce` | Action | Refresh the short-lived public initialization nonce |
 | `wp_ajax_nicepay_save_shortcode` | Action | AJAX: Save/update shortcode config |
 | `wp_ajax_nicepay_delete_shortcode` | Action | AJAX: Delete shortcode config |
 | `wp_ajax_nicepay_cancel_transaction` | Action | Legacy action name; initiates one WooCommerce refund flow for an eligible linked order |
+| `wp_ajax_nicepay_resolve_reconciliation` | Action | Record a forward-only, reasoned provider-console decision and append its audit row |
+| `wpmu_new_blog` | Action | Provision tables/options for a new multisite site |
+| `wpmu_drop_tables` | Filter | Add all three per-site NicePay tables to site deletion |
+| `wp_privacy_personal_data_exporters` / `wp_privacy_personal_data_erasers` | Filter | Register privacy exporter and eraser callbacks |
 
 ### WooCommerce API Endpoints
 
@@ -453,11 +485,15 @@ flowchart LR
 | `nicepay_vbank_expiry_days` | int | Virtual account expiry in days |
 | `nicepay_retention_settings` | array | Fail-closed `indefinite` policy or acknowledged custom `days` value |
 | `nicepay_retention_last_run` | array | Non-sensitive UTC completion time, deleted count, and error code |
+| `nicepay_delete_data_on_uninstall` | string | `no` by default; explicit opt-in to irreversible uninstall cleanup |
 | Protocol charset | fixed | UTF-8 only; no persisted EUC-KR setting |
 | `nicepay_db_version` | string | Database schema version |
 | `nicepay_saved_shortcodes` | array | Saved shortcode configurations (includes presets) |
-| `nicepay_transactions_schema_version` | string | Independent migrator version; current target `2026.08.24.7` |
+| `nicepay_transactions_schema_version` | string | Independent migrator version; current target `2026.08.27.3` |
+| `nicepay_transactions_schema_verified_version` | string | Last schema version whose required columns/tables/indexes were verified |
 
-WordPress privacy exporter/eraser callbacks are implemented by `NicePay_Privacy`. The eraser anonymizes buyer contact and receipt/payload fields but deliberately retains the financial identity and amount ledger.
+WordPress privacy exporter/eraser callbacks are implemented by `NicePay_Privacy`. The exporter includes transaction records and their refund attempts. The eraser anonymizes settled records' buyer contact, refund-reason, receipt, and payload fields but deliberately retains the financial identity and amount ledger; active or unresolved payment states are preserved until the flow is settled.
 
-`NicePay_Retention` implements the separate merchant-selected lifecycle. Its default is indefinite. When a custom period is explicitly acknowledged, a daily bounded job selects old eligible rows with `FOR UPDATE`, deletes child refund-attempt history and parent rows in one database transaction, and rolls back if the locked parent set changes. Active/ambiguous/reconciliation states are excluded. WooCommerce orders and external/provider storage are outside this cleanup boundary.
+`NicePay_Retention` implements the separate merchant-selected lifecycle. Its default is indefinite. When a custom period is explicitly acknowledged, a daily bounded job selects old eligible rows with `FOR UPDATE`, deletes both child audit ledgers and parent rows in one database transaction, and rolls back if the locked parent set changes. Active/ambiguous/reconciliation states are excluded. WooCommerce orders and external/provider storage are outside this cleanup boundary.
+
+Public filters are intentionally narrow: `nicepay_http_timeout`, `nicepay_allow_test_mode_checkout`, `nicepay_rate_limit_unknown_ip_policy`, `nicepay_public_rate_limit_identity`, `nicepay_public_rate_limit_max_requests`, `nicepay_public_rate_limit_window`, `nicepay_manage_transactions_capability`, and `nicepay_goods_cl`. None may override transaction identity, amount, currency, MID, signature material, or a reconciliation result.

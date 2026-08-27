@@ -1,5 +1,8 @@
 # The Path to First-Class
 
+> [!WARNING]
+> **Frozen historical snapshot.** This review describes baseline commit `5855db1` (2026-08-19), before the 2.0 remediation work. Its line references and present-tense security claims do not describe the current code. Use `docs/analysis/pr-review2/` and current tests for release decisions.
+
 This is the forward-looking document of the review. It does not re-litigate every defect — it answers a
 narrower question: *what stands between this plugin and the stated goal of "a perfect, first-class experience
 — excellent in UI/UX, in ease of use and clarity, and in functionality"?* Forty findings are indexed here,

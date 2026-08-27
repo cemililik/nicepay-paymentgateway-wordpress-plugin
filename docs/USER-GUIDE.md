@@ -11,6 +11,7 @@ A complete step-by-step guide for installing, configuring, and using the NicePay
 - [Getting Started](#getting-started)
   - [Requirements](#requirements)
   - [Installation](#installation)
+	- [Upgrading from 1.x](#upgrading-from-1x)
   - [First-Time Setup Walkthrough](#first-time-setup-walkthrough)
 - [Admin Panel](#admin-panel)
   - [General Settings](#general-settings)
@@ -28,7 +29,6 @@ A complete step-by-step guide for installing, configuring, and using the NicePay
   - [Using Saved Shortcodes](#using-saved-shortcodes)
   - [Display Modes: Inline vs Modal](#display-modes-inline-vs-modal)
   - [Shortcode Parameters Reference](#shortcode-parameters-reference)
-  - [Buyer Information Behavior](#buyer-information-behavior)
   - [Button Customization](#button-customization)
 - [Payment Methods in Detail](#payment-methods-in-detail)
   - [Credit Card (CARD)](#credit-card-card)
@@ -66,6 +66,39 @@ A complete step-by-step guide for installing, configuring, and using the NicePay
 3. Select the ZIP file and click **Install Now**
 4. Click **Activate**
 5. Verify the payment return routes in your real permalink/proxy/cache environment before enabling payments
+
+### Upgrading from 1.x
+
+1. Create and verify a complete database backup before updating. The 2.x schema migration is forward-only; installing an older plugin over a newer NicePay schema is blocked and rollback is not supported.
+2. Export the transaction ledger before updating. A CSV contains at most 10,000 rows, so use non-overlapping date ranges for larger ledgers and verify every exported part.
+3. Update the plugin and open **NicePay > Settings**. Do not re-enable payments until the transaction schema readiness check passes.
+4. Confirm that WooCommerce uses `0` price decimals for KRW. Test-mode checkout is hidden by default; when explicitly enabled for development, sandbox orders remain `on-hold` and must never be fulfilled.
+5. Verify at least one historical paid order can be found by TID and reaches the refund confirmation step before going live.
+
+The migration stops without advancing its version when duplicate merchant order IDs or non-empty TIDs would prevent a unique index. Inspect duplicates on a backup or maintenance copy first:
+
+```sql
+SELECT moid, COUNT(*) AS duplicate_count
+FROM wp_nicepay_transactions
+GROUP BY moid
+HAVING COUNT(*) > 1;
+
+SELECT tid, COUNT(*) AS duplicate_count
+FROM wp_nicepay_transactions
+WHERE tid IS NOT NULL AND tid <> ''
+GROUP BY tid
+HAVING COUNT(*) > 1;
+```
+
+Replace `wp_` with the site's real table prefix. Do not delete or rewrite financial rows solely to make the migration pass. Match every duplicate to WooCommerce and the NICEPAY merchant console, keep a written audit trail, and obtain accounting/operations approval before correcting the authoritative row. If the context cannot be proven, leave the gateway disabled and escalate the record for manual reconciliation.
+
+### Uninstalling
+
+Uninstalling retains the NicePay financial ledger and settings by default. If
+you explicitly enable **Permanently delete NicePay tables and settings when the
+plugin is uninstalled** under **NicePay > Settings > General**, uninstalling
+will irreversibly delete plugin-owned transaction/refund tables and settings.
+Export the ledger and verify a recoverable database backup first.
 
 ### First-Time Setup Walkthrough
 
@@ -208,8 +241,7 @@ An interactive builder with a live preview panel. Build your payment shortcode v
 - **Specific method** — Lock to one method (e.g., Credit Card only)
 
 **5. Buyer Information**
-- **If left empty:** The payment form shows Name, Email, and Phone input fields for the buyer to fill in
-- **If filled:** Those values are pre-set and the fields are hidden from the buyer
+- Name, email, and phone are collected from the customer when payment starts. They are not stored in the reusable form configuration or embedded as hidden PII in public HTML.
 
 **6. Appearance**
 - **Button Text** — The label on the pay button (default: "Pay Now")
@@ -222,7 +254,7 @@ An interactive builder with a live preview panel. Build your payment shortcode v
 The right panel updates in real-time as you fill in the fields:
 - Shows product name and formatted amount
 - Shows payment method options (if "All Enabled")
-- Shows buyer input field placeholders (if buyer info not pre-filled)
+- Shows the buyer input fields that are collected at payment time
 - Shows the button with your chosen text and color
 
 #### Generated Shortcode
@@ -427,9 +459,6 @@ What the customer sees:
 | `amount` | No | Saved value | Cannot override saved commercial data |
 | `goods_name` | No | Saved value | Cannot override saved commercial data; sent as max 40 UTF-8 bytes |
 | `pay_method` | No | Saved/selected policy | Cannot override saved policy; certified choices are `CARD`, `BANK`, `CELLPHONE` |
-| `buyer_name` | No | — | Pre-fill buyer name |
-| `buyer_email` | No | — | Pre-fill buyer email |
-| `buyer_tel` | No | — | Pre-fill buyer phone |
 | `button_text` | No | "Pay Now" | Button label |
 | `button_color` | No | `#2563eb` | Hex color for button background |
 | `button_class` | No | `nicepay-pay-button` | CSS class for custom styling |
@@ -440,13 +469,9 @@ What the customer sees:
 
 ### Buyer Information Behavior
 
-| Scenario | What Happens |
-|---|---|
-| All buyer fields empty in shortcode | Form shows Name, Email, Phone inputs for the buyer to fill in |
-| Some fields provided | Only missing fields are shown as inputs |
-| All fields provided | No input fields shown — buyer info is hidden and pre-set |
+The form always shows Name, Email, and Phone inputs. Reusable configurations deliberately cannot contain buyer PII.
 
-**With validation:** When the buyer clicks Pay, the form validates:
+When the buyer clicks Pay, the form validates:
 - Name: must not be empty
 - Email: must be a valid email format
 - Phone: must be 7-20 digits (allows dashes, spaces, parentheses)

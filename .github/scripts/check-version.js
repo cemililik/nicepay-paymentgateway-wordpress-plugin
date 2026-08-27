@@ -33,6 +33,9 @@ const plugin = read(
     path.join(repositoryRoot, 'nicepay-payment-gateway.php')
 );
 const changelog = read('CHANGELOG.md', path.join(repositoryRoot, 'CHANGELOG.md'));
+const directoryReadme = read('readme.txt', path.join(repositoryRoot, 'readme.txt'));
+const composerMetadata = read('composer.json', path.join(repositoryRoot, 'composer.json'));
+const packageMetadata = read('package.json', path.join(repositoryRoot, 'package.json'));
 const bootstrap = read(
     'tests/bootstrap/bootstrap.php',
     path.join(repositoryRoot, 'tests', 'bootstrap', 'bootstrap.php')
@@ -65,6 +68,16 @@ const expectedUpdateUri = 'https://github.com/cemililik/nicepay-paymentgateway-w
 const updateUriMatch = plugin.match(/^\s*\*\s*Update URI:\s*([^\s]+)\s*$/m);
 const distributionChannel = process.env.NICEPAY_DISTRIBUTION_CHANNEL || 'github';
 const minimumWordPressMatch = plugin.match(/^\s*\*\s*Requires at least:\s*([^\s]+)\s*$/m);
+const readmeVersion = capture(directoryReadme, /^Stable tag:\s*([^\s]+)\s*$/m, 'readme.txt Stable tag');
+const packageVersion = capture(packageMetadata, /"version"\s*:\s*"([^"]+)"/, 'package.json');
+const pluginLicense = capture(plugin, /^\s*\*\s*License:\s*(.+?)\s*$/m, 'Plugin header License');
+const readmeLicense = capture(directoryReadme, /^License:\s*(.+?)\s*$/m, 'readme.txt License');
+const composerLicense = capture(composerMetadata, /"license"\s*:\s*"([^"]+)"/, 'composer.json License');
+const packageLicense = capture(packageMetadata, /"license"\s*:\s*"([^"]+)"/, 'package.json License');
+const contributorsMatch = directoryReadme.match(/^Contributors:\s*\S+/m);
+const normalizedLicenses = [pluginLicense, readmeLicense, composerLicense, packageLicense]
+    .map((license) => license.toLowerCase().replace(/[\s._-]+/g, ''));
+const compatibleLicenses = new Set(['gplv2orlater', 'gpl20orlater']);
 
 if (!expectedVersion || !semanticVersion.test(expectedVersion)) {
     failures.push(`Expected version is not a supported semantic version: ${expectedVersion || '(empty)'}`);
@@ -82,12 +95,22 @@ if (!minimumWordPressMatch || minimumWordPressMatch[1] !== '5.8') {
     failures.push('Plugin header Requires at least must remain 5.8 or be deliberately raised with the support matrix');
 }
 
+if (!contributorsMatch) {
+    failures.push('readme.txt: Contributors header is required for WordPress.org publishing');
+}
+
+if (normalizedLicenses.some((license) => !compatibleLicenses.has(license))) {
+    failures.push('License metadata must consistently declare GPL v2 or later / GPL-2.0-or-later');
+}
+
 [
     ['Plugin header', headerVersion],
     ['NICEPAY_VERSION', constantVersion],
     ['CHANGELOG.md latest entry', changelogVersion],
     ['Test bootstrap NICEPAY_VERSION', bootstrapVersion],
     ['Translation template Project-Id-Version', potVersion],
+	['readme.txt Stable tag', readmeVersion],
+	['package.json version', packageVersion],
 ].forEach(([label, value]) => {
     if (value && value !== expectedVersion) {
         failures.push(`${label}: expected ${expectedVersion}, found ${value}`);

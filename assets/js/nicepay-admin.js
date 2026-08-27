@@ -213,7 +213,7 @@
 
         showError: function(message) {
             var error = $('#nicepay-modal-error');
-            error.text(message || adminI18n.cancelFailed || 'Cancellation failed.').prop('hidden', false);
+			error.text(message || adminI18n.refundFailed || 'Refund failed.').prop('hidden', false);
             $('#nicepay-modal-input').attr('aria-invalid', 'true').css('border-color', '#dc2626').focus();
         },
 
@@ -245,16 +245,19 @@
         var tid = btn.data('tid');
         var id = btn.data('id');
         var nonce = btn.data('nonce');
+		var formattedAmount = String(btn.data('amount') || '');
+		var message = adminI18n.refundMessage || 'Refund %s? The provider action cannot be undone.';
+		message = message.replace('%s', formattedAmount);
 
         NicePayModal.open({
-            title: adminI18n.cancelTitle || 'Cancel Transaction',
-            message: adminI18n.cancelMessage || 'This action cannot be undone.',
-            inputLabel: adminI18n.cancelReasonLabel || 'Cancellation reason',
-            inputPlaceholder: adminI18n.cancelReasonPlaceholder || 'Enter reason...',
-            confirmText: adminI18n.cancelConfirm || 'Cancel Transaction',
+			title: adminI18n.refundTitle || 'Refund payment',
+			message: message,
+			inputLabel: adminI18n.refundReasonLabel || 'Refund reason',
+			inputPlaceholder: adminI18n.refundReasonPlaceholder || 'Enter the refund reason...',
+			confirmText: adminI18n.refundConfirm || 'Refund payment',
             onConfirm: function(reason, modal) {
                 if (!reason || !reason.trim()) {
-                    modal.showError(adminI18n.cancelReasonRequired || 'A cancellation reason is required.');
+					modal.showError(adminI18n.refundReasonRequired || 'A refund reason is required.');
                     return;
                 }
 
@@ -274,10 +277,11 @@
                         btn.closest('tr').find('.nicepay-status')
                             .removeClass('nicepay-status-paid nicepay-status-partially_refunded')
                             .addClass('nicepay-status-refunded')
-                            .text(adminI18n.statusRefunded || 'REFUNDED');
+							.text(adminI18n.statusRefunded || 'Refunded');
                         btn.remove();
+						window.location.reload();
                     } else {
-                        const message = response && response.data && response.data.message ? response.data.message : adminI18n.cancelFailed;
+						const message = response && response.data && response.data.message ? response.data.message : adminI18n.refundFailed;
                         modal.setLoading(false);
                         modal.showError(message);
                         NicePayToast.show(message, 'error');
@@ -292,6 +296,60 @@
         });
     });
 
+	/* ==========================================
+	   Reconciliation Resolution Handler
+	   ========================================== */
+	$(document).on('click', '.nicepay-reconcile-btn', function() {
+		var btn = $(this);
+		var decision = String(btn.data('decision') || '');
+		var amount = String(btn.data('amount') || '');
+		var isCaptured = decision === 'captured';
+		var title = isCaptured
+			? (adminI18n.reconcileCapturedTitle || 'Confirm captured funds')
+			: (adminI18n.reconcileReversedTitle || 'Confirm provider reversal');
+		var message = isCaptured
+			? (adminI18n.reconcileCapturedMessage || 'Record that NICEPAY confirms capture of %s. Verify the merchant console before continuing.')
+			: (adminI18n.reconcileReversedMessage || 'Record that NICEPAY confirms reversal of %s. Verify the merchant console before continuing.');
+
+		NicePayModal.open({
+			title: title,
+			message: message.replace('%s', amount),
+			inputLabel: adminI18n.reconcileReasonLabel || 'Evidence and reason',
+			inputPlaceholder: adminI18n.reconcileReasonPlaceholder || 'Enter the console reference and verification details...',
+			confirmText: adminI18n.reconcileConfirm || 'Record decision',
+			onConfirm: function(reason, modal) {
+				if (!reason || !reason.trim()) {
+					modal.showError(adminI18n.reconcileReasonRequired || 'Reconciliation evidence and a reason are required.');
+					return;
+				}
+				modal.clearError();
+				modal.setLoading(true);
+				$.post(adminConfig.ajaxUrl, {
+					action: 'nicepay_resolve_reconciliation',
+					id: btn.data('id'),
+					decision: decision,
+					reason: reason.trim(),
+					nonce: btn.data('nonce')
+				}, function(response) {
+					if (response && response.success) {
+						modal.close();
+						NicePayToast.show(response.data.message, 'success');
+						window.location.reload();
+						return;
+					}
+					var errorMessage = response && response.data && response.data.message
+						? response.data.message
+						: (adminI18n.reconcileFailed || 'Reconciliation decision could not be recorded.');
+					modal.setLoading(false);
+					modal.showError(errorMessage);
+				}).fail(function() {
+					modal.setLoading(false);
+					modal.showError(adminI18n.requestFailed || 'Request failed.');
+				});
+			}
+		});
+	});
+
     /* ==========================================
        Shortcode Card: Copy
        ========================================== */
@@ -302,13 +360,13 @@
             navigator.clipboard.writeText(text).then(function() {
                 NicePayToast.show(adminI18n.copied || 'Copied!', 'success', 2000);
             }).catch(function() {
-                NicePayToast.show('Copy failed', 'error', 2000);
+				NicePayToast.show(adminI18n.copyFailed || 'Copy failed.', 'error', 2000);
             });
         } else {
             const temp = $(element('textarea')).val(text).appendTo('body').select();
             var ok = document.execCommand('copy');
             temp.remove();
-            NicePayToast.show(ok ? (adminI18n.copied || 'Copied!') : 'Copy failed', ok ? 'success' : 'error', 2000);
+			NicePayToast.show(ok ? (adminI18n.copied || 'Copied!') : (adminI18n.copyFailed || 'Copy failed.'), ok ? 'success' : 'error', 2000);
         }
     });
 
@@ -361,7 +419,7 @@
                 NicePayToast.show(adminI18n.copied || 'Copied!', 'success', 2000);
                 setTimeout(function() { btn.removeClass('is-copied'); }, 2000);
             }).catch(function() {
-                NicePayToast.show('Copy failed', 'error', 2000);
+				NicePayToast.show(adminI18n.copyFailed || 'Copy failed.', 'error', 2000);
             });
         } else {
             const temp = $(element('input')).val(text).appendTo('body').select();
@@ -372,7 +430,7 @@
                 NicePayToast.show(adminI18n.copied || 'Copied!', 'success', 2000);
                 setTimeout(function() { btn.removeClass('is-copied'); }, 2000);
             } else {
-                NicePayToast.show('Copy failed', 'error', 2000);
+				NicePayToast.show(adminI18n.copyFailed || 'Copy failed.', 'error', 2000);
             }
         }
     });

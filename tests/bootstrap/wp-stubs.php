@@ -26,6 +26,50 @@ global $wp_test_hooks, $wp_http_api_curl_test_invocations;
 $wp_test_hooks = array();
 $wp_http_api_curl_test_invocations = 0;
 
+global $wp_verify_nonce_test_result, $wp_verify_nonce_test_checks;
+$wp_verify_nonce_test_result = true;
+$wp_verify_nonce_test_checks = array();
+
+global $nicepay_admin_test_can_manage;
+$nicepay_admin_test_can_manage = true;
+
+global $wp_timezone_string_test;
+$wp_timezone_string_test = 'UTC';
+
+global $nicepay_admin_test_is_ssl, $nicepay_wc_currency_test, $nicepay_wc_decimals_test;
+$nicepay_admin_test_is_ssl = true;
+$nicepay_wc_currency_test  = 'KRW';
+$nicepay_wc_decimals_test  = 0;
+
+global $nicepay_wc_notices_test;
+$nicepay_wc_notices_test = array();
+
+if ( ! class_exists( 'NicePay_Test_Json_Response_Exception' ) ) {
+	class NicePay_Test_Json_Response_Exception extends RuntimeException {
+		public $success;
+		public $data;
+		public $status;
+
+		public function __construct( $success, $data, $status ) {
+			parent::__construct( 'WordPress JSON response', (int) $status );
+			$this->success = (bool) $success;
+			$this->data    = $data;
+			$this->status  = (int) $status;
+		}
+	}
+}
+
+if ( ! class_exists( 'NicePay_Test_Redirect_Exception' ) ) {
+	class NicePay_Test_Redirect_Exception extends RuntimeException {
+		public $location;
+
+		public function __construct( $location ) {
+			parent::__construct( 'WordPress redirect' );
+			$this->location = (string) $location;
+		}
+	}
+}
+
 if ( ! function_exists( 'add_filter' ) ) {
     function add_filter( $hook_name, $callback, $priority = 10, $accepted_args = 1 ) {
         global $wp_test_hooks;
@@ -218,10 +262,85 @@ if ( ! function_exists( 'wp_rand' ) ) {
     }
 }
 
+if ( ! function_exists( 'wp_verify_nonce' ) ) {
+	function wp_verify_nonce( $nonce, $action = -1 ) {
+		global $wp_verify_nonce_test_result, $wp_verify_nonce_test_checks;
+		$wp_verify_nonce_test_checks[] = array( 'nonce' => $nonce, 'action' => $action );
+		return $wp_verify_nonce_test_result ? 1 : false;
+	}
+}
+
+if ( ! function_exists( 'current_user_can' ) ) {
+	function current_user_can( $capability ) {
+		global $nicepay_admin_test_can_manage;
+		return (bool) $nicepay_admin_test_can_manage;
+	}
+}
+
+if ( ! function_exists( 'wp_send_json_success' ) ) {
+	function wp_send_json_success( $data = null, $status_code = null ) {
+		throw new NicePay_Test_Json_Response_Exception( true, $data, null === $status_code ? 200 : $status_code );
+	}
+}
+
+if ( ! function_exists( 'wp_send_json_error' ) ) {
+	function wp_send_json_error( $data = null, $status_code = null ) {
+		throw new NicePay_Test_Json_Response_Exception( false, $data, null === $status_code ? 200 : $status_code );
+	}
+}
+
 if ( ! function_exists( 'home_url' ) ) {
     function home_url( $path = '' ) {
         return 'https://example.com/' . ltrim( (string) $path, '/' );
     }
+}
+
+if ( ! function_exists( 'is_ssl' ) ) {
+	function is_ssl() {
+		global $nicepay_admin_test_is_ssl;
+		return (bool) $nicepay_admin_test_is_ssl;
+	}
+}
+
+if ( ! function_exists( 'get_woocommerce_currency' ) ) {
+	function get_woocommerce_currency() {
+		global $nicepay_wc_currency_test;
+		return (string) $nicepay_wc_currency_test;
+	}
+}
+
+if ( ! function_exists( 'wc_get_price_decimals' ) ) {
+	function wc_get_price_decimals() {
+		global $nicepay_wc_decimals_test;
+		return (int) $nicepay_wc_decimals_test;
+	}
+}
+
+if ( ! function_exists( 'wc_get_checkout_url' ) ) {
+	function wc_get_checkout_url() {
+		return 'https://example.com/checkout/';
+	}
+}
+
+if ( ! function_exists( 'wc_add_notice' ) ) {
+	function wc_add_notice( $message, $notice_type = 'success' ) {
+		global $nicepay_wc_notices_test;
+		$nicepay_wc_notices_test[] = array( 'message' => $message, 'type' => $notice_type );
+	}
+}
+
+if ( ! function_exists( 'wp_safe_redirect' ) ) {
+	function wp_safe_redirect( $location, $status = 302, $x_redirect_by = 'WordPress' ) {
+		throw new NicePay_Test_Redirect_Exception( $location );
+	}
+}
+
+if ( ! function_exists( 'get_gmt_from_date' ) ) {
+	function get_gmt_from_date( $date_string, $format = 'Y-m-d H:i:s' ) {
+		global $wp_timezone_string_test;
+		$date = new DateTimeImmutable( (string) $date_string, new DateTimeZone( $wp_timezone_string_test ) );
+		return $date->setTimezone( new DateTimeZone( 'UTC' ) )->format( $format );
+	}
 }
 
 if ( ! function_exists( 'add_query_arg' ) ) {
@@ -305,6 +424,12 @@ if ( ! function_exists( 'sanitize_key' ) ) {
         $key = strtolower( (string) $key );
         return preg_replace( '/[^a-z0-9_\-]/', '', $key );
     }
+}
+
+if ( ! function_exists( 'sanitize_textarea_field' ) ) {
+	function sanitize_textarea_field( $value ) {
+		return trim( strip_tags( (string) $value ) );
+	}
 }
 
 if ( ! function_exists( 'esc_html' ) ) {

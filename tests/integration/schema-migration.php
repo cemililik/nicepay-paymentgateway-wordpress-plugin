@@ -20,9 +20,11 @@ function nicepay_it_assert( $condition, $message ) {
 
 $table        = NicePay_Installer::table_name( $wpdb );
 $refund_table = NicePay_Installer::refund_table_name( $wpdb );
+$audit_table  = NicePay_Installer::reconciliation_audit_table_name( $wpdb );
 
 nicepay_it_assert( $table === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ), 'Fresh transaction table is missing.' );
 nicepay_it_assert( $refund_table === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $refund_table ) ), 'Fresh refund table is missing.' );
+nicepay_it_assert( $audit_table === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $audit_table ) ), 'Fresh reconciliation audit table is missing.' );
 nicepay_it_assert( NicePay_Installer::is_current(), 'Fresh schema is not current.' );
 
 $indexes = $wpdb->get_col( "SHOW INDEX FROM {$table}", 2 );
@@ -31,43 +33,104 @@ nicepay_it_assert( in_array( 'uniq_active_attempt', $indexes, true ), 'Unique ac
 nicepay_it_assert( in_array( 'idx_created_at', $indexes, true ), 'Created-at list index is missing.' );
 nicepay_it_assert( in_array( 'idx_updated_at', $indexes, true ), 'Updated-at retention index is missing.' );
 
-// Simulate the immediately previous schema and prove additive upgrade.
-foreach ( array( 'cc_part_cl', 'clickpay_cl', 'card_type' ) as $column ) {
-	$wpdb->query( "ALTER TABLE {$table} DROP COLUMN {$column}" );
-}
-update_option( NicePay_Installer::VERSION_OPTION, '2026.08.20.5', false );
-$upgrade = NicePay_Installer::maybe_install();
-nicepay_it_assert( ! is_wp_error( $upgrade ), 'Additive legacy -> current upgrade failed.' );
-foreach ( array( 'cc_part_cl', 'clickpay_cl', 'card_type' ) as $column ) {
-	nicepay_it_assert( $column === $wpdb->get_var( $wpdb->prepare( "SHOW COLUMNS FROM {$table} LIKE %s", $column ) ), "Upgraded column {$column} is missing." );
+// Rebuild the exact published 1.x table shape. This is intentionally not a
+// current table with a few columns removed: nullability and legacy indexes are
+// the migration hazards this fixture must exercise.
+$wpdb->query( "DROP TABLE {$table}" );
+delete_option( NicePay_Installer::VERSION_OPTION );
+delete_option( NicePay_Installer::VERIFIED_VERSION_OPTION );
+$charset_collate = $wpdb->get_charset_collate();
+$legacy_sql = "CREATE TABLE {$table} (
+	id bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+	tid varchar(50) NOT NULL DEFAULT '',
+	order_id varchar(100) NOT NULL DEFAULT '',
+	wc_order_id bigint(20) UNSIGNED DEFAULT NULL,
+	moid varchar(64) NOT NULL DEFAULT '',
+	amount decimal(12,2) NOT NULL DEFAULT 0,
+	payment_method varchar(20) NOT NULL DEFAULT '',
+	pay_method_name varchar(50) NOT NULL DEFAULT '',
+	status varchar(20) NOT NULL DEFAULT 'pending',
+	result_code varchar(10) NOT NULL DEFAULT '',
+	result_msg text NOT NULL,
+	auth_token varchar(50) NOT NULL DEFAULT '',
+	buyer_name varchar(100) NOT NULL DEFAULT '',
+	buyer_email varchar(100) NOT NULL DEFAULT '',
+	buyer_tel varchar(30) NOT NULL DEFAULT '',
+	goods_name varchar(100) NOT NULL DEFAULT '',
+	card_code varchar(5) NOT NULL DEFAULT '',
+	card_name varchar(50) NOT NULL DEFAULT '',
+	card_no varchar(30) NOT NULL DEFAULT '',
+	card_quota varchar(5) NOT NULL DEFAULT '',
+	bank_code varchar(5) NOT NULL DEFAULT '',
+	bank_name varchar(50) NOT NULL DEFAULT '',
+	vbank_num varchar(30) NOT NULL DEFAULT '',
+	vbank_exp_date varchar(20) NOT NULL DEFAULT '',
+	payment_data longtext,
+	created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	PRIMARY KEY (id),
+	KEY idx_tid (tid),
+	KEY idx_order_id (order_id),
+	KEY idx_wc_order_id (wc_order_id),
+	KEY idx_moid (moid),
+	KEY idx_status (status)
+) {$charset_collate}";
+nicepay_it_assert( false !== $wpdb->query( $legacy_sql ), 'Published 1.x schema fixture could not be created.' );
+
+for ( $legacy_index = 1; $legacy_index <= 5; $legacy_index++ ) {
+	$is_paid = $legacy_index <= 3;
+	$inserted = $wpdb->insert(
+		$table,
+		array(
+			'tid'          => $is_paid ? sprintf( 'legacy-tid-%d', $legacy_index ) : '',
+			'order_id'     => 'legacy-order-' . $legacy_index,
+			'wc_order_id'  => 700 + $legacy_index,
+			'moid'         => 'LEGACY_' . $legacy_index,
+			'amount'       => 1000 * $legacy_index,
+			'status'       => $is_paid ? 'paid' : 'pending',
+			'auth_token'   => $is_paid ? 'spent-auth-token' : '',
+			'card_no'      => $is_paid ? '4111111111111111' : '',
+			'payment_data' => $is_paid ? '{"CardNo":"4111111111111111","AuthCode":"legacy-audit"}' : null,
+		),
+		array( '%s', '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s' )
+	);
+	nicepay_it_assert( 1 === $inserted, 'A published 1.x fixture row could not be inserted.' );
 }
 
-// Recreate the sensitive legacy shape and prove the migration scrubs it.
-$wpdb->query( "ALTER TABLE {$table} ADD COLUMN card_no varchar(30) NOT NULL DEFAULT ''" );
-$inserted = $wpdb->insert(
-	$table,
-	array(
-		'moid'         => 'LEGACY_20260820120000_0123456789abcdef',
-		'order_id'     => 'legacy-order',
-		'status'       => 'paid',
-		'auth_token'   => 'spent-auth-token',
-		'card_no'      => '4111111111111111',
-		'payment_data' => '{"CardNo":"4111111111111111","BuyerEmail":"buyer@example.com"}',
-	),
-	array( '%s', '%s', '%s', '%s', '%s', '%s' )
-);
-nicepay_it_assert( 1 === $inserted, 'Legacy fixture could not be inserted.' );
-update_option( NicePay_Installer::VERSION_OPTION, '2026.08.20.4', false );
-$scrub = NicePay_Installer::maybe_install();
-nicepay_it_assert( ! is_wp_error( $scrub ), 'Legacy sensitive-data migration failed.' );
-$legacy = $wpdb->get_row( $wpdb->prepare( "SELECT auth_token, card_no, payment_data FROM {$table} WHERE moid = %s", 'LEGACY_20260820120000_0123456789abcdef' ) );
-nicepay_it_assert( '' === $legacy->auth_token, 'Spent legacy auth token was not scrubbed.' );
-nicepay_it_assert( '' === $legacy->card_no, 'Legacy PAN field was not scrubbed.' );
-nicepay_it_assert( null === $legacy->payment_data, 'Legacy sensitive payload was not scrubbed.' );
+$upgrade = NicePay_Installer::maybe_install();
+nicepay_it_assert( ! is_wp_error( $upgrade ), 'Published 1.x -> current schema upgrade failed.' );
+$tid_column = $wpdb->get_row( "SHOW COLUMNS FROM {$table} LIKE 'tid'" );
+nicepay_it_assert( isset( $tid_column->Null ) && 'YES' === $tid_column->Null, 'Legacy TID column is still NOT NULL.' );
+nicepay_it_assert( 0 === (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table} WHERE tid = ''" ), 'Legacy empty TID sentinels were not normalized.' );
+$indexes = $wpdb->get_col( "SHOW INDEX FROM {$table}", 2 );
+foreach ( array( 'uniq_moid', 'uniq_tid', 'uniq_active_attempt', 'idx_source_ref', 'idx_status_offer_expiry', 'idx_status_approval_started' ) as $required_index ) {
+	nicepay_it_assert( in_array( $required_index, $indexes, true ), "Required upgraded index {$required_index} is missing." );
+}
+$legacy = $wpdb->get_row( "SELECT * FROM {$table} WHERE moid = 'LEGACY_1'" );
+nicepay_it_assert( 'woocommerce' === $legacy->flow, 'Legacy WooCommerce flow was not backfilled.' );
+nicepay_it_assert( 'KRW' === $legacy->currency, 'Legacy currency was not backfilled.' );
+nicepay_it_assert( 'test' === $legacy->mode && NICEPAY_TEST_MID === $legacy->mid, 'Legacy merchant context was not backfilled.' );
+nicepay_it_assert( '1000.00' === $legacy->captured_amount && '1000.00' === $legacy->remaining_amount, 'Legacy captured balance was not backfilled.' );
+nicepay_it_assert( '' === $legacy->auth_token && '' === $legacy->card_no, 'Spent legacy credentials were not scrubbed.' );
+nicepay_it_assert( null !== $legacy->payment_data, 'Legacy audit payload was erased without operator confirmation.' );
+nicepay_it_assert( is_object( nicepay_get_transaction_by_tid( 'legacy-tid-1', 701 ) ), 'Backfilled legacy payment cannot be resolved for refunds.' );
+nicepay_it_assert( false !== nicepay_save_transaction( array( 'moid' => 'POST_UPGRADE_1', 'order_id' => 'post-upgrade-1' ) ), 'First post-upgrade transaction could not be inserted.' );
+nicepay_it_assert( false !== nicepay_save_transaction( array( 'moid' => 'POST_UPGRADE_2', 'order_id' => 'post-upgrade-2' ) ), 'Second post-upgrade transaction could not be inserted.' );
+
+// Repository timestamps must be UTC even when the database session is not.
+$wpdb->query( "SET time_zone = '+09:00'" );
+$utc_before = gmdate( 'Y-m-d H:i:s' );
+$utc_row_id = nicepay_save_transaction( array( 'moid' => 'UTC_CONTRACT_1', 'order_id' => 'utc-contract' ) );
+$utc_after  = gmdate( 'Y-m-d H:i:s' );
+$utc_row    = $wpdb->get_row( $wpdb->prepare( "SELECT created_at, updated_at FROM {$table} WHERE id = %d", $utc_row_id ) );
+nicepay_it_assert( $utc_row && $utc_row->created_at >= $utc_before && $utc_row->created_at <= $utc_after, 'Transaction created_at inherited the database session timezone.' );
+nicepay_it_assert( $utc_row->created_at === $utc_row->updated_at, 'Initial UTC transaction timestamps diverged.' );
+$wpdb->query( "SET time_zone = '+00:00'" );
 
 // A current version option may not hide a missing physical table.
 $wpdb->query( "DROP TABLE {$refund_table}" );
 update_option( NicePay_Installer::VERSION_OPTION, NicePay_Installer::schema_version(), false );
+delete_option( NicePay_Installer::VERIFIED_VERSION_OPTION );
 $repair = NicePay_Installer::maybe_install();
 nicepay_it_assert( ! is_wp_error( $repair ), 'Missing-table self-repair failed.' );
 nicepay_it_assert( $refund_table === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $refund_table ) ), 'Refund table was not recreated.' );
@@ -155,8 +218,13 @@ nicepay_it_assert( ! nicepay_claim_transaction_for_refund( $refund_claim, 'RF503
 for ( $index = 0; $index < 50; $index++ ) {
 	$wpdb->insert(
 		$table,
-		array( 'moid' => sprintf( 'IT_%014d_%016x', $index, $index ), 'order_id' => 'integration-' . $index ),
-		array( '%s', '%s' )
+		array(
+			'moid'       => sprintf( 'IT_%014d_%016x', $index, $index ),
+			'order_id'   => 'integration-' . $index,
+			'created_at' => gmdate( 'Y-m-d H:i:s' ),
+			'updated_at' => gmdate( 'Y-m-d H:i:s' ),
+		),
+		array( '%s', '%s', '%s', '%s' )
 	);
 }
 $plan = $wpdb->get_row( "EXPLAIN SELECT id, created_at FROM {$table} ORDER BY created_at DESC LIMIT 20" );
@@ -266,7 +334,7 @@ nicepay_it_assert(
 );
 
 $retention_ids = implode( ',', array_map( 'absint', array( $retention_eligible, $retention_reconciliation, $retention_unknown_refund ) ) );
-$wpdb->query( "UPDATE {$table} SET updated_at = UTC_TIMESTAMP() - INTERVAL 400 DAY WHERE id IN ({$retention_ids})" );
+$wpdb->query( "UPDATE {$table} SET created_at = UTC_TIMESTAMP() - INTERVAL 400 DAY WHERE id IN ({$retention_ids})" );
 $purged = NicePay_Retention::purge_batch( 365, 50 );
 nicepay_it_assert( 1 === $purged, 'Retention did not delete exactly the one eligible old transaction.' );
 nicepay_it_assert( null === $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$table} WHERE id = %d", $retention_eligible ) ), 'Eligible old transaction was not deleted.' );
@@ -274,5 +342,19 @@ nicepay_it_assert( null === $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$re
 nicepay_it_assert( (int) $retention_reconciliation === (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$table} WHERE id = %d", $retention_reconciliation ) ), 'Reconciliation-required transaction was deleted.' );
 nicepay_it_assert( (int) $retention_unknown_refund === (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$table} WHERE id = %d", $retention_unknown_refund ) ), 'Transaction with an unknown refund was deleted.' );
 nicepay_it_assert( (int) $unknown_refund === (int) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$refund_table} WHERE id = %d", $unknown_refund ) ), 'Unknown refund attempt was deleted.' );
+
+// Uninstall retains financial data by default and purges only after explicit opt-in.
+delete_option( 'nicepay_delete_data_on_uninstall' );
+if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
+	define( 'WP_UNINSTALL_PLUGIN', true );
+}
+require dirname( __DIR__, 2 ) . '/uninstall.php';
+nicepay_it_assert( $table === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ), 'Default uninstall policy deleted the transaction ledger.' );
+update_option( 'nicepay_delete_data_on_uninstall', 'yes', false );
+nicepay_uninstall_current_site();
+foreach ( array( $table, $refund_table, $audit_table ) as $deleted_table ) {
+	nicepay_it_assert( $deleted_table !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $deleted_table ) ), 'Opt-in uninstall did not remove a NicePay table.' );
+}
+nicepay_it_assert( false === get_option( NicePay_Installer::VERSION_OPTION, false ), 'Opt-in uninstall retained the schema version option.' );
 
 echo "NicePay schema integration checks passed.\n";

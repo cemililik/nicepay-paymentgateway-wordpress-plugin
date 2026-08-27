@@ -1,5 +1,8 @@
 # WordPress & WooCommerce Platform Conformance
 
+> [!WARNING]
+> **Frozen historical snapshot.** This review describes baseline commit `5855db1` (2026-08-19), before the 2.0 remediation work. Its line references and present-tense security claims do not describe the current code. Use `docs/analysis/pr-review2/` and current tests for release decisions.
+
 This document covers how NicePay Payment Gateway v2.0.0 behaves as a *WordPress plugin* and as a *WooCommerce payment gateway* — the platform contracts it must honour (Blocks, HPOS, multisite, activation/uninstall, capabilities, i18n, settings API, rewrite rules, asset enqueueing, directory policy) rather than the correctness of the NICEPAY protocol itself. The headline result is a plugin whose *internals* are unusually disciplined — HPOS-correct order meta, parameterised SQL, uniformly sanitised superglobals, nonce+capability pairs on every AJAX endpoint — sitting inside a *platform shell* that is missing several of the declarations and registrations modern WooCommerce requires. Two findings are payment-critical: the gateway does not render at all in the Cart/Checkout blocks (the default checkout since WooCommerce 8.3), and the standalone shortcode signs a client-supplied amount, letting any visitor pay whatever they like. 42 findings are reported here: 2 critical, 5 high, 26 medium, 9 low. Two are marked **PLAUSIBLE — needs confirmation** because their core assertion is a design judgement rather than a verified defect, and one more carries a residual-uncertainty note.
 
 ---

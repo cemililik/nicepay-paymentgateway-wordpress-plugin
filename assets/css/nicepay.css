@@ -467,6 +467,9 @@
    Inline Notices (Frontend)
    ============================================ */
 .nicepay-notice {
+	background: #eff6ff;
+	color: #1e3a8a;
+	border: 1px solid #93c5fd;
     padding: 12px 16px;
     border-radius: var(--nicepay-radius-sm);
     margin-bottom: 16px;
@@ -477,6 +480,12 @@
     animation: nicepay-slide-down 0.3s ease;
 }
 
+.nicepay-notice-warning {
+	background: #fef3c7;
+	color: #78350f;
+	border-color: #f59e0b;
+}
+
 .nicepay-notice-error {
     background: var(--nicepay-error-light);
     color: var(--nicepay-error);
@@ -485,6 +494,15 @@
 
 .nicepay-notice-icon {
     flex-shrink: 0;
+}
+
+.nicepay-error {
+	margin: 12px 0;
+	padding: 12px 14px;
+	background: var(--nicepay-error-light);
+	color: var(--nicepay-error);
+	border: 1px solid var(--nicepay-error-border);
+	border-radius: var(--nicepay-radius-md);
 }
 
 @keyframes nicepay-slide-down {
@@ -531,6 +549,9 @@
 .nicepay-status-paid { background: #dcfce7; color: #166534; }
 .nicepay-status-paid::before { background: #16a34a; }
 
+.nicepay-status-approving { background: #ffedd5; color: #9a3412; }
+.nicepay-status-approving::before { background: #ea580c; animation: nicepay-pulse 2s ease-in-out infinite; }
+
 .nicepay-status-failed { background: #fee2e2; color: #991b1b; }
 .nicepay-status-failed::before { background: #dc2626; }
 
@@ -539,6 +560,21 @@
 
 .nicepay-status-refunded { background: #e0e7ff; color: #3730a3; }
 .nicepay-status-refunded::before { background: #6366f1; }
+
+.nicepay-status-partially_refunded { background: #ede9fe; color: #5b21b6; }
+.nicepay-status-partially_refunded::before { background: #7c3aed; }
+
+.nicepay-status-needs_reconciliation {
+	background: #7f1d1d;
+	color: #ffffff;
+	box-shadow: 0 0 0 2px #fecaca;
+}
+.nicepay-status-needs_reconciliation::before { background: #fef2f2; animation: nicepay-pulse 1.25s ease-in-out infinite; }
+
+.nicepay-status-abandoned,
+.nicepay-status-expired { background: #f3f4f6; color: #374151; }
+.nicepay-status-abandoned::before,
+.nicepay-status-expired::before { background: #6b7280; }
 
 .nicepay-status-waiting { background: #dbeafe; color: #1e40af; }
 .nicepay-status-waiting::before { background: #3b82f6; animation: nicepay-pulse 2s ease-in-out infinite; }

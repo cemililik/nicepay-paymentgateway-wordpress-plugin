@@ -1,5 +1,8 @@
 # Complete Findings Index
 
+> [!WARNING]
+> **Frozen historical snapshot.** This review describes baseline commit `5855db1` (2026-08-19), before the 2.0 remediation work. Its line references and present-tense security claims do not describe the current code. Use `docs/analysis/pr-review2/` and current tests for release decisions.
+
 Every finding from the twelve-dimension review of the NicePay Payment Gateway plugin, in one table. The review produced **489 findings that survived adversarial verification**, recorded across eleven dimension documents as **484 numbered entries** — the architecture and UX documents each fold a small number of near-identical findings into a single numbered entry rather than repeating them. Two claims were **refuted outright** during verification and are listed at the end, together with the significant *sub-claims* that were killed inside findings that otherwise survived. Nothing here is new analysis: this document is a navigation surface over documents 02–12, and every row links to the full write-up, evidence and recommendation.
 
 ---

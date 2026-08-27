@@ -20,7 +20,7 @@ class NicePayTransactionSchemaTest extends TestCase {
 		$this->assertStringContainsString( 'PRIMARY KEY  (id)', $sql );
 		$this->assertStringContainsString( 'UNIQUE KEY uniq_moid (moid)', $sql );
 		$this->assertStringContainsString( 'UNIQUE KEY uniq_tid (tid)', $sql );
-		$this->assertStringEndsWith( 'DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;', $sql );
+		$this->assertStringEndsWith( 'DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;', $sql );
 	}
 
 	public function test_schema_preserves_non_sensitive_legacy_columns_and_adds_r02_lifecycle_fields(): void {
@@ -35,7 +35,7 @@ class NicePayTransactionSchemaTest extends TestCase {
 		);
 		$added = array(
 				'flow', 'source_ref', 'active_attempt_key', 'config_fingerprint', 'expected_method', 'allowed_methods',
-			'binding_token_hash', 'wc_order_key_hash', 'edi_date', 'offer_expires_at',
+			'binding_token_hash', 'wc_order_key_hash', 'edi_date', 'next_app_url', 'net_cancel_url', 'offer_expires_at',
 			'mid', 'mode', 'currency', 'captured_amount', 'refunded_amount',
 			'remaining_amount', 'approval_state', 'approval_attempts',
 			'approval_started_at', 'approved_at', 'reconciliation_status',
@@ -61,12 +61,14 @@ class NicePayTransactionSchemaTest extends TestCase {
 		$this->assertContains( 'KEY idx_status_created (status, created_at)', $indexes );
 		$this->assertContains( 'KEY idx_created_at (created_at)', $indexes );
 		$this->assertContains( 'KEY idx_flow_status (flow, status)', $indexes );
-		$this->assertContains( 'KEY idx_source_ref (flow, source_ref)', $indexes );
+		$this->assertContains( 'KEY idx_source_ref (flow, source_ref(100))', $indexes );
 		$this->assertContains( 'KEY idx_reconciliation_status (reconciliation_status)', $indexes );
 		$this->assertContains( 'KEY idx_updated_at (updated_at)', $indexes );
 		$this->assertContains( 'KEY idx_receipt_token_hash (receipt_token_hash)', $indexes );
 		$this->assertContains( 'KEY idx_vbank_expires_at (vbank_expires_at)', $indexes );
 		$this->assertContains( 'UNIQUE KEY uniq_active_attempt (active_attempt_key)', $indexes );
+		$this->assertContains( 'KEY idx_status_offer_expiry (status, offer_expires_at)', $indexes );
+		$this->assertContains( 'KEY idx_status_approval_started (status, approval_started_at)', $indexes );
 	}
 
 	public function test_refund_attempt_schema_is_append_only_and_indexed(): void {
@@ -75,10 +77,23 @@ class NicePayTransactionSchemaTest extends TestCase {
 			'DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
 		);
 
-		$this->assertStringContainsString( 'transaction_id bigint(20) UNSIGNED NOT NULL', $sql );
+		$this->assertStringContainsString( 'transaction_id bigint(20) unsigned NOT NULL', $sql );
 		$this->assertStringContainsString( 'UNIQUE KEY uniq_cancel_moid (cancel_moid)', $sql );
 		$this->assertStringContainsString( 'KEY idx_transaction_created (transaction_id, created_at)', $sql );
 		$this->assertStringNotContainsString( 'buyer_email', $sql );
+	}
+
+	public function test_reconciliation_audit_schema_records_actor_reason_and_state_transition(): void {
+		$sql = NicePay_Transaction_Schema::create_reconciliation_audit_table_sql(
+			'wp_nicepay_reconciliation_audit',
+			'DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
+		);
+
+		$this->assertStringContainsString( 'actor_id bigint(20) unsigned NOT NULL', $sql );
+		$this->assertStringContainsString( 'reason text NOT NULL', $sql );
+		$this->assertStringContainsString( 'previous_status varchar(20)', $sql );
+		$this->assertStringContainsString( 'resulting_status varchar(20)', $sql );
+		$this->assertStringContainsString( 'KEY idx_reconciliation_transaction (transaction_id, created_at)', $sql );
 	}
 
 	public function test_prepare_write_whitelists_columns_and_aligns_formats(): void {
@@ -90,6 +105,8 @@ class NicePayTransactionSchemaTest extends TestCase {
 				'approval_attempts' => 1,
 				'unknown_column'    => 'drop me',
 				'id'                => 99,
+				'created_at'        => '2026-08-27 08:00:00',
+				'updated_at'        => '2026-08-27 08:00:00',
 			)
 		);
 
@@ -99,10 +116,12 @@ class NicePayTransactionSchemaTest extends TestCase {
 				'wc_order_id'       => 42,
 				'captured_amount'   => '1000.00',
 				'approval_attempts' => 1,
+				'created_at'        => '2026-08-27 08:00:00',
+				'updated_at'        => '2026-08-27 08:00:00',
 			),
 			$result['data']
 		);
-		$this->assertSame( array( '%s', '%d', '%s', '%d' ), $result['formats'] );
+		$this->assertSame( array( '%s', '%d', '%s', '%d', '%s', '%s' ), $result['formats'] );
 	}
 
 	public function test_invalid_table_name_is_rejected(): void {

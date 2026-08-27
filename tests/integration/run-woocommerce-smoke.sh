@@ -81,7 +81,12 @@ if [[ 'yes' != "$wordpress_ready" ]]; then
 	exit 1
 fi
 
-bash "$repository_root/.github/scripts/build-release.sh" 2.0.0 "$artifact_path"
+plugin_version="$(sed -n 's/^ \* Version: \([^[:space:]]*\)$/\1/p' "$repository_root/nicepay-payment-gateway.php")"
+if [[ ! "$plugin_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+    echo 'ERROR: could not read a valid plugin version from the main header' >&2
+    exit 1
+fi
+bash "$repository_root/.github/scripts/build-release.sh" "$plugin_version" "$artifact_path"
 
 wp_cli=(docker run --rm --user 0 --volumes-from "$wordpress_container" --network "$network_name"
 	--env NICEPAY_WC_INTEGRATION_TEST=1

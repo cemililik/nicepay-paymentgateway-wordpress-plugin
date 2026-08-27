@@ -68,6 +68,7 @@ composer install --prefer-dist --no-interaction
 composer test
 composer quality
 npm ci --ignore-scripts
+npm audit --audit-level=high --ignore-scripts
 npm run quality
 bash .github/scripts/check-translations.sh
 bash tests/integration/run-schema-migration.sh
@@ -303,4 +304,4 @@ Include:
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the [MIT License](LICENSE).
+By contributing, you agree that your contributions will be licensed under the [GNU General Public License v2.0 or later](LICENSE).

@@ -2,11 +2,33 @@
 
 All notable changes to the NicePay Payment Gateway plugin are documented in this file.
 
+## [2.0.1] - 2026-08-27
+
+### Breaking
+
+- Test-mode checkout is now hidden by default. Development sites must explicitly opt in with the `nicepay_allow_test_mode_checkout` filter; approved sandbox orders remain `on-hold` and are visibly marked as test transactions.
+- KRW stores must use zero WooCommerce price decimals before the gateway becomes available. Fractional KRW totals are rejected instead of rounded.
+- Reusable standalone configurations no longer pre-fill buyer PII. Name, email, and phone are collected from the customer at payment time.
+- Database schema downgrade is not supported. Back up the database before updating from 1.x.
+
+### Fixed
+
+- Added a real published-1.x migration fixture, explicit nullable-TID conversion, idempotent lifecycle backfill, migration locking, and post-dbDelta column/index verification before advancing the schema version.
+- Standardized new ledger timestamps on explicit UTC writes; existing rows are not offset-adjusted because their historical database session timezone cannot be determined safely.
+- Preserved legacy payment audit payloads during automatic migration; irreversible payload scrubbing now requires an explicit operator call.
+- Built approval and net-cancel transport context from the claimed local ledger rather than browser-supplied reversal fields.
+- Released stale approval locks during recovery and retained unknown outcomes for reconciliation.
+- Accepted signed fixed-width response amounts for numeric binding and declared JSON response encoding on approval/cancel calls.
+- Added customer-facing checkout errors, early buyer validation, standalone native form semantics, XHR timeouts, and a payment-window watchdog.
+- Added the WordPress.org contributor header, synchronized release versions, and switched all license metadata to GPL-2.0-or-later.
+- Made the distribution channel explicit: GitHub packages retain their takeover-protection `Update URI`, while verified WordPress.org candidates remove it automatically before the final artifact smoke check.
+- Disabled persisted checkout credentials in CI and added a high-severity npm advisory gate.
+
 ## [2.0.0] - 2026-08-20
 
 ### Added
 
-- Versioned transaction and refund-attempt schemas with migration checks, unique identifiers, active-attempt locking, reconciliation state, and legacy sensitive-data cleanup.
+- Versioned transaction and refund-attempt schemas with migration checks, unique identifiers, active-attempt locking, and reconciliation state.
 - Server-authoritative fixed-price standalone offers, anonymous rate limiting, cached-nonce recovery, durable receipt links, and safe receipt email delivery.
 - Shared inbound binding for MID, Moid, amount, currency, flow, payment method, TID, and signed approval responses.
 - Atomic approval/refund claims, append-only refund-attempt history, stale-approval escalation, and merchant-visible `needs_reconciliation` records.
@@ -34,13 +56,12 @@ All notable changes to the NicePay Payment Gateway plugin are documented in this
 - Custom standalone button classes retain the required payment behavior class, and custom background colors receive an automatically selected high-contrast text color.
 - Transaction operations default to the filterable `manage_woocommerce` capability while global configuration stays administrator-only.
 - Merchant keys are not rendered back into settings HTML; blank saves keep the existing key unless explicit clearing is requested.
-- Translation sources and all four bundled catalogs were regenerated. Catalog coverage is not claimed as complete; missing translations fall back to source English.
-- The source-English catalog is now complete, known Turkish meaning/orthography errors and critical Korean/Chinese placeholder errors are corrected, obsolete feature claims are removed, and CI verifies placeholders, HTML, feature claims, and compiled-catalog freshness.
+- Translation sources and all four bundled catalogs were regenerated with all 511 active entries complete. Fuzzy and obsolete entries are forbidden, and CI verifies source freshness, placeholders, HTML, certified-feature claims, completion, and compiled catalogs.
 - The minimum WordPress version is 5.8 so the explicit GitHub `Update URI` protection is honored by every supported installation.
 
 ### Security
 
-- Removed fresh-schema PAN storage and scrubbed legacy PAN/token/raw response material during upgrade.
+- Removed fresh-schema PAN storage and scrubbed spent legacy PAN/token fields after the upgraded schema is verified. Legacy audit payload deletion requires explicit operator confirmation.
 - Added recursive production-log redaction and allowlisted persisted/provider response fields.
 - Added byte-accurate buyer field validation, site-wide test/live configuration warnings, and strict card/simple-pay partial-refund capability gates.
 - Added fail-closed handling for unknown modes, malformed protocol types, duplicate callbacks, concurrent payment attempts, ambiguous reversals, and uncertain refunds.

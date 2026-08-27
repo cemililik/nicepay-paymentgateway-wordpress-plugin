@@ -12,22 +12,44 @@ class NicePayInstallerWpdbFake {
 	public $last_error = '';
 	public $table_exists = false;
 	public $refund_table_exists = false;
+	public $audit_table_exists = false;
 	public $duplicate_groups = 0;
 	public $duplicate_tid_groups = 0;
 	public $queries = array();
 	public $existing_columns = array( 'tid', 'card_no', 'auth_token', 'status', 'payment_data' );
+	public $schema_columns = array();
+	public $schema_indexes = array(
+		'uniq_moid',
+		'uniq_tid',
+		'uniq_active_attempt',
+		'idx_source_ref',
+		'idx_status_offer_expiry',
+		'idx_status_approval_started',
+	);
+	public $refund_indexes = array( 'uniq_cancel_moid' );
+	public $audit_indexes = array( 'idx_reconciliation_transaction' );
+
+	public function __construct() {
+		$this->schema_columns = array_keys( NicePay_Transaction_Schema::columns() );
+	}
 
 	public function get_charset_collate() {
 		return 'DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci';
 	}
 
-	public function prepare( $query, $value ) {
-		return str_replace( '%s', "'" . addslashes( $value ) . "'", $query );
+	public function prepare( $query, ...$values ) {
+		foreach ( $values as $value ) {
+			$query = preg_replace( '/%s/', "'" . addslashes( $value ) . "'", $query, 1 );
+		}
+		return $query;
 	}
 
 	public function get_var( $query ) {
 		$this->queries[] = $query;
 		if ( 0 === strpos( $query, 'SHOW TABLES LIKE' ) ) {
+			if ( false !== strpos( $query, 'wp_nicepay_reconciliation_audit' ) ) {
+				return $this->audit_table_exists ? 'wp_nicepay_reconciliation_audit' : null;
+			}
 			if ( false !== strpos( $query, 'wp_nicepay_refund_attempts' ) ) {
 				return $this->refund_table_exists ? 'wp_nicepay_refund_attempts' : null;
 			}
@@ -53,6 +75,21 @@ class NicePayInstallerWpdbFake {
 		$this->queries[] = $query;
 		return empty( $this->last_error ) ? 1 : false;
 	}
+
+	public function get_results( $query ) {
+		$this->queries[] = $query;
+		if ( 0 === strpos( $query, 'SHOW COLUMNS FROM' ) ) {
+			return array_map( static function ( $column ) {
+				return (object) array( 'Field' => $column );
+			}, $this->schema_columns );
+		}
+		$indexes = false !== strpos( $query, 'wp_nicepay_reconciliation_audit' )
+			? $this->audit_indexes
+			: ( false !== strpos( $query, 'wp_nicepay_refund_attempts' ) ? $this->refund_indexes : $this->schema_indexes );
+		return array_map( static function ( $index ) {
+			return (object) array( 'Key_name' => $index );
+		}, $indexes );
+	}
 }
 
 class NicePayInstallerTest extends TestCase {
@@ -71,7 +108,9 @@ class NicePayInstallerTest extends TestCase {
 		$wpdb = new NicePayInstallerWpdbFake();
 		$wpdb->table_exists = true;
 		$wpdb->refund_table_exists = true;
+		$wpdb->audit_table_exists = true;
 		update_option( NicePay_Installer::VERSION_OPTION, NicePay_Installer::schema_version() );
+		update_option( NicePay_Installer::VERIFIED_VERSION_OPTION, NicePay_Installer::schema_version() );
 		$calls = 0;
 
 		$result = NicePay_Installer::maybe_install(
@@ -84,7 +123,7 @@ class NicePayInstallerTest extends TestCase {
 
 		$this->assertSame( 'current', $result['status'] );
 		$this->assertSame( 0, $calls );
-		$this->assertCount( 2, $wpdb->queries );
+		$this->assertCount( 3, $wpdb->queries );
 	}
 
 	public function test_new_install_runs_dbdelta_and_stores_schema_version(): void {
@@ -97,14 +136,16 @@ class NicePayInstallerTest extends TestCase {
 				$received_sql[] = $sql;
 				$wpdb->table_exists = true;
 				$wpdb->refund_table_exists = true;
+				$wpdb->audit_table_exists = true;
 				return array( 'Created table wp_nicepay_transactions' );
 			}
 		);
 
 		$this->assertSame( 'installed', $result['status'] );
-		$this->assertCount( 2, $received_sql );
+		$this->assertCount( 3, $received_sql );
 		$this->assertStringStartsWith( 'CREATE TABLE wp_nicepay_transactions (', $received_sql[0] );
 		$this->assertStringStartsWith( 'CREATE TABLE wp_nicepay_refund_attempts (', $received_sql[1] );
+		$this->assertStringStartsWith( 'CREATE TABLE wp_nicepay_reconciliation_audit (', $received_sql[2] );
 		$this->assertStringNotContainsString( 'IF NOT EXISTS', implode( "\n", $received_sql ) );
 		$this->assertSame( 'wp_nicepay_refund_attempts', $result['refund_table'] );
 		$this->assertSame(
@@ -171,21 +212,23 @@ class NicePayInstallerTest extends TestCase {
 		$this->assertFalse( get_option( NicePay_Installer::VERSION_OPTION, false ) );
 	}
 
-	public function test_existing_table_normalizes_empty_tid_and_scrubs_legacy_sensitive_data(): void {
+	public function test_existing_table_normalizes_empty_tid_after_altering_nullability_and_preserves_payload(): void {
 		$wpdb               = new NicePayInstallerWpdbFake();
 		$wpdb->table_exists = true;
 
 		$result = NicePay_Installer::maybe_install( $wpdb, function () use ( $wpdb ) {
 			$wpdb->refund_table_exists = true;
+			$wpdb->audit_table_exists = true;
 			return array();
 		} );
 
 		$this->assertSame( 'installed', $result['status'] );
 		$queries = implode( "\n", $wpdb->queries );
+		$this->assertStringContainsString( 'MODIFY tid varchar(50) NULL', $queries );
 		$this->assertStringContainsString( "SET tid = NULL WHERE tid = ''", $queries );
 		$this->assertStringContainsString( "SET card_no = ''", $queries );
 		$this->assertStringContainsString( "SET auth_token = ''", $queries );
-		$this->assertStringContainsString( 'SET payment_data = NULL', $queries );
+		$this->assertStringNotContainsString( 'SET payment_data = NULL', $queries );
 	}
 
 	public function test_upgrade_without_legacy_card_column_does_not_query_it(): void {
@@ -196,6 +239,7 @@ class NicePayInstallerTest extends TestCase {
 
 		$result = NicePay_Installer::maybe_install( $wpdb, function () use ( $wpdb ) {
 			$wpdb->refund_table_exists = true;
+			$wpdb->audit_table_exists = true;
 			return array();
 		} );
 
@@ -206,7 +250,9 @@ class NicePayInstallerTest extends TestCase {
 	public function test_current_version_recreates_a_missing_refund_table(): void {
 		$wpdb               = new NicePayInstallerWpdbFake();
 		$wpdb->table_exists = true;
+		$wpdb->audit_table_exists = true;
 		update_option( NicePay_Installer::VERSION_OPTION, NicePay_Installer::schema_version() );
+		update_option( NicePay_Installer::VERIFIED_VERSION_OPTION, NicePay_Installer::schema_version() );
 		$calls = 0;
 
 		$result = NicePay_Installer::maybe_install(
@@ -214,12 +260,13 @@ class NicePayInstallerTest extends TestCase {
 			function () use ( &$calls, $wpdb ) {
 				++$calls;
 				$wpdb->refund_table_exists = true;
+				$wpdb->audit_table_exists = true;
 				return array();
 			}
 		);
 
 		$this->assertSame( 'installed', $result['status'] );
-		$this->assertSame( 2, $calls );
+		$this->assertSame( 3, $calls );
 		$this->assertTrue( NicePay_Installer::is_current( $wpdb ) );
 	}
 
@@ -233,5 +280,45 @@ class NicePayInstallerTest extends TestCase {
 		$this->assertInstanceOf( WP_Error::class, $result );
 		$this->assertSame( 'nicepay_schema_table_missing', $result->get_error_code() );
 		$this->assertFalse( NicePay_Installer::is_current( $wpdb ) );
+	}
+
+	public function test_newer_schema_version_is_never_downgraded(): void {
+		$wpdb = new NicePayInstallerWpdbFake();
+		update_option( NicePay_Installer::VERSION_OPTION, '9999.1.0' );
+
+		$result = NicePay_Installer::maybe_install( $wpdb, static function () {
+			return array();
+		} );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'nicepay_schema_downgrade_blocked', $result->get_error_code() );
+		$this->assertSame( '9999.1.0', get_option( NicePay_Installer::VERSION_OPTION ) );
+	}
+
+	public function test_missing_unique_index_does_not_mark_schema_current(): void {
+		$wpdb                       = new NicePayInstallerWpdbFake();
+		$wpdb->table_exists         = true;
+		$wpdb->refund_table_exists  = true;
+		$wpdb->audit_table_exists   = true;
+		$wpdb->schema_indexes       = array( 'uniq_moid', 'uniq_active_attempt', 'idx_source_ref' );
+
+		$result = NicePay_Installer::maybe_install( $wpdb, static function () {
+			return array();
+		} );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'nicepay_schema_verification_failed', $result->get_error_code() );
+		$this->assertFalse( get_option( NicePay_Installer::VERSION_OPTION, false ) );
+	}
+
+	public function test_payment_payload_scrub_requires_explicit_confirmation(): void {
+		$wpdb               = new NicePayInstallerWpdbFake();
+		$wpdb->table_exists = true;
+
+		$result = NicePay_Installer::scrub_legacy_payment_payloads( $wpdb, false );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'nicepay_schema_scrub_confirmation_required', $result->get_error_code() );
+		$this->assertStringNotContainsString( 'SET payment_data = NULL', implode( "\n", $wpdb->queries ) );
 	}
 }

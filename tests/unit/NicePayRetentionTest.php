@@ -11,6 +11,15 @@ class NicePayRetentionWpdbFake {
 	public $count_result = '0';
 	public $ledger_delete_result = null;
 	public $queries = array();
+	public $engine = 'InnoDB';
+	public $last_error = '';
+
+	public function prepare( $query, ...$values ) {
+		foreach ( $values as $value ) {
+			$query = preg_replace( '/%s/', "'" . addslashes( (string) $value ) . "'", $query, 1 );
+		}
+		return $query;
+	}
 
 	public function query( $query ) {
 		$this->queries[] = $query;
@@ -30,6 +39,9 @@ class NicePayRetentionWpdbFake {
 
 	public function get_var( $query ) {
 		$this->queries[] = $query;
+		if ( false !== strpos( $query, 'information_schema.TABLES' ) ) {
+			return $this->engine;
+		}
 		return $this->count_result;
 	}
 }
@@ -132,7 +144,9 @@ class NicePayRetentionTest extends TestCase {
 
 		$this->assertSame( 2, $result );
 		$sql = implode( "\n", $wpdb->queries );
-		$this->assertStringStartsWith( 'START TRANSACTION', $wpdb->queries[0] );
+		$this->assertStringContainsString( 'information_schema.TABLES', $wpdb->queries[0] );
+		$this->assertStringContainsString( 'START TRANSACTION', $sql );
+		$this->assertStringContainsString( 'ORDER BY ledger.created_at ASC', $sql );
 		$this->assertStringContainsString( 'FOR UPDATE', $sql );
 		$this->assertStringContainsString( "ledger.status IN ('paid', 'partially_refunded', 'refunded', 'failed', 'abandoned', 'expired', 'cancelled')", $sql );
 		$this->assertStringContainsString( "ledger.reconciliation_status <> 'required'", $sql );
@@ -141,6 +155,7 @@ class NicePayRetentionTest extends TestCase {
 		$this->assertStringContainsString( "ledger.net_cancel_status <> 'unknown'", $sql );
 		$this->assertStringContainsString( "refund_attempt.status IN ('requested', 'unknown')", $sql );
 		$this->assertStringContainsString( 'DELETE FROM wp_nicepay_refund_attempts WHERE transaction_id IN (11,12)', $sql );
+		$this->assertStringContainsString( 'DELETE FROM wp_nicepay_reconciliation_audit WHERE transaction_id IN (11,12)', $sql );
 		$this->assertStringContainsString( 'DELETE ledger FROM wp_nicepay_transactions AS ledger', $sql );
 		$this->assertSame( 'COMMIT', end( $wpdb->queries ) );
 	}
@@ -154,6 +169,21 @@ class NicePayRetentionTest extends TestCase {
 
 		$this->assertTrue( is_wp_error( $result ) );
 		$this->assertSame( 'nicepay_retention_delete_mismatch', $result->get_error_code() );
+		$this->assertSame( 'ROLLBACK', end( $wpdb->queries ) );
+	}
+
+	public function test_purge_fails_closed_without_transactional_tables_or_after_select_error(): void {
+		global $wpdb;
+		$wpdb->engine = 'MyISAM';
+		$result = NicePay_Retention::purge_batch( 365, 10 );
+		$this->assertSame( 'nicepay_retention_engine_unsupported', $result->get_error_code() );
+		$this->assertStringNotContainsString( 'START TRANSACTION', implode( "\n", $wpdb->queries ) );
+
+		$wpdb->engine     = 'InnoDB';
+		$wpdb->queries    = array();
+		$wpdb->last_error = 'lock wait timeout';
+		$result = NicePay_Retention::purge_batch( 365, 10 );
+		$this->assertSame( 'nicepay_retention_select_failed', $result->get_error_code() );
 		$this->assertSame( 'ROLLBACK', end( $wpdb->queries ) );
 	}
 

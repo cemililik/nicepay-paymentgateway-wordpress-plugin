@@ -3,8 +3,8 @@
  * Standalone NicePay Payment Form Template
  *
  * Used by the [nicepay_payment] shortcode for non-WooCommerce payments.
- * If buyer info is provided in shortcode attributes, fields are pre-filled and hidden.
- * Otherwise, an interactive form is shown for the buyer to fill in.
+ * Buyer information is always collected interactively so reusable public
+ * forms never embed a previous buyer's PII.
  *
  * @var array $atts Shortcode attributes
  */
@@ -59,7 +59,9 @@ if ( $pay_method && ! in_array( $pay_method, $enabled_methods, true ) ) {
 $show_method_selector = empty( $pay_method ) && count( $enabled_methods ) > 1;
 $default_method       = $pay_method ? $pay_method : $enabled_methods[0];
 
-$form_id = 'nicepay-standalone-' . wp_rand( 1000, 9999 );
+static $nicepay_form_sequence = 0;
+$nicepay_form_sequence++;
+$form_id = 'nicepay-standalone-' . $nicepay_form_sequence;
 
 // Determine which buyer fields need user input
 $preset_name  = sanitize_text_field( $atts['buyer_name'] );
@@ -88,7 +90,7 @@ $show_buyer_fields = empty( $preset_name ) || empty( $preset_email ) || empty( $
 
 <div class="<?php echo $is_modal ? 'nicepay-payment-wrapper' : 'nicepay-standalone-wrapper nicepay-payment-wrapper'; ?>" id="<?php echo esc_attr( $form_id . '-wrapper' ); ?>">
     <?php if ( 'test' === get_option( 'nicepay_mode', 'test' ) ) : ?>
-        <output class="nicepay-notice" aria-live="polite">
+		<output class="nicepay-notice nicepay-notice-warning" aria-live="polite">
             <span><?php esc_html_e( 'Test mode — no real payment will be collected.', 'nicepay-payment-gateway' ); ?></span>
         </output>
     <?php endif; ?>
@@ -108,6 +110,7 @@ $show_buyer_fields = empty( $preset_name ) || empty( $preset_email ) || empty( $
                 <?php foreach ( $enabled_methods as $method ) : ?>
                     <label class="nicepay-method-option <?php echo ( $method === $enabled_methods[0] ) ? 'is-selected' : ''; ?>">
                         <input type="radio" name="nicepay_method_<?php echo esc_attr( $form_id ); ?>"
+							   form="<?php echo esc_attr( $form_id ); ?>"
                                value="<?php echo esc_attr( $method ); ?>"
                                <?php checked( $method, $enabled_methods[0] ); ?>>
                         <?php echo nicepay_get_method_icon( $method ); ?>
@@ -126,6 +129,7 @@ $show_buyer_fields = empty( $preset_name ) || empty( $preset_email ) || empty( $
                 <div class="nicepay-field">
                     <label for="<?php echo esc_attr( $form_id . '-name' ); ?>"><?php esc_html_e( 'Name', 'nicepay-payment-gateway' ); ?> <span class="nicepay-field-required">*</span></label>
                     <input type="text" id="<?php echo esc_attr( $form_id . '-name' ); ?>"
+						   form="<?php echo esc_attr( $form_id ); ?>"
                            class="nicepay-field-input" data-field="BuyerName"
                            data-max-bytes="30" maxlength="30" autocomplete="name"
                            placeholder="<?php esc_attr_e( 'Enter your name', 'nicepay-payment-gateway' ); ?>" required>
@@ -135,6 +139,7 @@ $show_buyer_fields = empty( $preset_name ) || empty( $preset_email ) || empty( $
                 <div class="nicepay-field">
                     <label for="<?php echo esc_attr( $form_id . '-email' ); ?>"><?php esc_html_e( 'Email', 'nicepay-payment-gateway' ); ?> <span class="nicepay-field-required">*</span></label>
                     <input type="email" id="<?php echo esc_attr( $form_id . '-email' ); ?>"
+						   form="<?php echo esc_attr( $form_id ); ?>"
                            class="nicepay-field-input" data-field="BuyerEmail"
                            data-max-bytes="60" maxlength="60" autocomplete="email" inputmode="email"
                            placeholder="<?php esc_attr_e( 'Enter your email', 'nicepay-payment-gateway' ); ?>" required>
@@ -144,6 +149,7 @@ $show_buyer_fields = empty( $preset_name ) || empty( $preset_email ) || empty( $
                 <div class="nicepay-field">
                     <label for="<?php echo esc_attr( $form_id . '-tel' ); ?>"><?php esc_html_e( 'Phone', 'nicepay-payment-gateway' ); ?> <span class="nicepay-field-required">*</span></label>
                     <input type="tel" id="<?php echo esc_attr( $form_id . '-tel' ); ?>"
+						   form="<?php echo esc_attr( $form_id ); ?>"
                            class="nicepay-field-input" data-field="BuyerTel"
                            data-max-bytes="20" maxlength="20" autocomplete="tel" inputmode="tel"
                            placeholder="<?php esc_attr_e( 'Enter your phone number', 'nicepay-payment-gateway' ); ?>" required>
@@ -164,6 +170,7 @@ $show_buyer_fields = empty( $preset_name ) || empty( $preset_email ) || empty( $
         <input type="hidden" name="EdiDate" id="<?php echo esc_attr( $form_id . '-edidate' ); ?>" value="">
         <input type="hidden" name="Moid" id="<?php echo esc_attr( $form_id . '-moid' ); ?>" value="">
         <input type="hidden" name="SignData" id="<?php echo esc_attr( $form_id . '-signdata' ); ?>" value="">
+		<input type="hidden" name="ReqReserved" id="<?php echo esc_attr( $form_id . '-reserved' ); ?>" value="">
         <input type="hidden" name="PayMethod" id="<?php echo esc_attr( $form_id . '-method' ); ?>" value="<?php echo esc_attr( $default_method ); ?>">
         <input type="hidden" name="ReturnURL" id="<?php echo esc_attr( $form_id . '-returnurl' ); ?>" value="">
         <input type="hidden" name="BuyerName" id="<?php echo esc_attr( $form_id . '-buyername' ); ?>" value="<?php echo esc_attr( $preset_name ); ?>">
@@ -176,7 +183,7 @@ $show_buyer_fields = empty( $preset_name ) || empty( $preset_email ) || empty( $
         <input type="hidden" data-nicepay-goods-class value="">
 
         <div class="nicepay-submit-wrapper">
-            <button type="button" class="<?php echo esc_attr( $button_class ); ?>"
+			<button type="submit" class="<?php echo esc_attr( $button_class ); ?>"
                     data-nicepay-start="<?php echo esc_attr( $form_id ); ?>"
                     <?php if ( $button_style ) : ?>
                         style="<?php echo esc_attr( $button_style ); ?>"

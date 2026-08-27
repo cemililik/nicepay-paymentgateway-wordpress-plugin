@@ -26,9 +26,11 @@ class NicePay_Return_Handler {
         if ( function_exists( 'nocache_headers' ) ) {
             nocache_headers();
         }
-        header( 'X-Robots-Tag: noindex, nofollow', true );
-        header( 'Referrer-Policy: no-referrer', true );
-        header( 'X-Frame-Options: DENY', true );
+		if ( ! headers_sent() ) {
+			header( 'X-Robots-Tag: noindex, nofollow', true );
+			header( 'Referrer-Policy: no-referrer', true );
+			header( 'X-Frame-Options: DENY', true );
+		}
 
         $request_method = isset( $_SERVER['REQUEST_METHOD'] ) && is_string( $_SERVER['REQUEST_METHOD'] )
             ? strtoupper( wp_unslash( $_SERVER['REQUEST_METHOD'] ) )
@@ -50,6 +52,7 @@ class NicePay_Return_Handler {
         $mid              = isset( $_POST['MID'] ) ? sanitize_text_field( wp_unslash( $_POST['MID'] ) ) : '';
         $pay_method       = isset( $_POST['PayMethod'] ) ? sanitize_text_field( wp_unslash( $_POST['PayMethod'] ) ) : '';
         $signature        = isset( $_POST['Signature'] ) ? sanitize_text_field( wp_unslash( $_POST['Signature'] ) ) : '';
+		$req_reserved     = isset( $_POST['ReqReserved'] ) ? sanitize_text_field( wp_unslash( $_POST['ReqReserved'] ) ) : '';
 
         nicepay_log( 'Standalone return handler', array(
             'AuthResultCode' => $auth_result_code,
@@ -68,6 +71,7 @@ class NicePay_Return_Handler {
             'Moid'         => $moid,
             'PayMethod'    => $pay_method,
             'Signature'    => $signature,
+			'ReqReserved'  => $req_reserved,
         );
 
         $transaction = NicePay_Inbound_Validator::validate_auth_return(
@@ -91,8 +95,10 @@ class NicePay_Return_Handler {
         }
 
         if ( ! nicepay_update_transaction( $transaction->id, array(
-            'tid'        => $tx_tid,
-            'auth_token' => $auth_token,
+			'tid'            => $tx_tid,
+			'auth_token'     => $auth_token,
+			'next_app_url'   => $next_app_url,
+			'net_cancel_url' => $net_cancel_url,
         ), true ) ) {
             $abort = nicepay_abort_authenticated_payment(
                 $transaction->id,
@@ -112,7 +118,14 @@ class NicePay_Return_Handler {
         }
 
         // Bind the approval response to this claimed transaction.
-        $transaction->tid = $tx_tid;
+		$auth_data = nicepay_get_authenticated_payment_context( $transaction->id );
+		if ( is_wp_error( $auth_data ) ) {
+			nicepay_abort_authenticated_payment( $transaction->id, array(), $this->api, $auth_data->get_error_code() );
+			nicepay_log( 'Standalone local auth context could not be reloaded', $transaction->id, 'error' );
+			$this->render_result_page( false, __( 'We could not confirm the payment outcome. Please contact the merchant before retrying.', 'nicepay-payment-gateway' ) );
+			return;
+		}
+		$transaction->tid = $auth_data['TxTid'];
 
         $result = $this->api->request_approval( $auth_data );
 
@@ -215,7 +228,10 @@ class NicePay_Return_Handler {
                 }
             }
 
-            $this->render_result_page( true, __( 'Payment completed successfully.', 'nicepay-payment-gateway' ), $receipt_data );
+			$message = 'test' === $this->api->get_mode()
+				? __( 'Test payment completed. No real payment was collected.', 'nicepay-payment-gateway' )
+				: __( 'Payment completed successfully.', 'nicepay-payment-gateway' );
+			$this->render_result_page( true, $message, $receipt_data );
         } else {
             $update_data['status']         = 'failed';
             $update_data['approval_state'] = 'failed';

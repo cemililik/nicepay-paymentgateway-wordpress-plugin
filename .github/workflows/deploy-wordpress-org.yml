@@ -60,6 +60,7 @@ jobs:
         with:
           ref: refs/tags/v${{ inputs.version }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Setup PHP for package smoke checks
         uses: shivammathur/setup-php@cf4cade2721270509d5b1c766ab3549210a39a2a # v2.33.0
@@ -133,10 +134,6 @@ jobs:
           grep -Fq 'https://www.nicepay.co.kr/cs/terms/policy1.do' readme.txt
           grep -Fq 'https://www.nicepay.co.kr/cs/terms/private.do' readme.txt
 
-          if grep -Eq '^\s*\*\s*Update URI:' nicepay-payment-gateway.php; then
-            echo '::warning::The GitHub Update URI must be removed in the approved WordPress.org release before publish mode can proceed.'
-          fi
-
       - name: Build WordPress.org candidate from the release package
         env:
           NICEPAY_DISTRIBUTION_CHANNEL: wordpress-org-candidate
@@ -166,18 +163,10 @@ jobs:
 
           (
             cd "$stage_dir"
-            zip -q -r "$payload_zip" "$PLUGIN_SLUG"
+            find "$PLUGIN_SLUG" -print | LC_ALL=C sort | zip -X -q "$payload_zip" -@
           )
 
-          unzip -t "$payload_zip" >/dev/null
-          archive_listing="$(unzip -Z1 "$payload_zip")"
-          grep -Fxq "$PLUGIN_SLUG/readme.txt" <<< "$archive_listing"
-          grep -Fxq "$PLUGIN_SLUG/nicepay-payment-gateway.php" <<< "$archive_listing"
-
-          if grep -Eq '(^|/)(\.git|\.github|tests|vendor|node_modules|docs/analysis)(/|$)' <<< "$archive_listing"; then
-            echo 'ERROR: development-only files entered the WordPress.org payload.' >&2
-            exit 1
-          fi
+          bash .github/scripts/smoke-check-artifact.sh "$payload_zip" "$PLUGIN_SLUG"
 
           sha256sum "$(basename "$payload_zip")" > "${payload_zip}.sha256"
 
@@ -220,6 +209,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: refs/tags/v${{ inputs.version }}
+          persist-credentials: false
 
       - name: Download verified candidate
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
@@ -254,11 +244,6 @@ jobs:
             exit 1
           fi
 
-          if grep -Eq '^\s*\*\s*Update URI:' nicepay-payment-gateway.php; then
-            echo 'ERROR: remove the third-party Update URI before publishing through WordPress.org.' >&2
-            exit 1
-          fi
-
           if ! grep -Eq '^Contributors:[[:space:]]*[a-zA-Z0-9_.-]+' readme.txt; then
             echo 'ERROR: add and verify at least one real WordPress.org username in readme.txt Contributors before publishing.' >&2
             exit 1
@@ -283,6 +268,10 @@ jobs:
           unzip -q "$candidate_zip" -d "$payload_dir"
           [[ -f "$payload_dir/$PLUGIN_SLUG/readme.txt" ]]
           [[ -f "$payload_dir/$PLUGIN_SLUG/nicepay-payment-gateway.php" ]]
+          if grep -Eq '^\s*\*\s*Update URI:' "$payload_dir/$PLUGIN_SLUG/nicepay-payment-gateway.php"; then
+            echo 'ERROR: the verified WordPress.org payload contains a third-party Update URI.' >&2
+            exit 1
+          fi
 
           svn info "https://plugins.svn.wordpress.org/${PLUGIN_SLUG}/" \
             --non-interactive --no-auth-cache \

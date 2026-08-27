@@ -20,7 +20,7 @@ function tick() {
 
 function createEnvironment(postResponse, i18nOverrides) {
     const dom = new JSDOM(
-        '<!doctype html><html><body><table><tbody><tr><td><span class="nicepay-status nicepay-status-paid">PAID</span></td><td><button type="button" class="nicepay-cancel-btn" data-tid="TID-1" data-id="1" data-nonce="nonce">Refund</button></td></tr></tbody></table></body></html>',
+		'<!doctype html><html><body><table><tbody><tr><td><span class="nicepay-status nicepay-status-paid">Paid</span></td><td><button type="button" class="nicepay-cancel-btn" data-tid="TID-1" data-id="1" data-amount="10,000 KRW" data-nonce="nonce">Refund</button></td></tr></tbody></table></body></html>',
         { runScripts: 'outside-only', url: 'https://merchant.example/wp-admin/' }
     );
     const { window } = dom;
@@ -34,15 +34,15 @@ function createEnvironment(postResponse, i18nOverrides) {
         i18n: Object.assign({
             confirm: 'Confirm',
             cancel: 'Cancel',
-            cancelTitle: 'Refund transaction',
-            cancelMessage: 'Cannot undo',
-            cancelReasonLabel: 'Reason',
-            cancelReasonPlaceholder: 'Why?',
-            cancelConfirm: 'Refund',
-            cancelReasonRequired: 'Reason is required.',
-            cancelFailed: 'Refund failed.',
+			refundTitle: 'Refund transaction',
+			refundMessage: 'Refund %s? Cannot undo.',
+			refundReasonLabel: 'Reason',
+			refundReasonPlaceholder: 'Why?',
+			refundConfirm: 'Refund',
+			refundReasonRequired: 'Reason is required.',
+			refundFailed: 'Refund failed.',
             requestFailed: 'Request failed.',
-            statusRefunded: 'REFUNDED'
+			statusRefunded: 'Refunded'
         }, i18nOverrides || {})
     };
     $.post = function(url, data, callback) {
@@ -73,6 +73,7 @@ test('refund validation is announced and a failed request keeps the entered reas
     assert.ok(input);
     assert.equal(window.document.activeElement, input);
     assert.equal(window.document.querySelector('.nicepay-modal').getAttribute('aria-busy'), 'false');
+	assert.equal(window.document.querySelector('.nicepay-modal-body p').textContent, 'Refund 10,000 KRW? Cannot undo.');
 
     $('#nicepay-modal-confirm').trigger('click');
     assert.equal(posts.length, 0);
@@ -122,7 +123,7 @@ test('localized modal and toast text cannot create executable markup', async () 
     const attack = '<img src=x onerror="window.__nicepayXss=true">';
     const environment = createEnvironment(
         { success: false, data: { message: attack } },
-        { cancelTitle: attack, cancelMessage: attack, cancelReasonPlaceholder: attack }
+		{ refundTitle: attack, refundMessage: attack, refundReasonPlaceholder: attack }
     );
     const { window, $ } = environment;
 

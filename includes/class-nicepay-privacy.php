@@ -67,8 +67,12 @@ final class NicePay_Privacy {
 		);
 
 		$data = array();
+		$transaction_ids = array();
 		foreach ( (array) $rows as $row ) {
 			$id       = isset( $row->id ) ? absint( $row->id ) : 0;
+			if ( $id > 0 ) {
+				$transaction_ids[] = $id;
+			}
 			$currency = isset( $row->currency ) ? (string) $row->currency : 'KRW';
 			$data[]   = array(
 				'group_id'    => 'nicepay-transactions',
@@ -87,6 +91,33 @@ final class NicePay_Privacy {
 					array( 'name' => __( 'Created at', 'nicepay-payment-gateway' ), 'value' => isset( $row->created_at ) ? (string) $row->created_at : '' ),
 				),
 			);
+		}
+
+		if ( ! empty( $transaction_ids ) ) {
+			$id_list      = implode( ',', array_map( 'absint', array_unique( $transaction_ids ) ) );
+			$refund_table = $wpdb->prefix . 'nicepay_refund_attempts';
+			$refunds      = $wpdb->get_results(
+				"SELECT id, transaction_id, requested_amount, currency, reason, status, requested_at
+				 FROM {$refund_table}
+				 WHERE transaction_id IN ({$id_list})
+				 ORDER BY id ASC"
+			);
+			foreach ( (array) $refunds as $refund ) {
+				$refund_id = isset( $refund->id ) ? absint( $refund->id ) : 0;
+				$currency  = isset( $refund->currency ) ? (string) $refund->currency : 'KRW';
+				$data[]    = array(
+					'group_id'    => 'nicepay-transactions',
+					'group_label' => __( 'NicePay payment transactions', 'nicepay-payment-gateway' ),
+					'item_id'     => 'nicepay-refund-attempt-' . $refund_id,
+					'data'        => array(
+						array( 'name' => __( 'Transaction ID', 'nicepay-payment-gateway' ), 'value' => isset( $refund->transaction_id ) ? (string) $refund->transaction_id : '' ),
+						array( 'name' => __( 'Amount', 'nicepay-payment-gateway' ), 'value' => nicepay_format_amount( isset( $refund->requested_amount ) ? $refund->requested_amount : 0, $currency ) ),
+						array( 'name' => __( 'Refund reason', 'nicepay-payment-gateway' ), 'value' => isset( $refund->reason ) ? (string) $refund->reason : '' ),
+						array( 'name' => __( 'Status', 'nicepay-payment-gateway' ), 'value' => isset( $refund->status ) ? (string) $refund->status : '' ),
+						array( 'name' => __( 'Date', 'nicepay-payment-gateway' ), 'value' => isset( $refund->requested_at ) ? (string) $refund->requested_at : '' ),
+					),
+				);
+			}
 		}
 
 		return array(
@@ -120,7 +151,10 @@ final class NicePay_Privacy {
 		$table = $wpdb->prefix . 'nicepay_transactions';
 		$rows  = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT id FROM {$table} WHERE buyer_email = %s ORDER BY id ASC LIMIT %d",
+				"SELECT id FROM {$table}
+				 WHERE buyer_email = %s
+				   AND status NOT IN ('pending', 'approving', 'needs_reconciliation')
+				 ORDER BY id ASC LIMIT %d",
 				$email,
 				100
 			)
@@ -139,12 +173,20 @@ final class NicePay_Privacy {
 		if ( ! empty( $ids ) ) {
 			$id_list = implode( ',', array_map( 'absint', $ids ) );
 			$updated = $wpdb->query(
-				"UPDATE {$table}
-				 SET buyer_name = '', buyer_email = '', buyer_tel = '',
-				     receipt_token_hash = '', receipt_issued_at = NULL, payment_data = NULL
+					"UPDATE {$table}
+					 SET buyer_name = '', buyer_email = '', buyer_tel = '',
+					     receipt_token_hash = '', receipt_issued_at = NULL, payment_data = NULL,
+					     updated_at = UTC_TIMESTAMP()
 				 WHERE id IN ({$id_list})"
 			);
 			if ( false === $updated ) {
+				$result['messages'][] = __( 'NicePay buyer data could not be erased from the transaction ledger.', 'nicepay-payment-gateway' );
+				$result['done'] = false;
+				return $result;
+			}
+			$refund_table   = $wpdb->prefix . 'nicepay_refund_attempts';
+			$refund_updated = $wpdb->query( "UPDATE {$refund_table} SET reason = '' WHERE transaction_id IN ({$id_list})" );
+			if ( false === $refund_updated ) {
 				$result['messages'][] = __( 'NicePay buyer data could not be erased from the transaction ledger.', 'nicepay-payment-gateway' );
 				$result['done'] = false;
 				return $result;

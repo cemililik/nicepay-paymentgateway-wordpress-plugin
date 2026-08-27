@@ -108,6 +108,8 @@ class NicePayTransactionRepositoryTest extends TestCase {
         $this->assertArrayNotHasKey( 'unknown_column', $wpdb->insert_data );
         $this->assertSame( 'SP_123', $wpdb->insert_data['moid'] );
         $this->assertSame( 42, $wpdb->insert_data['wc_order_id'] );
+		$this->assertMatchesRegularExpression( '/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $wpdb->insert_data['created_at'] );
+		$this->assertSame( $wpdb->insert_data['created_at'], $wpdb->insert_data['updated_at'] );
         $this->assertCount( count( $wpdb->insert_data ), $wpdb->insert_formats );
     }
 
@@ -236,16 +238,62 @@ class NicePayTransactionRepositoryTest extends TestCase {
         $this->assertFalse( nicepay_update_transaction( 17, array( 'status' => 'paid' ), true ) );
     }
 
+	public function test_reconciliation_capture_is_atomic_and_appends_actor_reason_audit(): void {
+		global $wpdb;
+		$wpdb->get_row_result = (object) array(
+			'id'                    => 17,
+			'status'                => 'needs_reconciliation',
+			'reconciliation_status' => 'required',
+			'amount'                => '1000.00',
+			'refunded_amount'       => '0.00',
+		);
+
+		$result = nicepay_resolve_reconciliation( 17, 'captured', 'Console case NC-42 verified', 9 );
+
+		$this->assertSame( array( 'decision' => 'captured', 'status' => 'paid', 'amount' => '1000' ), $result );
+		$this->assertSame( 'paid', $wpdb->update_data['status'] );
+		$this->assertSame( 'approved', $wpdb->update_data['approval_state'] );
+		$this->assertSame( 'resolved', $wpdb->update_data['reconciliation_status'] );
+		$this->assertSame( 17, $wpdb->insert_data['transaction_id'] );
+		$this->assertSame( 9, $wpdb->insert_data['actor_id'] );
+		$this->assertSame( 'captured', $wpdb->insert_data['action'] );
+		$this->assertSame( 'Console case NC-42 verified', $wpdb->insert_data['reason'] );
+	}
+
+	public function test_reconciliation_requires_reason_and_only_forward_pending_state(): void {
+		global $wpdb;
+
+		$missing_reason = nicepay_resolve_reconciliation( 17, 'reversed', '  ', 9 );
+		$this->assertInstanceOf( WP_Error::class, $missing_reason );
+		$this->assertSame( 'nicepay_reconciliation_reason_required', $missing_reason->get_error_code() );
+
+		$wpdb->get_row_result = (object) array(
+			'id'                    => 17,
+			'status'                => 'paid',
+			'reconciliation_status' => 'resolved',
+			'amount'                => '1000',
+			'refunded_amount'       => '0',
+		);
+		$state_changed = nicepay_resolve_reconciliation( 17, 'reversed', 'Verified', 9 );
+		$this->assertInstanceOf( WP_Error::class, $state_changed );
+		$this->assertSame( 'nicepay_reconciliation_state_changed', $state_changed->get_error_code() );
+	}
+
     public function test_preapproval_abort_persists_a_confirmed_network_cancel(): void {
         global $wpdb;
-        $context = array( 'AuthToken' => 'verified-token', 'TxTid' => 'verified-tid', 'Amt' => '1004' );
+		$posted_context = array( 'AuthToken' => 'attacker-token', 'TxTid' => 'attacker-tid', 'Amt' => '9999', 'NetCancelURL' => 'https://dc1-api.nicepay.co.kr/webapi/cancel_process.jsp' );
+		$local_context  = $this->claimedAuthRow();
+		$wpdb->get_row_result = $local_context;
         $api     = new NicePayAbortApiFake( array( 'ResultCode' => '2001', 'ResultMsg' => 'cancelled' ) );
 
-        $result = nicepay_abort_authenticated_payment( 17, $context, $api, 'order_snapshot_changed' );
+		$result = nicepay_abort_authenticated_payment( 17, $posted_context, $api, 'order_snapshot_changed' );
 
         $this->assertFalse( $result['needs_reconciliation'] );
         $this->assertTrue( $result['persisted'] );
-        $this->assertSame( array( $context ), $api->contexts );
+		$this->assertSame( 'verified-token', $api->contexts[0]['AuthToken'] );
+		$this->assertSame( 'verified-tid', $api->contexts[0]['TxTid'] );
+		$this->assertSame( '1004', $api->contexts[0]['Amt'] );
+		$this->assertNotSame( $posted_context, $api->contexts[0] );
         $this->assertSame( 'failed', $wpdb->update_data['status'] );
         $this->assertSame( 'confirmed', $wpdb->update_data['net_cancel_status'] );
         $this->assertSame( '', $wpdb->update_data['auth_token'] );
@@ -255,6 +303,7 @@ class NicePayTransactionRepositoryTest extends TestCase {
     public function test_preapproval_abort_preserves_context_for_unknown_network_cancel(): void {
         global $wpdb;
         $context = array( 'AuthToken' => 'verified-token', 'TxTid' => 'verified-tid', 'Amt' => '1004' );
+		$wpdb->get_row_result = $this->claimedAuthRow();
         $api     = new NicePayAbortApiFake( new WP_Error( 'nicepay_net_cancel_timeout', 'timeout' ) );
 
         $result = nicepay_abort_authenticated_payment( 17, $context, $api, 'order_missing' );
@@ -266,6 +315,23 @@ class NicePayTransactionRepositoryTest extends TestCase {
         $this->assertSame( 'unknown', $wpdb->update_data['net_cancel_status'] );
         $this->assertSame( 'verified-token', $wpdb->update_data['auth_token'] );
     }
+
+	public function test_net_cancel_is_not_attempted_without_a_claimed_local_context(): void {
+		global $wpdb;
+		$wpdb->get_row_result = null;
+		$api = new NicePayAbortApiFake( array( 'ResultCode' => '2001' ) );
+
+		$result = nicepay_abort_authenticated_payment(
+			17,
+			array( 'AuthToken' => 'posted-token', 'TxTid' => 'posted-tid', 'Amt' => '1004' ),
+			$api,
+			'local_context_missing'
+		);
+
+		$this->assertTrue( $result['needs_reconciliation'] );
+		$this->assertSame( array(), $api->contexts );
+		$this->assertSame( 'nicepay_local_auth_context_missing', $result['net_cancel_result_code'] );
+	}
 
     public function test_mismatched_approval_requires_reconciliation_even_when_original_auth_is_reversed(): void {
         $audit = nicepay_get_mismatched_approval_audit(
@@ -302,6 +368,8 @@ class NicePayTransactionRepositoryTest extends TestCase {
         $this->assertSame( 2, nicepay_expire_pending_transactions() );
         $this->assertStringContainsString( "status = 'needs_reconciliation'", $wpdb->last_query );
         $this->assertStringContainsString( "reconciliation_note = 'stale_approval_attempt'", $wpdb->last_query );
+		$this->assertStringContainsString( 'active_attempt_key = NULL', $wpdb->last_query );
+		$this->assertStringContainsString( "auth_token = ''", $wpdb->last_query );
         $this->assertStringContainsString( 'INTERVAL 30 MINUTE', $wpdb->last_query );
     }
 
@@ -359,4 +427,20 @@ class NicePayTransactionRepositoryTest extends TestCase {
         $this->assertStringContainsString( 'transaction_id IN (17)', $wpdb->last_query );
         $this->assertStringContainsString( 'ORDER BY created_at DESC, id DESC', $wpdb->last_query );
     }
+
+	private function claimedAuthRow(): object {
+		return (object) array(
+			'id'             => 17,
+			'status'         => 'approving',
+			'approval_state' => 'approving',
+			'next_app_url'   => 'https://dc1-api.nicepay.co.kr/webapi/pay_process.jsp',
+			'net_cancel_url' => 'https://dc1-api.nicepay.co.kr/webapi/cancel_process.jsp',
+			'tid'            => 'verified-tid',
+			'auth_token'     => 'verified-token',
+			'amount'         => '1004.00',
+			'mid'            => NICEPAY_TEST_MID,
+			'moid'           => 'SP_ORDER_1',
+			'expected_method'=> 'CARD',
+		);
+	}
 }

@@ -44,18 +44,18 @@ flowchart TD
 ### Activation
 
 On activation, the plugin:
-1. Creates or upgrades the transaction and refund-attempt tables
+1. Creates or upgrades the transaction, refund-attempt, and reconciliation-audit tables, then verifies required columns and indexes
 2. Sets fail-closed default option values, including indefinite financial retention
 3. Registers the recovery cron and, only for an acknowledged custom policy, the daily retention cron
-4. Flushes rewrite rules (for `/nicepay-return/` endpoint)
+4. Invalidates rewrite rules (for `/nicepay-return/` endpoint); multisite activation does this per site without cross-site flushing
 
 ### Deactivation
 
 On deactivation, the plugin:
 1. Clears the recovery and financial-retention cron hooks
-2. Flushes rewrite rules
+2. Invalidates rewrite rules for regeneration
 
-> **Note:** Deactivation and uninstall retain the financial ledger. The default retention policy is also indefinite. A custom 1–36,500 day policy requires explicit administrator acknowledgement and deletes only settled/failed local ledger rows that have no active, unknown, refund-pending, or reconciliation-required state. The cleanup is transactional and bounded to 100 rows per batch and five batches per daily run. WordPress's personal-data exporter can return a buyer's NicePay records; its eraser removes buyer contact data, receipt access, and raw allowlisted payloads while retaining transaction references, amounts, and states.
+> **Note:** Deactivation and uninstall retain the financial ledger by default. Uninstall deletes all three plugin tables and options only when the administrator explicitly enables the irreversible **Delete all NicePay data on uninstall** setting. The default retention policy is indefinite. A custom 1–36,500 day policy requires explicit acknowledgement and deletes only settled/failed local ledger rows that have no active, unknown, refund-pending, or reconciliation-required state. Cleanup is transactional and bounded to 100 rows per batch and five batches per daily run. WordPress's personal-data exporter returns matching transaction and refund-attempt records; its eraser removes settled records' buyer contact data, refund reasons, receipt access, and raw allowlisted payloads while retaining transaction references, amounts, and states. Active or unresolved payment records are not anonymized mid-flow.
 
 ---
 
@@ -212,12 +212,16 @@ echo 'Total: ' . $result['total'];
 | Status | Meaning | Triggered When |
 |---|---|---|
 | `pending` | Transaction initiated, waiting for payment | Form created, before auth |
+| `abandoned` | An older unpaid attempt was replaced | A newer attempt claims the same merchant source |
+| `expired` | The signed offer expired before claim | Hourly bounded recovery job |
 | `paid` | Payment approved successfully | CARD/BANK/CELLPHONE approval |
 | `failed` | Payment failed (auth or approval) | Error in any step |
 | `approving` | One request owns the approval attempt | Atomic claim before server approval |
 | `partially_refunded` | Some captured balance was refunded | Partial WooCommerce refund |
 | `refunded` | Captured balance was fully refunded | Full WooCommerce refund |
 | `needs_reconciliation` | Approval/cancel outcome cannot be proven | Manual merchant review required |
+| `cancelled` | Historical/explicitly cancelled local record | Administrative lifecycle |
+| `waiting` | Reserved status for a future certified asynchronous flow | Not emitted by currently certified methods |
 
 ---
 
@@ -235,9 +239,6 @@ array(
     'amount'       => '10000',
     'goods_name'   => 'Quick Payment',
     'pay_method'   => '',                 // empty = all enabled
-    'buyer_name'   => '',
-    'buyer_email'  => '',
-    'buyer_tel'    => '',
     'button_text'  => 'Pay Now',
     'button_class' => 'nicepay-pay-button',
     'button_color' => '#2563eb',
@@ -387,18 +388,7 @@ define( 'NICEPAY_LIVE_MID', 'your_live_mid' );
 define( 'NICEPAY_LIVE_MERCHANT_KEY', 'your_live_merchant_key' );
 ```
 
-Then modify the API class initialization to check for constants first:
-
-```php
-// In a custom plugin or theme functions.php
-add_filter( 'option_nicepay_live_mid', function( $value ) {
-    return defined( 'NICEPAY_LIVE_MID' ) ? NICEPAY_LIVE_MID : $value;
-} );
-
-add_filter( 'option_nicepay_live_merchant_key', function( $value ) {
-    return defined( 'NICEPAY_LIVE_MERCHANT_KEY' ) ? NICEPAY_LIVE_MERCHANT_KEY : $value;
-} );
-```
+The API reads these constants directly before consulting database options. When either constant is defined, its corresponding admin field is read-only and saving settings does not copy the constant value into the options table. No option filter or source-code modification is required.
 
 ---
 
@@ -487,15 +477,22 @@ if ( $tx ) {
 ### Programmatic Refund
 
 ```php
-$gateway = new WC_Gateway_NicePay();
-$result = $gateway->process_refund( $order_id, 5000, 'Defective product' );
+$result = wc_create_refund( array(
+    'order_id'       => $order_id,
+    'amount'         => 5000,
+    'reason'         => 'Defective product',
+    'refund_payment' => true,
+    'restock_items'  => false,
+) );
 
 if ( is_wp_error( $result ) ) {
     echo 'Refund failed: ' . $result->get_error_message();
-} elseif ( $result === true ) {
+} else {
     echo 'Refund processed successfully';
 }
 ```
+
+Do not call `WC_Gateway_NicePay::process_refund()` directly. WooCommerce must create the in-flight `WC_Order_Refund` first so the local order total, append-only refund attempt, remote cancellation, and NicePay balance use the same audited request.
 
 ### WooCommerce Order Meta Fields
 

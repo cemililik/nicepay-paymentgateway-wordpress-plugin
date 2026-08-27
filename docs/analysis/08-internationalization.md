@@ -1,5 +1,8 @@
 # Internationalization & Localization
 
+> [!WARNING]
+> **Frozen historical snapshot.** This review describes baseline commit `5855db1` (2026-08-19), before the 2.0 remediation work. Its line references and present-tense security claims do not describe the current code. Use `docs/analysis/pr-review2/` and current tests for release decisions.
+
 This document audits the i18n/l10n layer of NicePay Payment Gateway v2.0.0 across all ten non-test PHP files, both JavaScript bundles, and the five gettext catalogs (`.pot` plus `en_US`, `ko_KR`, `tr_TR`, `zh_CN`). The mechanical hygiene is genuinely strong — every one of the 263 translation-function call sites uses the literal text domain, there are zero placeholder mismatches between msgid and msgstr in any locale, and all four `.mo` files are byte-identical to a fresh `msgfmt` of their `.po`. The problem is not *how* strings are translated but *which* strings ever reach a translator: the shipped `.pot` was generated before the last two feature commits and is missing **74 of the 209 translatable units that exist in the code (35%)**, while simultaneously carrying 20 dead msgids from a removed feature. Every catalog therefore reports "156 translated messages, 0 fuzzy" — a perfect score against a catalog that describes roughly two thirds of the product. Layered on top are two Korean-text leaks into non-Korean customer screens (raw `ResultMsg` pass-through, and a Korean-by-default payment window), a `_n()` plural pair that no catalog can ever match, timezone-naive date generation, and a `EUC-KR` charset option that would break the gateway outright if a merchant selected it.
 
 **21 findings:** 3 high · 6 medium · 10 low · 2 enhancement.

@@ -4,7 +4,7 @@
  * Plugin URI: https://github.com/cemililik/nicepay-paymentgateway-wordpress-plugin
  * Update URI: https://github.com/cemililik/nicepay-paymentgateway-wordpress-plugin
  * Description: NicePay Payment Gateway integration for WooCommerce. Payment methods remain disabled until explicitly configured and validated.
- * Version: 2.0.0
+ * Version: 2.0.1
  * Author: cemililik
  * Author URI: https://github.com/cemililik
  * Text Domain: nicepay-payment-gateway
@@ -12,14 +12,15 @@
  * Requires at least: 5.8
  * Requires PHP: 7.4
  * WC requires at least: 5.0
- * License: MIT
+ * License: GPL v2 or later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'NICEPAY_VERSION', '2.0.0' );
+define( 'NICEPAY_VERSION', '2.0.1' );
 define( 'NICEPAY_PLUGIN_FILE', __FILE__ );
 define( 'NICEPAY_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'NICEPAY_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -107,6 +108,7 @@ final class NicePay_Payment_Gateway {
         add_action( 'woocommerce_order_status_cancelled', 'nicepay_warn_cancelled_order_with_captured_funds', 10, 1 );
         add_filter( 'wp_privacy_personal_data_exporters', array( 'NicePay_Privacy', 'register_exporter' ) );
         add_filter( 'wp_privacy_personal_data_erasers', array( 'NicePay_Privacy', 'register_eraser' ) );
+		add_filter( 'wpmu_drop_tables', array( $this, 'multisite_drop_tables' ), 10, 2 );
 
         // Shortcodes
         add_shortcode( 'nicepay_payment', array( $this, 'render_payment_shortcode' ) );
@@ -129,19 +131,27 @@ final class NicePay_Payment_Gateway {
 
     public function activate( $network_wide = false ) {
         if ( is_multisite() && $network_wide ) {
-            $site_ids = get_sites( array( 'fields' => 'ids', 'number' => 0 ) );
-            foreach ( $site_ids as $site_id ) {
-                switch_to_blog( $site_id );
-                try {
-                    $result = $this->activate_current_site();
-                } finally {
-                    restore_current_blog();
-                }
-                if ( is_wp_error( $result ) ) {
-                    wp_die( esc_html( $result->get_error_message() ) );
-                    return;
-                }
-            }
+			$errors = array();
+			$offset = 0;
+			do {
+				$site_ids = get_sites( array( 'fields' => 'ids', 'number' => 100, 'offset' => $offset ) );
+				foreach ( $site_ids as $site_id ) {
+					switch_to_blog( $site_id );
+					try {
+						$result = $this->activate_current_site();
+					} finally {
+						restore_current_blog();
+					}
+					if ( is_wp_error( $result ) ) {
+						$errors[] = sprintf( 'Site %d: %s', (int) $site_id, $result->get_error_message() );
+					}
+				}
+				$offset += count( $site_ids );
+			} while ( 100 === count( $site_ids ) );
+
+			if ( ! empty( $errors ) ) {
+				wp_die( esc_html( implode( ' | ', $errors ) ) );
+			}
             return;
         }
 
@@ -161,27 +171,32 @@ final class NicePay_Payment_Gateway {
         }
 
         $this->set_default_options();
-        // Register endpoints before flushing so the rewrite rules are persisted
+		// Invalidate this site's rules. WordPress regenerates them using this
+		// site's own permalink structure on the next request.
         $this->register_endpoints();
         if ( ! wp_next_scheduled( 'nicepay_expire_pending_transactions' ) ) {
             wp_schedule_event( time() + HOUR_IN_SECONDS, 'hourly', 'nicepay_expire_pending_transactions' );
         }
         NicePay_Retention::sync_schedule();
-        flush_rewrite_rules();
+		delete_option( 'rewrite_rules' );
         return true;
     }
 
     public function deactivate( $network_wide = false ) {
         if ( is_multisite() && $network_wide ) {
-            $site_ids = get_sites( array( 'fields' => 'ids', 'number' => 0 ) );
-            foreach ( $site_ids as $site_id ) {
-                switch_to_blog( $site_id );
-                try {
-                    $this->deactivate_current_site();
-                } finally {
-                    restore_current_blog();
-                }
-            }
+			$offset = 0;
+			do {
+				$site_ids = get_sites( array( 'fields' => 'ids', 'number' => 100, 'offset' => $offset ) );
+				foreach ( $site_ids as $site_id ) {
+					switch_to_blog( $site_id );
+					try {
+						$this->deactivate_current_site();
+					} finally {
+						restore_current_blog();
+					}
+				}
+				$offset += count( $site_ids );
+			} while ( 100 === count( $site_ids ) );
             return;
         }
 
@@ -191,8 +206,30 @@ final class NicePay_Payment_Gateway {
     private function deactivate_current_site() {
         wp_clear_scheduled_hook( 'nicepay_expire_pending_transactions' );
         wp_clear_scheduled_hook( NicePay_Retention::CRON_HOOK );
-        flush_rewrite_rules();
+		delete_option( 'rewrite_rules' );
     }
+
+	/**
+	 * Include per-site NicePay tables in WordPress multisite site deletion.
+	 *
+	 * @param string[] $tables  Fully qualified table names to drop.
+	 * @param int      $blog_id Site being deleted.
+	 * @return string[]
+	 */
+	public function multisite_drop_tables( $tables, $blog_id ) {
+		global $wpdb;
+
+		$tables = is_array( $tables ) ? $tables : array();
+		if ( ! is_object( $wpdb ) || ! method_exists( $wpdb, 'get_blog_prefix' ) ) {
+			return $tables;
+		}
+
+		$prefix   = $wpdb->get_blog_prefix( (int) $blog_id );
+		$tables[] = $prefix . 'nicepay_transactions';
+		$tables[] = $prefix . 'nicepay_refund_attempts';
+		$tables[] = $prefix . 'nicepay_reconciliation_audit';
+		return array_values( array_unique( $tables ) );
+	}
 
     /**
      * Run repeatable schema upgrades during normal plugin loading.
@@ -282,6 +319,7 @@ final class NicePay_Payment_Gateway {
         add_option( NicePay_Retention::SETTINGS_OPTION, NicePay_Retention::default_settings() );
         add_option( 'nicepay_db_version', NICEPAY_VERSION );
         add_option( 'nicepay_saved_shortcodes', nicepay_get_default_presets() );
+		add_option( 'nicepay_delete_data_on_uninstall', 'no' );
     }
 
     public function load_textdomain() {
@@ -414,13 +452,14 @@ final class NicePay_Payment_Gateway {
             return '<p class="nicepay-error">' . esc_html__( 'Payment configuration not found.', 'nicepay-payment-gateway' ) . '</p>';
         }
 
-        if ( function_exists( 'is_ssl' ) && ! is_ssl() ) {
+		if ( ! is_ssl() ) {
             return '<p class="nicepay-error">' . esc_html__( 'NicePay payments require a secure HTTPS page.', 'nicepay-payment-gateway' ) . '</p>';
         }
 
         $api = new NicePay_API();
         if ( '' === (string) $api->get_mode() || '' === (string) $api->get_mid() || '' === (string) $api->get_merchant_key() ) {
-            return '<p class="nicepay-error">' . esc_html__( 'NicePay credentials are not configured.', 'nicepay-payment-gateway' ) . '</p>';
+			nicepay_log( 'Standalone payment form is unavailable because active credentials are incomplete.', null, 'warning' );
+			return '<p class="nicepay-error">' . esc_html__( 'NicePay payments are temporarily unavailable.', 'nicepay-payment-gateway' ) . '</p>';
         }
 
         $enabled_methods = nicepay_get_enabled_methods();
@@ -439,9 +478,6 @@ final class NicePay_Payment_Gateway {
             'amount'       => '',
             'goods_name'   => '',
             'goods_class'  => '',
-            'buyer_name'   => '',
-            'buyer_email'  => '',
-            'buyer_tel'    => '',
             'pay_method'   => '',
             'button_text'  => __( 'Pay Now', 'nicepay-payment-gateway' ),
             'button_class' => 'nicepay-pay-button',
@@ -458,12 +494,15 @@ final class NicePay_Payment_Gateway {
 
         $atts = shortcode_atts( $defaults, $raw_atts, 'nicepay_payment' );
 
-        // Commercial and prefilled buyer fields are always sourced from the
-        // saved server-side configuration. Shortcode attributes may customize
-        // presentation only.
-        foreach ( array( 'amount', 'goods_name', 'goods_class', 'pay_method', 'currency', 'buyer_name', 'buyer_email', 'buyer_tel' ) as $key ) {
+		// Commercial fields are always sourced from the saved server-side
+		// configuration. Buyer PII is deliberately collected from the customer
+		// at payment time and is never embedded in public shortcode HTML.
+		foreach ( array( 'amount', 'goods_name', 'goods_class', 'pay_method', 'currency' ) as $key ) {
             $atts[ $key ] = isset( $saved[ $key ] ) ? $saved[ $key ] : '';
         }
+		$atts['buyer_name']  = '';
+		$atts['buyer_email'] = '';
+		$atts['buyer_tel']   = '';
         $atts['id'] = $config_id;
 
         ob_start();
@@ -506,6 +545,8 @@ final class NicePay_Payment_Gateway {
             'ajaxUrl'    => admin_url( 'admin-ajax.php' ),
             'returnUrl'  => nicepay_get_standalone_return_url(),
             'initNonce'  => wp_create_nonce( 'nicepay_init_payment' ),
+			'xhrTimeout' => 20000,
+			'pgTimeout'  => 120000,
             'i18n'       => array(
                 'processing'   => __( 'Processing payment...', 'nicepay-payment-gateway' ),
                 'error'        => __( 'Payment error occurred. Please try again.', 'nicepay-payment-gateway' ),
@@ -520,6 +561,8 @@ final class NicePay_Payment_Gateway {
                 'initializationFailed' => __( 'Payment initialization failed.', 'nicepay-payment-gateway' ),
                 'unexpectedError' => __( 'An unexpected error occurred.', 'nicepay-payment-gateway' ),
                 'paymentInProgress' => __( 'Another payment is already in progress.', 'nicepay-payment-gateway' ),
+				'paymentTimeout' => __( 'The payment window did not respond. Close it if necessary and try again.', 'nicepay-payment-gateway' ),
+				'rateLimited' => __( 'Too many payment attempts were made. Please wait and try again.', 'nicepay-payment-gateway' ),
             ),
         ) );
     }
@@ -540,7 +583,7 @@ final class NicePay_Payment_Gateway {
             return;
         }
 
-        if ( function_exists( 'is_ssl' ) && ! is_ssl() ) {
+		if ( ! is_ssl() ) {
             wp_send_json_error( array( 'message' => __( 'NicePay payments require HTTPS.', 'nicepay-payment-gateway' ) ), 503 );
             return;
         }
@@ -585,6 +628,11 @@ final class NicePay_Payment_Gateway {
         $edi_date = $api->generate_edi_date();
         $moid     = $api->generate_moid( 'SP' );
         $sign_data = $api->create_auth_sign_data( $edi_date, $offer['amount'] );
+		$binding_token = nicepay_generate_payment_binding_token();
+		if ( false === $binding_token ) {
+			wp_send_json_error( array( 'message' => __( 'Payment initialization failed.', 'nicepay-payment-gateway' ) ), 500 );
+			return;
+		}
 
         $tx_id = nicepay_save_transaction( array(
             'order_id'    => $moid,
@@ -594,6 +642,7 @@ final class NicePay_Payment_Gateway {
             'config_fingerprint' => $offer['config_fingerprint'],
             'expected_method' => $offer['expected_method'],
             'allowed_methods' => $offer['expected_method'],
+			'binding_token_hash' => hash( 'sha256', $binding_token ),
             'edi_date'    => $edi_date,
             'offer_expires_at' => gmdate( 'Y-m-d H:i:s', time() + 15 * MINUTE_IN_SECONDS ),
             'mid'         => $api->get_mid(),
@@ -617,6 +666,7 @@ final class NicePay_Payment_Gateway {
             'edi_date'   => $edi_date,
             'moid'       => $moid,
             'sign_data'  => $sign_data,
+			'req_reserved'=> $binding_token,
             'amount'     => $offer['amount'],
             'currency'   => $offer['currency'],
             'goods_name' => $offer['goods_name'],
@@ -632,8 +682,7 @@ final class NicePay_Payment_Gateway {
      * Mint a fresh public reliability nonce for cached standalone forms.
      */
     public function ajax_refresh_payment_nonce() {
-        if ( 'yes' !== get_option( 'nicepay_standalone_enabled', 'no' ) || ! NicePay_Installer::is_current() ||
-            ( function_exists( 'is_ssl' ) && ! is_ssl() ) ) {
+		if ( 'yes' !== get_option( 'nicepay_standalone_enabled', 'no' ) || ! NicePay_Installer::is_current() || ! is_ssl() ) {
             wp_send_json_error( array( 'message' => __( 'Payment service is temporarily unavailable.', 'nicepay-payment-gateway' ) ), 503 );
             return;
         }
@@ -679,17 +728,12 @@ final class NicePay_Payment_Gateway {
         $goods_class  = isset( $_POST['goods_class'] ) ? sanitize_text_field( wp_unslash( $_POST['goods_class'] ) ) : '';
         $display_mode = isset( $_POST['display_mode'] ) ? sanitize_text_field( wp_unslash( $_POST['display_mode'] ) ) : 'inline';
         $language     = isset( $_POST['language'] ) ? strtoupper( sanitize_text_field( wp_unslash( $_POST['language'] ) ) ) : '';
-        $buyer_name   = isset( $_POST['buyer_name'] ) ? nicepay_utf8_byte_cut( sanitize_text_field( wp_unslash( $_POST['buyer_name'] ) ), 100 ) : '';
-        $buyer_email  = isset( $_POST['buyer_email'] ) ? sanitize_email( wp_unslash( $_POST['buyer_email'] ) ) : '';
-        $buyer_tel    = isset( $_POST['buyer_tel'] ) ? sanitize_text_field( wp_unslash( $_POST['buyer_tel'] ) ) : '';
 
         if ( false === $amount || '' === $goods_name || ! in_array( $goods_class, array( '0', '1' ), true ) ||
             ( '' !== $pay_method && ! array_key_exists( $pay_method, NicePay_API::get_certified_methods() ) ) ||
             ! in_array( $display_mode, array( 'inline', 'modal' ), true ) ||
-            ! in_array( $language, array( '', 'KO', 'EN', 'CN' ), true ) ||
-            ( '' !== $buyer_email && function_exists( 'is_email' ) && ! is_email( $buyer_email ) ) ||
-            ( '' !== $buyer_tel && ( strlen( $buyer_tel ) > 30 || ! preg_match( '/^[0-9+() -]{7,30}$/', $buyer_tel ) ) ) ) {
-            wp_send_json_error( array( 'message' => __( 'Payment configuration contains an invalid amount, product, method, or buyer field.', 'nicepay-payment-gateway' ) ), 400 );
+			! in_array( $language, array( '', 'KO', 'EN', 'CN' ), true ) ) {
+			wp_send_json_error( array( 'message' => __( 'Payment configuration contains an invalid amount, product, method, display mode, or language.', 'nicepay-payment-gateway' ) ), 400 );
             return;
         }
 
@@ -707,9 +751,6 @@ final class NicePay_Payment_Gateway {
             'goods_name'   => $goods_name,
             'goods_class'  => $goods_class,
             'pay_method'   => $pay_method,
-            'buyer_name'   => $buyer_name,
-            'buyer_email'  => $buyer_email,
-            'buyer_tel'    => $buyer_tel,
             'button_text'  => isset( $_POST['button_text'] ) ? sanitize_text_field( wp_unslash( $_POST['button_text'] ) ) : 'Pay Now',
             'button_class' => $button_class,
             'button_color' => $button_color,

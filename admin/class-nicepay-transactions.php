@@ -22,6 +22,7 @@ class NicePay_Transactions {
 
     public function __construct() {
         add_action( 'wp_ajax_nicepay_cancel_transaction', array( $this, 'ajax_cancel_transaction' ) );
+		add_action( 'wp_ajax_nicepay_resolve_reconciliation', array( $this, 'ajax_resolve_reconciliation' ) );
         add_action( 'admin_post_nicepay_export_transactions', array( $this, 'handle_csv_export' ) );
     }
 
@@ -141,12 +142,16 @@ class NicePay_Transactions {
         $columns    = array(
             'id', 'tid', 'wc_order_id', 'moid', 'flow', 'currency', 'amount',
             'captured_amount', 'refunded_amount', 'remaining_amount',
-            'payment_method', 'status', 'result_code', 'mode', 'created_at', 'approved_at',
+			'payment_method', 'status', 'result_code', 'mode', 'reconciliation_status',
+			'reconciliation_note', 'net_cancel_status', 'net_cancel_result_code',
+			'created_at', 'approved_at',
         );
         $headers = array(
             'ID', 'TID', 'WooCommerce Order ID', 'Merchant Order ID', 'Flow', 'Currency',
             'Requested Amount', 'Captured Amount', 'Refunded Amount', 'Remaining Amount',
-            'Payment Method', 'Status', 'Provider Result Code', 'Environment', 'Created At', 'Approved At',
+			'Payment Method', 'Status', 'Provider Result Code', 'Environment', 'Reconciliation Status',
+			'Reconciliation Note', 'Network Cancel Status', 'Network Cancel Result Code',
+			'Created At', 'Approved At',
         );
         fputcsv( $stream, $headers );
 
@@ -189,6 +194,8 @@ class NicePay_Transactions {
                         $value = self::REDACTED_VALUE;
                     } elseif ( 'mode' === $column && ! in_array( $value, array( 'test', 'live', '' ), true ) ) {
                         $value = self::REDACTED_VALUE;
+					} elseif ( 'reconciliation_note' === $column ) {
+						$value = self::redact_sensitive_text( $value, 500 );
                     }
                     $csv_row[] = self::sanitize_csv_cell( $value );
                 }
@@ -326,6 +333,8 @@ class NicePay_Transactions {
         $to      = isset( $filters['date_to'] ) && self::is_valid_date( $filters['date_to'] )
             ? $filters['date_to']
             : '';
+		$from_utc = '' !== $from ? get_gmt_from_date( $from . ' 00:00:00', 'Y-m-d H:i:s' ) : '';
+		$to_utc   = '' !== $to ? get_gmt_from_date( $to . ' 23:59:59', 'Y-m-d H:i:s' ) : '';
         $search  = isset( $filters['search'] ) && is_scalar( $filters['search'] )
             ? nicepay_utf8_byte_cut( sanitize_text_field( (string) $filters['search'] ), 100 )
             : '';
@@ -337,9 +346,9 @@ class NicePay_Transactions {
             $method,
             $method,
             $from,
-            '' !== $from ? $from . ' 00:00:00' : '',
+			$from_utc,
             $to,
-            '' !== $to ? $to . ' 23:59:59' : '',
+			$to_utc,
             $search,
             $like,
             $like,
@@ -377,6 +386,23 @@ class NicePay_Transactions {
                 'value' => self::redact_sensitive_text( $transaction->result_msg, 500 ),
             );
         }
+
+		$diagnostics = array(
+			'reconciliation_status'  => __( 'Reconciliation status', 'nicepay-payment-gateway' ),
+			'reconciliation_note'    => __( 'Reconciliation note', 'nicepay-payment-gateway' ),
+			'net_cancel_status'       => __( 'Network cancel status', 'nicepay-payment-gateway' ),
+			'net_cancel_result_code'  => __( 'Network cancel result code', 'nicepay-payment-gateway' ),
+		);
+		foreach ( $diagnostics as $property => $label ) {
+			if ( isset( $transaction->{$property} ) && is_scalar( $transaction->{$property} ) && '' !== (string) $transaction->{$property} ) {
+				$fields[] = array(
+					'label' => $label,
+					'value' => 'net_cancel_result_code' === $property
+						? self::sanitize_result_code( $transaction->{$property} )
+						: self::redact_sensitive_text( $transaction->{$property}, 500 ),
+				);
+			}
+		}
 
         $mode = isset( $transaction->mode ) && is_scalar( $transaction->mode )
             ? strtolower( (string) $transaction->mode )
@@ -799,7 +825,7 @@ class NicePay_Transactions {
                             $remaining = isset( $item->remaining_amount ) ? $item->remaining_amount : $item->amount;
                             $requires_reconciliation = 'needs_reconciliation' === (string) $item->status ||
                                 ( isset( $item->reconciliation_status ) && 'required' === (string) $item->reconciliation_status );
-                            $can_refund = $order && ! empty( $item->tid ) && ! $requires_reconciliation &&
+							$can_refund = current_user_can( 'edit_shop_orders' ) && $order && ! empty( $item->tid ) && ! $requires_reconciliation &&
                                 in_array( (string) $item->status, array( 'paid', 'partially_refunded' ), true ) &&
                                 ( ! isset( $item->cancel_status ) || ! in_array( (string) $item->cancel_status, array( 'requested', 'unknown' ), true ) ) &&
                                 '0' !== nicepay_normalize_ledger_amount( $remaining );
@@ -810,13 +836,6 @@ class NicePay_Transactions {
                                 ? sprintf(
                                     /* translators: %s: NicePay transaction ID */
                                     __( 'Copy TID %s', 'nicepay-payment-gateway' ),
-                                    $item->tid
-                                )
-                                : '';
-                            $cancel_transaction_label = $can_refund
-                                ? sprintf(
-                                    /* translators: %s: NicePay transaction ID */
-                                    __( 'Cancel transaction %s', 'nicepay-payment-gateway' ),
                                     $item->tid
                                 )
                                 : '';
@@ -924,11 +943,28 @@ class NicePay_Transactions {
                                         <button type="button" class="button button-small nicepay-cancel-btn"
                                                 data-tid="<?php echo esc_attr( $item->tid ); ?>"
                                                 data-id="<?php echo esc_attr( $item->id ); ?>"
+												data-amount="<?php echo esc_attr( nicepay_format_amount( $remaining, $currency ) ); ?>"
                                                 data-nonce="<?php echo esc_attr( wp_create_nonce( 'nicepay_cancel_' . $item->id ) ); ?>"
-                                                aria-label="<?php echo esc_attr( $cancel_transaction_label ); ?>">
+												aria-label="<?php /* translators: %s: formatted refundable amount */ echo esc_attr( sprintf( __( 'Refund payment %s', 'nicepay-payment-gateway' ), nicepay_format_amount( $remaining, $currency ) ) ); ?>">
                                             <?php esc_html_e( 'Refund', 'nicepay-payment-gateway' ); ?>
                                         </button>
                                     <?php endif; ?>
+									<?php if ( $requires_reconciliation && current_user_can( 'edit_shop_orders' ) ) : ?>
+										<button type="button" class="button button-small nicepay-reconcile-btn"
+											data-id="<?php echo esc_attr( $item->id ); ?>"
+											data-decision="reversed"
+											data-amount="<?php echo esc_attr( nicepay_format_amount( $item->amount, $currency ) ); ?>"
+											data-nonce="<?php echo esc_attr( wp_create_nonce( 'nicepay_reconcile_' . $item->id ) ); ?>">
+											<?php esc_html_e( 'Confirm reversed', 'nicepay-payment-gateway' ); ?>
+										</button>
+										<button type="button" class="button button-small button-primary nicepay-reconcile-btn"
+											data-id="<?php echo esc_attr( $item->id ); ?>"
+											data-decision="captured"
+											data-amount="<?php echo esc_attr( nicepay_format_amount( $item->amount, $currency ) ); ?>"
+											data-nonce="<?php echo esc_attr( wp_create_nonce( 'nicepay_reconcile_' . $item->id ) ); ?>">
+											<?php esc_html_e( 'Confirm captured', 'nicepay-payment-gateway' ); ?>
+										</button>
+									<?php endif; ?>
                                     <?php
                                     printf(
                                         '<a class="button button-small" href="%1$s" aria-label="%2$s">',
@@ -971,7 +1007,8 @@ class NicePay_Transactions {
         $reason = isset( $_POST['reason'] ) ? sanitize_text_field( wp_unslash( $_POST['reason'] ) ) : '';
         $nonce  = isset( $_POST['nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['nonce'] ) ) : '';
 
-        if ( ! nicepay_current_user_can_manage_payments() || ! wp_verify_nonce( $nonce, 'nicepay_cancel_' . $id ) ) {
+		if ( ! nicepay_current_user_can_manage_payments() || ! current_user_can( 'edit_shop_orders' ) ||
+			! wp_verify_nonce( $nonce, 'nicepay_cancel_' . $id ) ) {
             wp_send_json_error( array( 'message' => __( 'Unauthorized.', 'nicepay-payment-gateway' ) ) );
             return;
         }
@@ -1023,8 +1060,44 @@ class NicePay_Transactions {
             return;
         }
 
-        wp_send_json_success( array( 'message' => __( 'Refund completed successfully.', 'nicepay-payment-gateway' ) ) );
+		$updated = nicepay_get_transaction( $id );
+		wp_send_json_success(
+			array(
+				'message'              => __( 'Refund completed successfully.', 'nicepay-payment-gateway' ),
+				'status'               => $updated && isset( $updated->status ) ? (string) $updated->status : 'refunded',
+				'formatted_remaining'  => $updated && isset( $updated->remaining_amount, $updated->currency )
+					? nicepay_format_amount( $updated->remaining_amount, $updated->currency )
+					: '',
+			)
+		);
     }
+
+	/** Resolve a provider-console reconciliation decision with an audit trail. */
+	public function ajax_resolve_reconciliation() {
+		$id       = isset( $_POST['id'] ) ? absint( wp_unslash( $_POST['id'] ) ) : 0;
+		$decision = isset( $_POST['decision'] ) ? sanitize_key( wp_unslash( $_POST['decision'] ) ) : '';
+		$reason   = isset( $_POST['reason'] ) ? sanitize_textarea_field( wp_unslash( $_POST['reason'] ) ) : '';
+		$nonce    = isset( $_POST['nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['nonce'] ) ) : '';
+
+		if ( ! nicepay_current_user_can_manage_payments() || ! current_user_can( 'edit_shop_orders' ) ||
+			! wp_verify_nonce( $nonce, 'nicepay_reconcile_' . $id ) ) {
+			wp_send_json_error( array( 'message' => __( 'Unauthorized.', 'nicepay-payment-gateway' ) ), 403 );
+			return;
+		}
+
+		$result = nicepay_resolve_reconciliation( $id, $decision, $reason, get_current_user_id() );
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message(), 'code' => $result->get_error_code() ), 400 );
+			return;
+		}
+
+		wp_send_json_success(
+			array(
+				'message' => __( 'Reconciliation decision recorded with an audit entry.', 'nicepay-payment-gateway' ),
+				'status'  => $result['status'],
+			)
+		);
+	}
 }
 
 new NicePay_Transactions();

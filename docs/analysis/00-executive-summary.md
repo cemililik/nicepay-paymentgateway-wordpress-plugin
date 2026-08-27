@@ -1,5 +1,8 @@
 # NicePay Payment Gateway — Comprehensive Review: Executive Summary
 
+> [!WARNING]
+> **Frozen historical snapshot.** This review describes baseline commit `5855db1` (2026-08-19), before the 2.0 remediation work. Its line references and present-tense security claims do not describe the current code. Use `docs/analysis/pr-review2/` and current tests for release decisions.
+
 The NicePay Payment Gateway plugin (v2.0.0, ~12.5k LOC across 34 files) was reviewed across twelve dimensions, with every claim re-verified against the source by an adversarial second pass. The result is **489 surviving findings — 14 critical, 66 high, 246 medium, 135 low, 23 enhancement — with 2 claims refuted outright** and a further sixteen sub-claims killed inside findings that otherwise survived. The headline is a split verdict: the *cryptographic and protocol* layer of this plugin is done to a standard well above the WordPress-gateway average — all eight NICEPAY signature rules are byte-for-byte correct, the SSRF allowlist is real, every comparison is strict, every query is parameterised — while the *orchestration* layer around it never reconciles what NICEPAY tells it against what the merchant's own database says. The plugin can prove a message came from NICEPAY. It cannot prove the message is about the order it is being applied to, or for the amount that order costs. That single gap, plus a public endpoint that signs whatever amount a browser asks it to, is the difference between a plugin that is nearly ready and one that must not take live money today.
 
 ---

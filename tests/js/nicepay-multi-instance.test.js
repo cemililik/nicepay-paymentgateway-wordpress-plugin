@@ -24,13 +24,13 @@ function formMarkup(id, configId) {
                 </label>
             </div>
             <form id="${id}" class="nicepay-standalone-form" data-nicepay-config-id="${configId}" data-nicepay-init-nonce="nonce-${id}">
-                <input name="EdiDate"><input name="Moid"><input name="SignData">
+				<input name="EdiDate"><input name="Moid"><input name="SignData"><input name="ReqReserved">
                 <input name="Amt"><input name="CurrencyCode"><input name="GoodsName">
                 <input name="PayMethod" value="CARD"><input name="MID"><input name="ReturnURL">
                 <input name="BuyerName"><input name="BuyerEmail"><input name="BuyerTel">
                 <input name="CharSet"><input data-nicepay-goods-class>
                 <div class="nicepay-submit-wrapper">
-                    <button type="button" data-nicepay-start="${id}">Pay ${id}</button>
+					<button type="submit" data-nicepay-start="${id}">Pay ${id}</button>
                 </div>
             </form>
         </div>`;
@@ -74,6 +74,7 @@ function createEnvironment(returnUrl) {
                     edi_date: '20260820120000',
                     moid: `SP_${configId}`,
                     sign_data: 'a'.repeat(64),
+					req_reserved: `binding-${configId}`,
                     amount: '1004',
                     currency: 'KRW',
                     goods_name: `Goods ${configId}`,
@@ -102,13 +103,14 @@ test('two shortcode instances keep commercial configuration and callbacks scoped
     assert.equal(requests.length, 1);
     assert.equal(requests[0].configId, 'config-a');
     assert.equal(document.querySelector('#form-a [name="Moid"]').value, 'SP_config-a');
+	assert.equal(document.querySelector('#form-a [name="ReqReserved"]').value, 'binding-config-a');
     assert.equal(document.querySelector('#form-b [name="Moid"]').value, '');
     assert.equal(document.querySelectorAll('.nicepay-standalone-form[name="payForm"]').length, 1);
     assert.deepEqual(starts, ['form-a']);
 
     assert.equal(document.querySelector('[data-nicepay-start="form-b"]').disabled, true);
-    document.querySelector('[data-nicepay-start="form-b"]').dispatchEvent(
-        new window.MouseEvent('click', { bubbles: true, cancelable: true })
+	document.getElementById('form-b').dispatchEvent(
+		new window.SubmitEvent('submit', { bubbles: true, cancelable: true })
     );
     assert.equal(requests.length, 1, 'a second instance cannot replace an active PG session');
     assert.equal(document.querySelector('#form-b-wrapper [role="alert"]').textContent, '!Another payment is already in progress.');

@@ -53,8 +53,8 @@ class NicePayResultCodeTest extends TestCase {
             [ 'BANK', '3001', false ],
             [ 'BANK', '4100', false ],
 
-            // VBANK success = 4100
-            [ 'VBANK', '4100', true ],
+			// Unsupported asynchronous methods must never become paid.
+			[ 'VBANK', '4100', false ],
             [ 'VBANK', '4000', false ],
             [ 'VBANK', '3001', false ],
 
@@ -63,12 +63,11 @@ class NicePayResultCodeTest extends TestCase {
             [ 'CELLPHONE', '3001', false ],
             [ 'CELLPHONE', 'a000', false ], // case sensitive
 
-            // SSG_BANK success = 0000
-            [ 'SSG_BANK', '0000', true ],
+			// Unsupported wallet methods remain fail-closed until certified.
+			[ 'SSG_BANK', '0000', false ],
             [ 'SSG_BANK', '3001', false ],
 
-            // GIFT_CULT success = 0000
-            [ 'GIFT_CULT', '0000', true ],
+			[ 'GIFT_CULT', '0000', false ],
             [ 'GIFT_CULT', '3001', false ],
         ];
     }

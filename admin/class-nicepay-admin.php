@@ -78,16 +78,29 @@ class NicePay_Admin {
             'i18n'    => array(
                 'confirm'               => __( 'Confirm', 'nicepay-payment-gateway' ),
                 'cancel'                => __( 'Cancel', 'nicepay-payment-gateway' ),
-                'cancelTitle'           => __( 'Cancel Transaction', 'nicepay-payment-gateway' ),
-                'cancelMessage'         => __( 'This action cannot be undone. The payment will be reversed.', 'nicepay-payment-gateway' ),
-                'cancelReasonLabel'     => __( 'Cancellation Reason', 'nicepay-payment-gateway' ),
-                'cancelReasonPlaceholder' => __( 'Enter reason for cancellation...', 'nicepay-payment-gateway' ),
-                'cancelReasonRequired'  => __( 'A cancellation reason is required.', 'nicepay-payment-gateway' ),
-                'cancelConfirm'         => __( 'Cancel Transaction', 'nicepay-payment-gateway' ),
-                'cancelFailed'          => __( 'Cancellation failed.', 'nicepay-payment-gateway' ),
+				'refundTitle'           => __( 'Refund payment', 'nicepay-payment-gateway' ),
+				/* translators: %s: formatted refundable amount */
+				'refundMessage'         => __( 'Refund %s? The provider action cannot be undone.', 'nicepay-payment-gateway' ),
+				'refundReasonLabel'     => __( 'Refund reason', 'nicepay-payment-gateway' ),
+				'refundReasonPlaceholder' => __( 'Enter the refund reason...', 'nicepay-payment-gateway' ),
+				'refundReasonRequired'  => __( 'A refund reason is required.', 'nicepay-payment-gateway' ),
+				'refundConfirm'         => __( 'Refund payment', 'nicepay-payment-gateway' ),
+				'refundFailed'          => __( 'Refund failed.', 'nicepay-payment-gateway' ),
                 'requestFailed'         => __( 'Request failed. Please try again.', 'nicepay-payment-gateway' ),
                 'copied'                => __( 'Copied to clipboard!', 'nicepay-payment-gateway' ),
-                'statusRefunded'        => __( 'REFUNDED', 'nicepay-payment-gateway' ),
+				'copyFailed'            => __( 'Copy failed.', 'nicepay-payment-gateway' ),
+				'statusRefunded'        => __( 'Refunded', 'nicepay-payment-gateway' ),
+				'reconcileReversedTitle'=> __( 'Confirm provider reversal', 'nicepay-payment-gateway' ),
+				'reconcileCapturedTitle'=> __( 'Confirm captured funds', 'nicepay-payment-gateway' ),
+				/* translators: %s: formatted transaction amount */
+				'reconcileReversedMessage' => __( 'Record that NICEPAY confirms reversal of %s. Verify the merchant console before continuing.', 'nicepay-payment-gateway' ),
+				/* translators: %s: formatted transaction amount */
+				'reconcileCapturedMessage' => __( 'Record that NICEPAY confirms capture of %s. Verify the merchant console before continuing.', 'nicepay-payment-gateway' ),
+				'reconcileReasonLabel'  => __( 'Evidence and reason', 'nicepay-payment-gateway' ),
+				'reconcileReasonPlaceholder' => __( 'Enter the console reference and verification details...', 'nicepay-payment-gateway' ),
+				'reconcileReasonRequired' => __( 'Reconciliation evidence and a reason are required.', 'nicepay-payment-gateway' ),
+				'reconcileConfirm'      => __( 'Record decision', 'nicepay-payment-gateway' ),
+				'reconcileFailed'       => __( 'Reconciliation decision could not be recorded.', 'nicepay-payment-gateway' ),
                 'shortcodeDeleted'      => __( 'Shortcode deleted.', 'nicepay-payment-gateway' ),
                 'deleteConfirmTitle'    => __( 'Delete Shortcode', 'nicepay-payment-gateway' ),
                 'deleteConfirmMsg'      => __( 'Are you sure? This cannot be undone.', 'nicepay-payment-gateway' ),
@@ -119,6 +132,11 @@ class NicePay_Admin {
             'sanitize_callback' => array( 'NicePay_Retention', 'sanitize_settings' ),
             'default'           => NicePay_Retention::default_settings(),
         ) );
+		register_setting( 'nicepay_general', 'nicepay_delete_data_on_uninstall', array(
+			'type'              => 'string',
+			'sanitize_callback' => array( $this, 'sanitize_checkbox' ),
+			'default'           => 'no',
+		) );
 
         // API settings
         register_setting( 'nicepay_api', 'nicepay_test_mid', array(
@@ -178,6 +196,10 @@ class NicePay_Admin {
     }
 
     public function sanitize_live_merchant_key( $value ) {
+		if ( defined( 'NICEPAY_LIVE_MERCHANT_KEY' ) ) {
+			// Never copy a wp-config.php secret into the options table.
+			return '';
+		}
         return $this->sanitize_merchant_key( $value, 'nicepay_live_merchant_key', '', 'nicepay_clear_live_merchant_key' );
     }
 
@@ -236,10 +258,8 @@ class NicePay_Admin {
         $methods          = array_values( array_intersect( array_keys( NicePay_API::get_available_methods() ), $methods ) );
         sort( $methods, SORT_STRING );
 
-        $https_status = function_exists( 'is_ssl' ) ? ( is_ssl() ? 'yes' : 'no' ) : 'unknown';
-        $cron_status  = function_exists( 'wp_next_scheduled' )
-            ? ( wp_next_scheduled( 'nicepay_expire_pending_transactions' ) ? 'scheduled' : 'missing' )
-            : 'unknown';
+		$https_status = is_ssl() ? 'yes' : 'no';
+		$cron_status  = wp_next_scheduled( 'nicepay_expire_pending_transactions' ) ? 'scheduled' : 'missing';
         $permalink_option = get_option( 'permalink_structure', '' );
         $permalink_status = is_scalar( $permalink_option ) && '' !== (string) $permalink_option ? 'pretty' : 'plain';
 
@@ -273,7 +293,7 @@ class NicePay_Admin {
         $retention_status = 'custom' === $retention['mode']
             ? (string) $retention['days'] . '_days'
             : 'indefinite';
-        $retention_cron = function_exists( 'wp_next_scheduled' ) && wp_next_scheduled( NicePay_Retention::CRON_HOOK )
+		$retention_cron = wp_next_scheduled( NicePay_Retention::CRON_HOOK )
             ? 'scheduled'
             : ( 'custom' === $retention['mode'] ? 'missing' : 'not_required' );
 
@@ -427,14 +447,17 @@ class NicePay_Admin {
         $methods          = nicepay_get_enabled_methods();
         $gateway_settings = get_option( 'woocommerce_nicepay_settings', array() );
         $gateway_enabled  = is_array( $gateway_settings ) && isset( $gateway_settings['enabled'] ) && 'yes' === $gateway_settings['enabled'];
-        $https_ready      = ! function_exists( 'is_ssl' ) || is_ssl();
-        $cron_ready       = ! function_exists( 'wp_next_scheduled' ) || (bool) wp_next_scheduled( 'nicepay_expire_pending_transactions' );
+		$https_ready      = is_ssl();
+		$cron_ready       = ( ! defined( 'DISABLE_WP_CRON' ) || ! DISABLE_WP_CRON ) && (bool) wp_next_scheduled( 'nicepay_expire_pending_transactions' );
+		$whole_krw_ready  = ! $gateway_enabled ||
+			( function_exists( 'wc_get_price_decimals' ) && 0 === (int) wc_get_price_decimals() );
         $checks = array(
             array( NicePay_Installer::is_current(), __( 'Transaction schema', 'nicepay-payment-gateway' ), __( 'Database migration must complete successfully.', 'nicepay-payment-gateway' ) ),
             array( $https_ready, __( 'HTTPS', 'nicepay-payment-gateway' ), __( 'Checkout, payment forms, AJAX and return URLs must use HTTPS.', 'nicepay-payment-gateway' ) ),
             array( '' !== (string) $api->get_mode(), __( 'Operating mode', 'nicepay-payment-gateway' ), __( 'Select a valid test or live mode.', 'nicepay-payment-gateway' ) ),
             array( '' !== (string) $api->get_mid() && '' !== (string) $api->get_merchant_key(), __( 'Active credentials', 'nicepay-payment-gateway' ), __( 'Configure both the MID and merchant key for the selected mode.', 'nicepay-payment-gateway' ) ),
             array( 'KRW' === strtoupper( (string) get_option( 'nicepay_currency', 'KRW' ) ), __( 'Currency', 'nicepay-payment-gateway' ), __( 'Only KRW is certified for new payment requests.', 'nicepay-payment-gateway' ) ),
+			array( $whole_krw_ready, __( 'KRW decimals', 'nicepay-payment-gateway' ), __( 'Set the WooCommerce number of decimals to 0 before accepting NicePay payments.', 'nicepay-payment-gateway' ) ),
             array( ! empty( $methods ), __( 'Payment methods', 'nicepay-payment-gateway' ), __( 'Enable at least one certified payment method.', 'nicepay-payment-gateway' ) ),
             array( $cron_ready, __( 'Recovery cron', 'nicepay-payment-gateway' ), __( 'The pending-attempt expiry and stale-approval recovery task must be scheduled.', 'nicepay-payment-gateway' ) ),
         );
@@ -468,9 +491,7 @@ class NicePay_Admin {
         $retention_count = 'custom' === $retention['mode']
             ? NicePay_Retention::count_eligible( $retention_days )
             : null;
-        $retention_next  = function_exists( 'wp_next_scheduled' )
-            ? wp_next_scheduled( NicePay_Retention::CRON_HOOK )
-            : false;
+		$retention_next  = wp_next_scheduled( NicePay_Retention::CRON_HOOK );
         $last_run = get_option( NicePay_Retention::LAST_RUN_OPTION, array() );
         ?>
         <form method="post" action="options.php">
@@ -600,6 +621,19 @@ class NicePay_Admin {
                         </fieldset>
                     </td>
                 </tr>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Plugin uninstall', 'nicepay-payment-gateway' ); ?></th>
+					<td>
+						<input type="hidden" name="nicepay_delete_data_on_uninstall" value="no">
+						<label>
+							<input type="checkbox" name="nicepay_delete_data_on_uninstall" value="yes" <?php checked( get_option( 'nicepay_delete_data_on_uninstall', 'no' ), 'yes' ); ?>>
+							<strong><?php esc_html_e( 'Permanently delete NicePay tables and settings when the plugin is uninstalled.', 'nicepay-payment-gateway' ); ?></strong>
+						</label>
+						<div class="notice notice-error inline">
+							<p><?php esc_html_e( 'Leave this disabled unless you have exported the ledger and verified a recoverable backup. Uninstall deletion cannot be undone and can remove records needed for refunds, reconciliation, accounting or legal retention.', 'nicepay-payment-gateway' ); ?></p>
+						</div>
+					</td>
+				</tr>
             </table>
             <?php submit_button(); ?>
         </form>
@@ -631,6 +665,8 @@ class NicePay_Admin {
 
     private function render_api_tab() {
         $mode = get_option( 'nicepay_mode', 'test' );
+		$live_mid_external = defined( 'NICEPAY_LIVE_MID' );
+		$live_key_external = defined( 'NICEPAY_LIVE_MERCHANT_KEY' );
         ?>
         <form method="post" action="options.php">
             <?php settings_fields( 'nicepay_api' ); ?>
@@ -673,20 +709,30 @@ class NicePay_Admin {
                 <tr>
                     <th scope="row"><label for="nicepay-live-mid"><?php esc_html_e( 'Live MID', 'nicepay-payment-gateway' ); ?></label></th>
                     <td>
-                        <input type="text" id="nicepay-live-mid" name="nicepay_live_mid" class="regular-text"
-                               value="<?php echo esc_attr( get_option( 'nicepay_live_mid' ) ); ?>">
+						<?php if ( $live_mid_external ) : ?>
+							<input type="hidden" name="nicepay_live_mid" value="">
+							<input type="text" id="nicepay-live-mid" class="regular-text" value="<?php esc_attr_e( 'Managed in wp-config.php', 'nicepay-payment-gateway' ); ?>" readonly>
+						<?php else : ?>
+							<input type="text" id="nicepay-live-mid" name="nicepay_live_mid" class="regular-text"
+								value="<?php echo esc_attr( get_option( 'nicepay_live_mid' ) ); ?>">
+						<?php endif; ?>
                     </td>
                 </tr>
                 <tr>
                     <th scope="row"><label for="nicepay-live-merchant-key"><?php esc_html_e( 'Live Merchant Key', 'nicepay-payment-gateway' ); ?></label></th>
                     <td>
-                        <input type="password" id="nicepay-live-merchant-key" name="nicepay_live_merchant_key" class="large-text"
-                               value="" autocomplete="new-password"
-                               placeholder="<?php echo get_option( 'nicepay_live_merchant_key', '' ) ? esc_attr__( 'Configured — leave blank to keep unchanged', 'nicepay-payment-gateway' ) : esc_attr__( 'Enter live merchant key', 'nicepay-payment-gateway' ); ?>">
-                        <label>
-                            <input type="checkbox" id="nicepay-clear-live-merchant-key" name="nicepay_clear_live_merchant_key" value="yes">
-                            <?php esc_html_e( 'Clear the stored live merchant key', 'nicepay-payment-gateway' ); ?>
-                        </label>
+						<?php if ( $live_key_external ) : ?>
+							<input type="hidden" name="nicepay_live_merchant_key" value="">
+							<input type="text" id="nicepay-live-merchant-key" class="large-text" value="<?php esc_attr_e( 'Managed in wp-config.php; the secret is not stored in WordPress.', 'nicepay-payment-gateway' ); ?>" readonly>
+						<?php else : ?>
+							<input type="password" id="nicepay-live-merchant-key" name="nicepay_live_merchant_key" class="large-text"
+								value="" autocomplete="new-password"
+								placeholder="<?php echo get_option( 'nicepay_live_merchant_key', '' ) ? esc_attr__( 'Configured — leave blank to keep unchanged', 'nicepay-payment-gateway' ) : esc_attr__( 'Enter live merchant key', 'nicepay-payment-gateway' ); ?>">
+							<label>
+								<input type="checkbox" id="nicepay-clear-live-merchant-key" name="nicepay_clear_live_merchant_key" value="yes">
+								<?php esc_html_e( 'Clear the stored live merchant key', 'nicepay-payment-gateway' ); ?>
+							</label>
+						<?php endif; ?>
                     </td>
                 </tr>
             </table>
@@ -958,31 +1004,6 @@ class NicePay_Admin {
                                 </label>
                                 <?php endif; ?>
                             <?php endforeach; ?>
-                        </div>
-                    </div>
-
-                    <div class="nicepay-sc-section">
-                        <h3 class="nicepay-sc-section-title">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                            <?php esc_html_e( 'Buyer Information', 'nicepay-payment-gateway' ); ?>
-                            <span class="nicepay-sc-optional"><?php esc_html_e( 'Pre-fill or leave empty', 'nicepay-payment-gateway' ); ?></span>
-                        </h3>
-                        <p class="nicepay-sc-hint">
-                            <?php esc_html_e( 'If left empty, the buyer will fill these fields in the payment form. If provided, the fields will be pre-filled and hidden.', 'nicepay-payment-gateway' ); ?>
-                        </p>
-                        <div class="nicepay-sc-field-row">
-                            <div class="nicepay-sc-field">
-                                <label for="sc-buyer-name"><?php esc_html_e( 'Name', 'nicepay-payment-gateway' ); ?></label>
-                                <input type="text" id="sc-buyer-name" placeholder="<?php esc_attr_e( 'Buyer fills in', 'nicepay-payment-gateway' ); ?>" class="nicepay-sc-input">
-                            </div>
-                            <div class="nicepay-sc-field">
-                                <label for="sc-buyer-tel"><?php esc_html_e( 'Phone', 'nicepay-payment-gateway' ); ?></label>
-                                <input type="text" id="sc-buyer-tel" placeholder="<?php esc_attr_e( 'Buyer fills in', 'nicepay-payment-gateway' ); ?>" class="nicepay-sc-input">
-                            </div>
-                        </div>
-                        <div class="nicepay-sc-field">
-                            <label for="sc-buyer-email"><?php esc_html_e( 'Email', 'nicepay-payment-gateway' ); ?></label>
-                            <input type="email" id="sc-buyer-email" placeholder="<?php esc_attr_e( 'Buyer fills in', 'nicepay-payment-gateway' ); ?>" class="nicepay-sc-input">
                         </div>
                     </div>
 

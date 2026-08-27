@@ -1,5 +1,8 @@
 # NicePay Payment Gateway — Remediation Action Plan
 
+> [!WARNING]
+> **Frozen historical plan.** This plan is tied to baseline commit `5855db1` (2026-08-19). It is retained as an audit artifact, not as the current release gate. Use `docs/analysis/pr-review2/17-action-plan.md` and current tests for release decisions.
+
 **Prepared:** 2026-08-19
 **Implementation branch:** `development`
 **Baseline commit:** `5855db1ac0fffe7c98e0c354158d9071fc32d420`

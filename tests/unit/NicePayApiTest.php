@@ -339,7 +339,7 @@ class NicePayApiTest extends TestCase {
     }
 
     public function test_is_success_code_vbank(): void {
-        $this->assertTrue( $this->api->is_success_code( '4100', 'VBANK' ) );
+		$this->assertFalse( $this->api->is_success_code( '4100', 'VBANK' ) );
     }
 
     public function test_is_success_code_cellphone(): void {
@@ -347,11 +347,11 @@ class NicePayApiTest extends TestCase {
     }
 
     public function test_is_success_code_ssg_bank(): void {
-        $this->assertTrue( $this->api->is_success_code( '0000', 'SSG_BANK' ) );
+		$this->assertFalse( $this->api->is_success_code( '0000', 'SSG_BANK' ) );
     }
 
     public function test_is_success_code_gift_cult(): void {
-        $this->assertTrue( $this->api->is_success_code( '0000', 'GIFT_CULT' ) );
+		$this->assertFalse( $this->api->is_success_code( '0000', 'GIFT_CULT' ) );
     }
 
     public function test_is_success_code_without_method_fails_closed(): void {

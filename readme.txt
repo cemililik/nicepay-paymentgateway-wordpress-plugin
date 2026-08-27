@@ -1,11 +1,12 @@
 === NicePay Payment Gateway ===
+Contributors: cemililik
 Tags: woocommerce, payment gateway, credit card, bank transfer, mobile payments
 Requires at least: 5.8
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 2.0.0
-License: MIT
-License URI: https://opensource.org/license/mit/
+Stable tag: 2.0.1
+License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Adds disabled-by-default NICEPAY card, bank-transfer, and mobile-payment flows to WooCommerce and fixed-price forms.
 
@@ -30,7 +31,7 @@ This plugin relies on NICEPAY, a third-party payment service. When a merchant en
 
 Merchants are responsible for obtaining the required customer notices and consents and for configuring retention according to their applicable laws and contracts.
 
-Local NicePay financial rows are retained indefinitely by default. An administrator can opt into a 1–36,500 day period only after acknowledging the permanent-deletion warning. The bounded daily cleanup protects active, unknown, refund-pending, and reconciliation-required states. It affects only this plugin's ledger/refund-attempt tables; it does not delete WooCommerce orders, backups, logs, exports, or records held by NICEPAY. Deleting a settled local ledger row prevents future refunds through this plugin.
+Local NicePay financial rows are retained indefinitely by default. An administrator can opt into a 1–36,500 day period only after acknowledging the permanent-deletion warning. The bounded daily cleanup protects active, unknown, refund-pending, and reconciliation-required states. It affects only this plugin's transaction, refund-attempt, and reconciliation-audit tables; it does not delete WooCommerce orders, backups, logs, exports, or records held by NICEPAY. Deleting a settled local ledger row prevents future refunds through this plugin.
 
 * NICEPAY service: https://www.nicepay.co.kr/
 * NICEPAY service terms: https://www.nicepay.co.kr/cs/terms/policy1.do
@@ -76,6 +77,10 @@ For a payment selected by the customer, the plugin processes the buyer name, ema
 
 The default is indefinite retention. A WordPress administrator may enter a custom 1–36,500 day period after obtaining the legal and accounting approval applicable to the merchant and acknowledging permanent deletion. The plugin cannot determine the correct regulatory period. Back up and export the required data before opting in; extending the period later cannot restore deleted rows.
 
+= What happens to financial records when I uninstall the plugin? =
+
+NicePay tables and settings are retained by default. A separate destructive option under NicePay > Settings > General can delete them during uninstall. Enable it only after exporting the ledger and verifying a recoverable database backup.
+
 = Does the plugin collect analytics? =
 
 No. It does not send plugin usage analytics or telemetry.
@@ -85,6 +90,16 @@ No. It does not send plugin usage analytics or telemetry.
 Human-readable source, tests, and build automation are available at https://github.com/cemililik/nicepay-paymentgateway-wordpress-plugin. Distributed JavaScript and CSS are kept in readable source form.
 
 == Changelog ==
+
+= 2.0.1 =
+
+* Fixed the published-1.x upgrade path, lifecycle backfill, and schema/index verification.
+* Bound approval reversal context to the claimed local ledger and released stale payment locks safely.
+* Added fail-closed test-mode/KRW gates, visible sandbox order state, checkout validation, and payment-window recovery.
+* Preserved legacy audit payloads unless an operator explicitly confirms irreversible scrubbing.
+* Switched license metadata to GPLv2 or later and hardened WordPress.org release metadata.
+* Completed the bundled English, Korean, Turkish, and Simplified Chinese catalogs and added strict translation quality gates.
+* Separated GitHub and WordPress.org package metadata and smoke-checks so each verified artifact carries the correct update-channel policy.
 
 = 2.0.0 =
 
@@ -98,6 +113,6 @@ Human-readable source, tests, and build automation are available at https://gith
 
 == Upgrade Notice ==
 
-= 2.0.0 =
+= 2.0.1 =
 
-Review all settings after upgrading. Payment methods remain disabled until explicitly configured, and unsupported legacy methods cannot start new payments.
+Back up the database before upgrading from 1.x. Schema downgrade is unsupported. Test-mode checkout is hidden by default, sandbox orders remain on hold, KRW requires zero WooCommerce price decimals, and reusable forms no longer embed buyer PII. Review credentials, methods, decimal settings, and the migration notice after updating.

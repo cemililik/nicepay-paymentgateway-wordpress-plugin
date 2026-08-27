@@ -7,6 +7,7 @@
     'use strict';
 
     var activePaymentForm = null;
+	var paymentWatchdog = null;
     var modalState = new Map();
     var paymentConfig = window.nicepayParams && typeof window.nicepayParams === 'object'
         ? window.nicepayParams
@@ -68,6 +69,7 @@
             if (typeof window.nicepayStart === 'function') {
                 try {
                     window.nicepayStart();
+					startPaymentWatchdog(form, form.closest('.nicepay-payment-wrapper'));
                 } catch (e) {
                     console.error('[NicePay] nicepayStart() threw:', e);
                     this.hideLoading();
@@ -86,6 +88,7 @@
         },
 
         hideLoading: function() {
+			clearPaymentWatchdog();
             $('.nicepay-pay-button').removeClass('is-loading').prop('disabled', false);
             $('.nicepay-loading-overlay').removeClass('is-active');
             if (activePaymentForm && !activePaymentForm.classList.contains('nicepay-standalone-form')) {
@@ -137,6 +140,8 @@
             case 'invalidEmail': return paymentI18n.invalidEmail || fallback;
             case 'invalidPhone': return paymentI18n.invalidPhone || fallback;
             case 'paymentInProgress': return paymentI18n.paymentInProgress || fallback;
+			case 'paymentTimeout': return paymentI18n.paymentTimeout || fallback;
+			case 'rateLimited': return paymentI18n.rateLimited || fallback;
             case 'requiredField': return paymentI18n.requiredField || fallback;
             case 'sessionExpired': return paymentI18n.sessionExpired || fallback;
             case 'systemUnavailable': return paymentI18n.systemUnavailable || fallback;
@@ -144,6 +149,29 @@
             default: return fallback;
         }
     }
+
+	function clearPaymentWatchdog() {
+		if (paymentWatchdog !== null) {
+			window.clearTimeout(paymentWatchdog);
+			paymentWatchdog = null;
+		}
+	}
+
+	function startPaymentWatchdog(form, wrapper) {
+		clearPaymentWatchdog();
+		var configured = parseInt(paymentConfig.pgTimeout, 10);
+		var timeout = Number.isFinite(configured) && configured >= 90000 ? configured : 120000;
+		paymentWatchdog = window.setTimeout(function() {
+			paymentWatchdog = null;
+			if (form && form.classList.contains('nicepay-standalone-form')) {
+				releaseStandalone(form);
+				showStandaloneError(wrapper, form, translated('paymentTimeout', 'The payment window did not respond. Close it if necessary and try again.'));
+				return;
+			}
+			NicePayHandler.hideLoading();
+			NicePayHandler.showNotice(translated('paymentTimeout', 'The payment window did not respond. Close it if necessary and try again.'), 'error');
+		}, timeout);
+	}
 
     function standaloneField(form, name) {
         return form.elements.namedItem(name);
@@ -240,7 +268,8 @@
     function populateStandaloneForm(form, authoritative) {
         if (!authoritative.edi_date || !authoritative.moid || !authoritative.sign_data ||
             !authoritative.amount || !authoritative.currency || !authoritative.goods_name ||
-            !authoritative.pay_method || !authoritative.mid || !authoritative.return_url) return false;
+            !authoritative.pay_method || !authoritative.mid || !authoritative.return_url ||
+			!authoritative.req_reserved) return false;
         if (authoritative.pay_method === 'CELLPHONE' && authoritative.goods_class !== '0' && authoritative.goods_class !== '1') {
             return false;
         }
@@ -254,6 +283,7 @@
             { name: 'EdiDate', value: authoritative.edi_date },
             { name: 'Moid', value: authoritative.moid },
             { name: 'SignData', value: authoritative.sign_data },
+			{ name: 'ReqReserved', value: authoritative.req_reserved },
             { name: 'Amt', value: authoritative.amount },
             { name: 'CurrencyCode', value: authoritative.currency },
             { name: 'GoodsName', value: authoritative.goods_name },
@@ -297,20 +327,29 @@
             '&buyer_tel=' + encodeURIComponent(standaloneField(form, 'BuyerTel').value);
         var request = new XMLHttpRequest();
         request.open('POST', ajaxUrl);
+		request.timeout = Math.max(5000, parseInt(paymentConfig.xhrTimeout, 10) || 20000);
         request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
         request.onerror = function() {
             releaseStandalone(form);
             showStandaloneError(wrapper, form, translated('connectionError', 'Connection error. Please check your internet.'));
         };
+		request.ontimeout = request.onerror;
         request.onload = function() {
+			if (request.status === 429) {
+				releaseStandalone(form);
+				showStandaloneError(wrapper, form, translated('rateLimited', 'Too many payment attempts were made. Please wait and try again.'));
+				return;
+			}
             if (request.status === 403 && !wasRetried) {
                 const refresh = new XMLHttpRequest();
                 refresh.open('POST', ajaxUrl);
+				refresh.timeout = Math.max(5000, parseInt(paymentConfig.xhrTimeout, 10) || 20000);
                 refresh.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
                 refresh.onerror = function() {
                     releaseStandalone(form);
                     showStandaloneError(wrapper, form, translated('connectionError', 'Connection error. Please check your internet.'));
                 };
+				refresh.ontimeout = refresh.onerror;
                 refresh.onload = function() {
                     try {
                         const nonceResponse = JSON.parse(refresh.responseText);
@@ -334,6 +373,7 @@
                         throw new Error('NicePay library unavailable');
                     }
                     window.nicepayStart();
+					startPaymentWatchdog(form, wrapper);
                     return;
                 }
 
@@ -460,8 +500,6 @@
     document.addEventListener('click', function(event) {
         var startButton = event.target.closest('[data-nicepay-start]');
         if (startButton) {
-            event.preventDefault();
-            startStandalone(startButton.getAttribute('data-nicepay-start'));
             return;
         }
         var openButton = event.target.closest('[data-nicepay-open-modal]');
@@ -478,12 +516,21 @@
         if (modal) closeModal(modal.id.replace(/-modal$/, ''));
     });
 
+	document.addEventListener('submit', function(event) {
+		var form = event.target;
+		if (!form.classList || !form.classList.contains('nicepay-standalone-form')) return;
+		event.preventDefault();
+		startStandalone(form.id);
+	});
+
     window.nicepaySubmit = function() {
+		clearPaymentWatchdog();
         var form = activePaymentForm || document.payForm;
         if (form && typeof form.submit === 'function') form.submit();
     };
 
     window.nicepayClose = function() {
+		clearPaymentWatchdog();
         var form = activePaymentForm || document.payForm;
         if (form && form.classList && form.classList.contains('nicepay-standalone-form')) {
             releaseStandalone(form);

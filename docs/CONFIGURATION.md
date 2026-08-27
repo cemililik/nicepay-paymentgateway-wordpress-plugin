@@ -68,7 +68,7 @@ To enable automatic cleanup:
 1. Choose **Permanently delete eligible NicePay financial records after**.
 2. Enter a whole number from 1 to 36,500 days.
 3. Read and select the permanent-deletion acknowledgement.
-4. Export the relevant transaction CSV, verify a recoverable backup, and save.
+4. Export the relevant transaction CSV, verify a recoverable backup, and save. Each CSV is limited to 10,000 rows; use non-overlapping date ranges and verify every part when a larger ledger must be backed up.
 
 The setting is fail-closed: an invalid period or missing acknowledgement keeps the last valid policy. Cleanup begins through WP-Cron, processes at most 500 records in a daily run, and uses each ledger row's last-updated time. Saving the setting does not restore records already deleted.
 
@@ -167,17 +167,9 @@ define( 'NICEPAY_LIVE_MID', 'your_live_mid_here' );
 define( 'NICEPAY_LIVE_MERCHANT_KEY', 'your_live_merchant_key_here' );
 ```
 
-Then add to your theme's `functions.php` or a custom plugin:
-
-```php
-add_filter( 'option_nicepay_live_mid', function( $stored ) {
-    return defined( 'NICEPAY_LIVE_MID' ) ? NICEPAY_LIVE_MID : $stored;
-} );
-
-add_filter( 'option_nicepay_live_merchant_key', function( $stored ) {
-    return defined( 'NICEPAY_LIVE_MERCHANT_KEY' ) ? NICEPAY_LIVE_MERCHANT_KEY : $stored;
-} );
-```
+No option filters are needed. When these constants are defined, NicePay reads
+them directly, renders the corresponding settings as read-only, and never
+copies the live merchant key into the WordPress options table.
 
 ---
 
@@ -203,10 +195,9 @@ Each card shows:
    - **Modal**: Only the button is visible; clicking opens a popup with the payment form
 4. Fill in the **Amount** and **Product Name** (required)
 5. Optionally select a specific **Payment Method** or leave as "All Enabled"
-6. Optionally pre-fill **Buyer Information** — if left empty, buyers fill these fields themselves
-7. Customize the **Button Text** and **Color**
-8. Click **Save Shortcode**
-9. Copy the generated shortcode from the **Shortcodes** tab and paste into any page
+6. Customize the **Button Text** and **Color**. Buyer name, email, and phone are collected from the customer at payment time and cannot be stored in a reusable configuration.
+7. Click **Save Shortcode**
+8. Copy the generated shortcode from the **Shortcodes** tab and paste into any page
 
 ### Editing a Shortcode
 

@@ -1,15 +1,15 @@
 # Copyright (C) 2026 cemililik
-# This file is distributed under the MIT.
+# This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: NicePay Payment Gateway 2.0.0\n"
+"Project-Id-Version: NicePay Payment Gateway 2.0.1\n"
 "Report-Msgid-Bugs-To: https://github.com/cemililik/nicepay-paymentgateway-wordpress-plugin/issues\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-08-25T06:49:55+00:00\n"
+"POT-Creation-Date: 2026-08-27T08:23:17+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: nicepay-payment-gateway\n"
@@ -47,13 +47,13 @@ msgstr ""
 
 #: admin/class-nicepay-admin.php:32
 #: admin/class-nicepay-admin.php:33
-#: admin/class-nicepay-transactions.php:722
+#: admin/class-nicepay-transactions.php:748
 msgid "Transactions"
 msgstr ""
 
 #: admin/class-nicepay-admin.php:41
 #: admin/class-nicepay-admin.php:42
-#: nicepay-payment-gateway.php:804
+#: nicepay-payment-gateway.php:845
 msgid "Settings"
 msgstr ""
 
@@ -67,846 +67,913 @@ msgid "Cancel"
 msgstr ""
 
 #: admin/class-nicepay-admin.php:81
-#: admin/class-nicepay-admin.php:86
-msgid "Cancel Transaction"
+#: admin/class-nicepay-admin.php:87
+msgid "Refund payment"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:82
-msgid "This action cannot be undone. The payment will be reversed."
-msgstr ""
-
+#. translators: %s: formatted refundable amount
 #: admin/class-nicepay-admin.php:83
-msgid "Cancellation Reason"
+#, php-format
+msgid "Refund %s? The provider action cannot be undone."
 msgstr ""
 
 #: admin/class-nicepay-admin.php:84
-msgid "Enter reason for cancellation..."
+#: includes/class-nicepay-privacy.php:115
+msgid "Refund reason"
 msgstr ""
 
 #: admin/class-nicepay-admin.php:85
-msgid "A cancellation reason is required."
+msgid "Enter the refund reason..."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:87
-msgid "Cancellation failed."
+#: admin/class-nicepay-admin.php:86
+msgid "A refund reason is required."
 msgstr ""
 
 #: admin/class-nicepay-admin.php:88
-#: admin/class-nicepay-admin.php:862
-msgid "Request failed. Please try again."
+msgid "Refund failed."
 msgstr ""
 
 #: admin/class-nicepay-admin.php:89
-msgid "Copied to clipboard!"
+#: admin/class-nicepay-admin.php:908
+msgid "Request failed. Please try again."
 msgstr ""
 
 #: admin/class-nicepay-admin.php:90
-msgid "REFUNDED"
+msgid "Copied to clipboard!"
 msgstr ""
 
 #: admin/class-nicepay-admin.php:91
-#: nicepay-payment-gateway.php:791
-msgid "Shortcode deleted."
+msgid "Copy failed."
 msgstr ""
 
 #: admin/class-nicepay-admin.php:92
-msgid "Delete Shortcode"
+#: includes/nicepay-functions.php:1912
+msgid "Refunded"
 msgstr ""
 
 #: admin/class-nicepay-admin.php:93
-msgid "Are you sure? This cannot be undone."
+msgid "Confirm provider reversal"
 msgstr ""
 
 #: admin/class-nicepay-admin.php:94
-#: admin/class-nicepay-admin.php:807
+msgid "Confirm captured funds"
+msgstr ""
+
+#. translators: %s: formatted transaction amount
+#: admin/class-nicepay-admin.php:96
+#, php-format
+msgid "Record that NICEPAY confirms reversal of %s. Verify the merchant console before continuing."
+msgstr ""
+
+#. translators: %s: formatted transaction amount
+#: admin/class-nicepay-admin.php:98
+#, php-format
+msgid "Record that NICEPAY confirms capture of %s. Verify the merchant console before continuing."
+msgstr ""
+
+#: admin/class-nicepay-admin.php:99
+msgid "Evidence and reason"
+msgstr ""
+
+#: admin/class-nicepay-admin.php:100
+msgid "Enter the console reference and verification details..."
+msgstr ""
+
+#: admin/class-nicepay-admin.php:101
+msgid "Reconciliation evidence and a reason are required."
+msgstr ""
+
+#: admin/class-nicepay-admin.php:102
+msgid "Record decision"
+msgstr ""
+
+#: admin/class-nicepay-admin.php:103
+msgid "Reconciliation decision could not be recorded."
+msgstr ""
+
+#: admin/class-nicepay-admin.php:104
+#: nicepay-payment-gateway.php:832
+msgid "Shortcode deleted."
+msgstr ""
+
+#: admin/class-nicepay-admin.php:105
+msgid "Delete Shortcode"
+msgstr ""
+
+#: admin/class-nicepay-admin.php:106
+msgid "Are you sure? This cannot be undone."
+msgstr ""
+
+#: admin/class-nicepay-admin.php:107
+#: admin/class-nicepay-admin.php:853
 msgid "Delete"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:356
+#: admin/class-nicepay-admin.php:376
 msgid "NicePay Settings"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:369
+#: admin/class-nicepay-admin.php:389
 msgid "General"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:373
+#: admin/class-nicepay-admin.php:393
 msgid "API Credentials"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:377
+#: admin/class-nicepay-admin.php:397
 msgid "Payment Methods"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:381
+#: admin/class-nicepay-admin.php:401
 msgid "Shortcodes"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:385
+#: admin/class-nicepay-admin.php:405
 msgid "Shortcode Generator"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:389
+#: admin/class-nicepay-admin.php:409
 msgid "System Report"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:433
+#: admin/class-nicepay-admin.php:455
 msgid "Transaction schema"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:433
+#: admin/class-nicepay-admin.php:455
 msgid "Database migration must complete successfully."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:434
+#: admin/class-nicepay-admin.php:456
 msgid "HTTPS"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:434
+#: admin/class-nicepay-admin.php:456
 msgid "Checkout, payment forms, AJAX and return URLs must use HTTPS."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:435
+#: admin/class-nicepay-admin.php:457
 msgid "Operating mode"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:435
+#: admin/class-nicepay-admin.php:457
 msgid "Select a valid test or live mode."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:436
+#: admin/class-nicepay-admin.php:458
 msgid "Active credentials"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:436
+#: admin/class-nicepay-admin.php:458
 msgid "Configure both the MID and merchant key for the selected mode."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:437
-#: admin/class-nicepay-admin.php:512
-#: admin/class-nicepay-admin.php:922
-#: admin/class-nicepay-transactions.php:721
+#: admin/class-nicepay-admin.php:459
+#: admin/class-nicepay-admin.php:533
+#: admin/class-nicepay-admin.php:968
+#: admin/class-nicepay-transactions.php:747
 msgid "Currency"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:437
+#: admin/class-nicepay-admin.php:459
 msgid "Only KRW is certified for new payment requests."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:438
-msgid "Payment methods"
-msgstr ""
-
-#: admin/class-nicepay-admin.php:438
-msgid "Enable at least one certified payment method."
-msgstr ""
-
-#: admin/class-nicepay-admin.php:439
-msgid "Recovery cron"
-msgstr ""
-
-#: admin/class-nicepay-admin.php:439
-msgid "The pending-attempt expiry and stale-approval recovery task must be scheduled."
-msgstr ""
-
-#: admin/class-nicepay-admin.php:447
-msgid "Core readiness checks passed."
-msgstr ""
-
-#: admin/class-nicepay-admin.php:447
-msgid "NicePay is not ready for production payments."
-msgstr ""
-
-#: admin/class-nicepay-admin.php:453
-msgid "Ready"
-msgstr ""
-
-#: admin/class-nicepay-admin.php:458
-msgid "The WooCommerce gateway is enabled but will remain unavailable until these checks pass."
+#: admin/class-nicepay-admin.php:460
+msgid "KRW decimals"
 msgstr ""
 
 #: admin/class-nicepay-admin.php:460
+msgid "Set the WooCommerce number of decimals to 0 before accepting NicePay payments."
+msgstr ""
+
+#: admin/class-nicepay-admin.php:461
+msgid "Payment methods"
+msgstr ""
+
+#: admin/class-nicepay-admin.php:461
+msgid "Enable at least one certified payment method."
+msgstr ""
+
+#: admin/class-nicepay-admin.php:462
+msgid "Recovery cron"
+msgstr ""
+
+#: admin/class-nicepay-admin.php:462
+msgid "The pending-attempt expiry and stale-approval recovery task must be scheduled."
+msgstr ""
+
+#: admin/class-nicepay-admin.php:470
+msgid "Core readiness checks passed."
+msgstr ""
+
+#: admin/class-nicepay-admin.php:470
+msgid "NicePay is not ready for production payments."
+msgstr ""
+
+#: admin/class-nicepay-admin.php:476
+msgid "Ready"
+msgstr ""
+
+#: admin/class-nicepay-admin.php:481
+msgid "The WooCommerce gateway is enabled but will remain unavailable until these checks pass."
+msgstr ""
+
+#: admin/class-nicepay-admin.php:483
 msgid "Vendor sandbox certification, Blocks checkout and HPOS require their separate integration matrix before compatibility is declared."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:480
+#: admin/class-nicepay-admin.php:501
 msgid "Mode"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:484
-#: admin/class-nicepay-transactions.php:388
+#: admin/class-nicepay-admin.php:505
+#: admin/class-nicepay-transactions.php:414
 msgid "Test"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:487
-#: admin/class-nicepay-transactions.php:389
+#: admin/class-nicepay-admin.php:508
+#: admin/class-nicepay-transactions.php:415
 msgid "Live"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:491
+#: admin/class-nicepay-admin.php:512
 msgid "Use Test mode for development. Switch to Live for production."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:496
-#: admin/class-nicepay-admin.php:1001
+#: admin/class-nicepay-admin.php:517
+#: admin/class-nicepay-admin.php:1022
 msgid "Language"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:500
-#: admin/class-nicepay-admin.php:1004
+#: admin/class-nicepay-admin.php:521
+#: admin/class-nicepay-admin.php:1025
 msgid "Korean"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:503
-#: admin/class-nicepay-admin.php:1005
+#: admin/class-nicepay-admin.php:524
+#: admin/class-nicepay-admin.php:1026
 msgid "English"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:506
-#: admin/class-nicepay-admin.php:1006
+#: admin/class-nicepay-admin.php:527
+#: admin/class-nicepay-admin.php:1027
 msgid "Chinese"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:518
+#: admin/class-nicepay-admin.php:539
 msgid "New payment requests are limited to KRW until another currency has a verified vendor fixture."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:523
-#: admin/class-nicepay-admin.php:526
+#: admin/class-nicepay-admin.php:544
+#: admin/class-nicepay-admin.php:547
 msgid "Financial record retention"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:529
+#: admin/class-nicepay-admin.php:550
 msgid "Retain indefinitely (recommended until your policy is approved)"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:534
+#: admin/class-nicepay-admin.php:555
 msgid "Permanently delete eligible NicePay financial records after"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:542
+#: admin/class-nicepay-admin.php:563
 msgid "days"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:546
+#: admin/class-nicepay-admin.php:567
 msgid "This is a permanent, legally significant deletion policy."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:548
+#: admin/class-nicepay-admin.php:569
 msgid "NicePay cannot determine which tax, accounting, payment or privacy rules apply to your organization. Obtain legal and accounting approval for the period you enter."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:549
+#: admin/class-nicepay-admin.php:570
 msgid "The daily job deletes eligible transactions and refund-attempt history only from this plugin. It does not delete WooCommerce orders, backups, logs or records held by NICEPAY."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:550
+#: admin/class-nicepay-admin.php:571
 msgid "Pending, approving, reconciliation-required and unknown cancel/refund records are always protected from automatic deletion."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:551
+#: admin/class-nicepay-admin.php:572
 msgid "Deleting a paid or partially refunded ledger record prevents future refunds through this plugin. Export the filtered CSV and verify a recoverable backup before enabling deletion."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:557
+#: admin/class-nicepay-admin.php:578
 msgid "I understand that eligible NicePay ledger records will be permanently deleted after this period."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:564
+#: admin/class-nicepay-admin.php:585
 msgid "The current eligible-record count could not be calculated."
 msgstr ""
 
 #. translators: %s: number of records currently eligible for deletion
-#: admin/class-nicepay-admin.php:568
+#: admin/class-nicepay-admin.php:589
 #, php-format
 msgid "Records currently eligible: %s."
 msgstr ""
 
 #. translators: %s: localized date/time of next scheduled cleanup
-#: admin/class-nicepay-admin.php:577
+#: admin/class-nicepay-admin.php:598
 #, php-format
 msgid "Next scheduled cleanup: %s."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:582
+#: admin/class-nicepay-admin.php:603
 msgid "The cleanup schedule is not currently registered; save the settings again or check WP-Cron."
 msgstr ""
 
 #. translators: %1$s: last UTC run timestamp, %2$d: records deleted, %3$s: error code or none
-#: admin/class-nicepay-admin.php:592
+#: admin/class-nicepay-admin.php:613
 #, php-format
 msgid "Last cleanup (UTC): %1$s; deleted: %2$d; error: %3$s."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:595
+#: admin/class-nicepay-admin.php:616
 msgid "none"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:617
-#: admin/class-nicepay-admin.php:619
-msgid "NicePay System Report"
-msgstr ""
-
-#: admin/class-nicepay-admin.php:618
-msgid "This report contains operational status only. It excludes merchant credentials, payment tokens, customer data, paths, URLs and server headers."
-msgstr ""
-
 #: admin/class-nicepay-admin.php:625
-msgid "Copy system report"
+msgid "Plugin uninstall"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:640
-msgid "You are currently in Test mode."
+#: admin/class-nicepay-admin.php:630
+msgid "Permanently delete NicePay tables and settings when the plugin is uninstalled."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:644
-msgid "You are currently in Live mode. Payments will be processed with real money."
-msgstr ""
-
-#: admin/class-nicepay-admin.php:648
-msgid "Test Credentials"
+#: admin/class-nicepay-admin.php:633
+msgid "Leave this disabled unless you have exported the ledger and verified a recoverable backup. Uninstall deletion cannot be undone and can remove records needed for refunds, reconciliation, accounting or legal retention."
 msgstr ""
 
 #: admin/class-nicepay-admin.php:651
+#: admin/class-nicepay-admin.php:653
+msgid "NicePay System Report"
+msgstr ""
+
+#: admin/class-nicepay-admin.php:652
+msgid "This report contains operational status only. It excludes merchant credentials, payment tokens, customer data, paths, URLs and server headers."
+msgstr ""
+
+#: admin/class-nicepay-admin.php:659
+msgid "Copy system report"
+msgstr ""
+
+#: admin/class-nicepay-admin.php:676
+msgid "You are currently in Test mode."
+msgstr ""
+
+#: admin/class-nicepay-admin.php:680
+msgid "You are currently in Live mode. Payments will be processed with real money."
+msgstr ""
+
+#: admin/class-nicepay-admin.php:684
+msgid "Test Credentials"
+msgstr ""
+
+#: admin/class-nicepay-admin.php:687
 msgid "Test MID"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:658
+#: admin/class-nicepay-admin.php:694
 msgid "Test Merchant Key"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:662
-#: admin/class-nicepay-admin.php:685
+#: admin/class-nicepay-admin.php:698
+#: admin/class-nicepay-admin.php:730
 msgid "Configured — leave blank to keep unchanged"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:665
+#: admin/class-nicepay-admin.php:701
 msgid "Clear the stored test merchant key"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:671
+#: admin/class-nicepay-admin.php:707
 msgid "Live Credentials"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:674
+#: admin/class-nicepay-admin.php:710
 msgid "Live MID"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:681
+#: admin/class-nicepay-admin.php:714
+msgid "Managed in wp-config.php"
+msgstr ""
+
+#: admin/class-nicepay-admin.php:722
 msgid "Live Merchant Key"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:685
+#: admin/class-nicepay-admin.php:726
+msgid "Managed in wp-config.php; the secret is not stored in WordPress."
+msgstr ""
+
+#: admin/class-nicepay-admin.php:730
 msgid "Enter live merchant key"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:688
+#: admin/class-nicepay-admin.php:733
 msgid "Clear the stored live merchant key"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:706
+#: admin/class-nicepay-admin.php:752
 msgid "Standalone payment forms"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:712
+#: admin/class-nicepay-admin.php:758
 msgid "Enable saved NicePay shortcode payment forms"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:715
+#: admin/class-nicepay-admin.php:761
 msgid "Enable only after reviewing credentials, currency, fixed prices, and return routing."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:720
+#: admin/class-nicepay-admin.php:766
 msgid "Enabled Payment Methods"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:747
+#: admin/class-nicepay-admin.php:793
 msgid "Manage your saved payment shortcodes. Copy and paste them into any page or post."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:749
+#: admin/class-nicepay-admin.php:795
 msgid "Create New"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:756
+#: admin/class-nicepay-admin.php:802
 msgid "No shortcodes yet"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:757
+#: admin/class-nicepay-admin.php:803
 msgid "Create your first payment shortcode to get started."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:796
+#: admin/class-nicepay-admin.php:842
 msgid "Edit"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:801
-#: admin/class-nicepay-admin.php:854
-#: admin/class-nicepay-admin.php:1093
+#: admin/class-nicepay-admin.php:847
+#: admin/class-nicepay-admin.php:900
+#: admin/class-nicepay-admin.php:1114
 msgid "Copy"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:849
+#: admin/class-nicepay-admin.php:895
 msgid "Save the configuration to generate its reference shortcode."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:850
-#: admin/class-nicepay-admin.php:1082
-#: includes/nicepay-functions.php:1825
-#: nicepay-payment-gateway.php:446
+#: admin/class-nicepay-admin.php:896
+#: admin/class-nicepay-admin.php:1103
+#: includes/nicepay-functions.php:2051
+#: nicepay-payment-gateway.php:482
 msgid "Pay Now"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:851
-#: admin/class-nicepay-admin.php:1054
+#: admin/class-nicepay-admin.php:897
+#: admin/class-nicepay-admin.php:1075
 msgid "Product Name"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:852
+#: admin/class-nicepay-admin.php:898
 msgid "Amount is required"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:853
+#: admin/class-nicepay-admin.php:899
 msgid "Product name is required"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:855
+#: admin/class-nicepay-admin.php:901
 msgid "Copied!"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:856
+#: admin/class-nicepay-admin.php:902
 msgid "Copy failed"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:857
+#: admin/class-nicepay-admin.php:903
 msgid "Saving..."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:858
-#: admin/class-nicepay-admin.php:1035
+#: admin/class-nicepay-admin.php:904
+#: admin/class-nicepay-admin.php:1056
 msgid "Save Shortcode"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:859
-#: admin/class-nicepay-admin.php:1035
+#: admin/class-nicepay-admin.php:905
+#: admin/class-nicepay-admin.php:1056
 msgid "Update Shortcode"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:860
+#: admin/class-nicepay-admin.php:906
 msgid "Saved."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:861
+#: admin/class-nicepay-admin.php:907
 msgid "Error"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:874
+#: admin/class-nicepay-admin.php:920
 msgid "Shortcode Name"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:877
-#: admin/class-nicepay-admin.php:975
-#: admin/class-nicepay-admin.php:1067
-#: templates/standalone-payment-form.php:127
+#: admin/class-nicepay-admin.php:923
+#: admin/class-nicepay-admin.php:1088
+#: templates/standalone-payment-form.php:130
 msgid "Name"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:878
+#: admin/class-nicepay-admin.php:924
 msgid "e.g. Quick Payment"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:886
+#: admin/class-nicepay-admin.php:932
 msgid "Display Mode"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:895
+#: admin/class-nicepay-admin.php:941
 msgid "Inline"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:896
+#: admin/class-nicepay-admin.php:942
 msgid "Full form shown on page"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:905
+#: admin/class-nicepay-admin.php:951
 msgid "Modal"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:906
+#: admin/class-nicepay-admin.php:952
 msgid "Button opens popup overlay"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:916
+#: admin/class-nicepay-admin.php:962
 msgid "Required"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:919
+#: admin/class-nicepay-admin.php:965
 msgid "Payment Amount"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:929
+#: admin/class-nicepay-admin.php:975
 msgid "Product / Service Name"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:930
+#: admin/class-nicepay-admin.php:976
 msgid "e.g. Premium Plan"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:933
+#: admin/class-nicepay-admin.php:979
 msgid "Mobile Payment Goods Type"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:935
+#: admin/class-nicepay-admin.php:981
 msgid "Digital content or service"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:936
+#: admin/class-nicepay-admin.php:982
 msgid "Physical goods"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:938
+#: admin/class-nicepay-admin.php:984
 msgid "Required by the carrier when mobile payment is selected."
 msgstr ""
 
-#: admin/class-nicepay-admin.php:945
-#: admin/class-nicepay-admin.php:1060
-#: templates/standalone-payment-form.php:106
+#: admin/class-nicepay-admin.php:991
+#: admin/class-nicepay-admin.php:1081
+#: templates/standalone-payment-form.php:108
 msgid "Payment Method"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:950
+#: admin/class-nicepay-admin.php:996
 msgid "All Enabled"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:967
-msgid "Buyer Information"
-msgstr ""
-
-#: admin/class-nicepay-admin.php:968
-msgid "Pre-fill or leave empty"
-msgstr ""
-
-#: admin/class-nicepay-admin.php:971
-msgid "If left empty, the buyer will fill these fields in the payment form. If provided, the fields will be pre-filled and hidden."
-msgstr ""
-
-#: admin/class-nicepay-admin.php:976
-#: admin/class-nicepay-admin.php:980
-#: admin/class-nicepay-admin.php:985
-msgid "Buyer fills in"
-msgstr ""
-
-#: admin/class-nicepay-admin.php:979
-#: admin/class-nicepay-admin.php:1075
-#: templates/standalone-payment-form.php:145
-msgid "Phone"
-msgstr ""
-
-#: admin/class-nicepay-admin.php:984
-#: admin/class-nicepay-admin.php:1071
-#: templates/standalone-payment-form.php:136
-msgid "Email"
-msgstr ""
-
-#: admin/class-nicepay-admin.php:992
+#: admin/class-nicepay-admin.php:1013
 msgid "Appearance"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:993
+#: admin/class-nicepay-admin.php:1014
 msgid "Optional"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:997
+#: admin/class-nicepay-admin.php:1018
 msgid "Button Text"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:1003
+#: admin/class-nicepay-admin.php:1024
 msgid "Default"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:1012
+#: admin/class-nicepay-admin.php:1033
 msgid "Button Color"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:1026
+#: admin/class-nicepay-admin.php:1047
 msgid "CSS Class"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:1039
+#: admin/class-nicepay-admin.php:1060
 msgid "or create new"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:1050
+#: admin/class-nicepay-admin.php:1071
 msgid "Live Preview"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:1090
+#: admin/class-nicepay-admin.php:1092
+#: templates/standalone-payment-form.php:140
+msgid "Email"
+msgstr ""
+
+#: admin/class-nicepay-admin.php:1096
+#: templates/standalone-payment-form.php:150
+msgid "Phone"
+msgstr ""
+
+#: admin/class-nicepay-admin.php:1111
 msgid "Generated Shortcode"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:1091
+#: admin/class-nicepay-admin.php:1112
 msgid "Copy to clipboard"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:1168
+#: admin/class-nicepay-admin.php:1189
 msgid "NicePay payment"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:1170
+#: admin/class-nicepay-admin.php:1191
 msgid "Ledger status:"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:1174
+#: admin/class-nicepay-admin.php:1195
 msgid "Captured:"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:1176
+#: admin/class-nicepay-admin.php:1197
 msgid "Refunded:"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:1178
+#: admin/class-nicepay-admin.php:1199
 msgid "Remaining:"
 msgstr ""
 
-#: admin/class-nicepay-admin.php:1191
+#: admin/class-nicepay-admin.php:1212
 msgid "View NicePay transaction"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:243
+#: admin/class-nicepay-transactions.php:250
 msgid "You are not allowed to export NicePay transactions."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:249
+#: admin/class-nicepay-transactions.php:256
 msgid "NicePay transaction storage is not ready."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:254
+#: admin/class-nicepay-transactions.php:261
 msgid "The transaction export filters are invalid."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:267
+#: admin/class-nicepay-transactions.php:274
 msgid "The CSV output stream could not be opened."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:369
+#: admin/class-nicepay-transactions.php:378
 msgid "Provider result code"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:376
+#: admin/class-nicepay-transactions.php:385
 msgid "Provider result message"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:386
+#: admin/class-nicepay-transactions.php:391
+msgid "Reconciliation status"
+msgstr ""
+
+#: admin/class-nicepay-transactions.php:392
+msgid "Reconciliation note"
+msgstr ""
+
+#: admin/class-nicepay-transactions.php:393
+msgid "Network cancel status"
+msgstr ""
+
+#: admin/class-nicepay-transactions.php:394
+msgid "Network cancel result code"
+msgstr ""
+
+#: admin/class-nicepay-transactions.php:412
 msgid "Environment"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:396
+#: admin/class-nicepay-transactions.php:422
 msgid "Payment instrument"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:424
+#: admin/class-nicepay-transactions.php:450
 msgid "Card"
 msgstr ""
 
 #. translators: %s: stored card installment quota
-#: admin/class-nicepay-transactions.php:444
+#: admin/class-nicepay-transactions.php:470
 #, php-format
 msgid "installment %s"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:449
+#: admin/class-nicepay-transactions.php:475
 msgid "Bank transfer"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:540
+#: admin/class-nicepay-transactions.php:566
 msgid "NicePay transaction storage is not ready. Resolve the database migration error before using this screen."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:599
+#: admin/class-nicepay-transactions.php:625
 msgid "NicePay Transactions"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:603
+#: admin/class-nicepay-transactions.php:629
 msgid "The requested transaction detail is unavailable."
 msgstr ""
 
 #. translators: %d: internal NicePay transaction row ID
-#: admin/class-nicepay-transactions.php:611
+#: admin/class-nicepay-transactions.php:637
 #, php-format
 msgid "Transaction details #%d"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:624
+#: admin/class-nicepay-transactions.php:650
 msgid "No safe provider diagnostics were recorded for this transaction."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:628
+#: admin/class-nicepay-transactions.php:654
 msgid "Close details"
 msgstr ""
 
 #. translators: %d: number of transactions requiring manual reconciliation
-#: admin/class-nicepay-transactions.php:640
+#: admin/class-nicepay-transactions.php:666
 #, php-format
 msgid "%d transaction requires manual reconciliation before retrying any payment or refund."
 msgid_plural "%d transactions require manual reconciliation before retrying any payment or refund."
 msgstr[0] ""
 msgstr[1] ""
 
-#: admin/class-nicepay-transactions.php:645
+#: admin/class-nicepay-transactions.php:671
 msgid "Review now"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:653
+#: admin/class-nicepay-transactions.php:679
 msgid "One or more transaction filters are invalid. No transactions or totals were loaded."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:660
-#: admin/class-nicepay-transactions.php:662
+#: admin/class-nicepay-transactions.php:686
+#: admin/class-nicepay-transactions.php:688
 msgid "All Statuses"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:670
-#: admin/class-nicepay-transactions.php:672
+#: admin/class-nicepay-transactions.php:696
+#: admin/class-nicepay-transactions.php:698
 msgid "All Methods"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:680
-#: admin/class-nicepay-transactions.php:681
+#: admin/class-nicepay-transactions.php:706
+#: admin/class-nicepay-transactions.php:707
 msgid "From"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:682
-#: admin/class-nicepay-transactions.php:683
+#: admin/class-nicepay-transactions.php:708
+#: admin/class-nicepay-transactions.php:709
 msgid "To"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:684
-#: admin/class-nicepay-transactions.php:685
+#: admin/class-nicepay-transactions.php:710
+#: admin/class-nicepay-transactions.php:711
 msgid "Search..."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:687
+#: admin/class-nicepay-transactions.php:713
 msgid "Filter"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:690
+#: admin/class-nicepay-transactions.php:716
 msgid "Export filtered CSV"
 msgstr ""
 
 #. translators: %s: maximum number of rows in one CSV export
-#: admin/class-nicepay-transactions.php:696
+#: admin/class-nicepay-transactions.php:722
 #, php-format
 msgid "Exports up to %s matching rows."
 msgstr ""
 
 #. translators: %d: total number of transactions
-#: admin/class-nicepay-transactions.php:709
+#: admin/class-nicepay-transactions.php:735
 #, php-format
 msgid "Total: %d transaction"
 msgid_plural "Total: %d transactions"
 msgstr[0] ""
 msgstr[1] ""
 
-#: admin/class-nicepay-transactions.php:718
+#: admin/class-nicepay-transactions.php:744
 msgid "Filtered NicePay financial totals by currency"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:723
+#: admin/class-nicepay-transactions.php:749
 msgid "Captured total"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:724
+#: admin/class-nicepay-transactions.php:750
 msgid "Refunded total"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:725
+#: admin/class-nicepay-transactions.php:751
 msgid "Remaining total"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:738
+#: admin/class-nicepay-transactions.php:764
 msgid "Not recorded"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:750
+#: admin/class-nicepay-transactions.php:776
 msgid "NicePay transaction ledger"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:753
+#: admin/class-nicepay-transactions.php:779
 msgid "ID"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:754
+#: admin/class-nicepay-transactions.php:780
 msgid "TID"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:755
+#: admin/class-nicepay-transactions.php:781
 msgid "Order"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:756
+#: admin/class-nicepay-transactions.php:782
 msgid "Balance"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:757
-#: includes/class-nicepay-return-handler.php:347
+#: admin/class-nicepay-transactions.php:783
+#: includes/class-nicepay-return-handler.php:363
 msgid "Method"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:758
+#: admin/class-nicepay-transactions.php:784
+#: includes/class-nicepay-privacy.php:116
 msgid "Status"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:759
+#: admin/class-nicepay-transactions.php:785
 msgid "Buyer"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:760
+#: admin/class-nicepay-transactions.php:786
+#: includes/class-nicepay-privacy.php:117
 msgid "Date"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:761
+#: admin/class-nicepay-transactions.php:787
 msgid "Actions"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:772
+#: admin/class-nicepay-transactions.php:798
 msgid "No transactions found"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:773
+#: admin/class-nicepay-transactions.php:799
 msgid "Transactions will appear here once payments are made."
 msgstr ""
 
 #. translators: %s: NicePay transaction ID
-#: admin/class-nicepay-transactions.php:812
+#: admin/class-nicepay-transactions.php:838
 #, php-format
 msgid "Copy TID %s"
 msgstr ""
 
-#. translators: %s: NicePay transaction ID
-#: admin/class-nicepay-transactions.php:819
-#, php-format
-msgid "Cancel transaction %s"
-msgstr ""
-
 #. translators: %d: internal NicePay transaction row ID
-#: admin/class-nicepay-transactions.php:825
+#: admin/class-nicepay-transactions.php:844
 #, php-format
 msgid "View details for transaction %d"
 msgstr ""
 
 #. translators: %d: deleted or unavailable WooCommerce order ID
-#: admin/class-nicepay-transactions.php:860
+#: admin/class-nicepay-transactions.php:879
 #, php-format
 msgid "Order #%d unavailable"
 msgstr ""
 
 #. translators: %1$s: refunded amount, %2$s: remaining amount
-#: admin/class-nicepay-transactions.php:874
+#: admin/class-nicepay-transactions.php:893
 #, php-format
 msgid "Refunded: %1$s · Remaining: %2$s"
 msgstr ""
 
 #. translators: %d: number of refund attempts
-#: admin/class-nicepay-transactions.php:887
+#: admin/class-nicepay-transactions.php:906
 #, php-format
 msgid "%d refund attempt"
 msgid_plural "%d refund attempts"
@@ -914,55 +981,75 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %1$s: refund status, %2$s: amount, %3$s: result code
-#: admin/class-nicepay-transactions.php:899
+#: admin/class-nicepay-transactions.php:918
 #, php-format
 msgid "%1$s — %2$s — code %3$s"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:917
+#: admin/class-nicepay-transactions.php:936
 msgid "Manual review required"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:929
+#. translators: %s: formatted refundable amount
+#: admin/class-nicepay-transactions.php:948
+#, php-format
+msgid "Refund payment %s"
+msgstr ""
+
+#. translators: %s: formatted refundable amount
+#: admin/class-nicepay-transactions.php:949
 msgid "Refund"
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:939
-msgid "Details"
+#: admin/class-nicepay-transactions.php:958
+msgid "Confirm reversed"
+msgstr ""
+
+#: admin/class-nicepay-transactions.php:965
+msgid "Confirm captured"
 msgstr ""
 
 #: admin/class-nicepay-transactions.php:975
-#: nicepay-payment-gateway.php:660
-#: nicepay-payment-gateway.php:775
+msgid "Details"
+msgstr ""
+
+#: admin/class-nicepay-transactions.php:1012
+#: admin/class-nicepay-transactions.php:1084
+#: nicepay-payment-gateway.php:709
+#: nicepay-payment-gateway.php:816
 msgid "Unauthorized."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:981
+#: admin/class-nicepay-transactions.php:1018
 msgid "Transaction not found."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:986
+#: admin/class-nicepay-transactions.php:1023
 msgid "Standalone cancellation is unavailable until its reconciliation workflow is configured."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:992
+#: admin/class-nicepay-transactions.php:1029
 msgid "WooCommerce order not found."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:1001
+#: admin/class-nicepay-transactions.php:1038
 msgid "This transaction is not in a safe state for refund."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:1007
+#: admin/class-nicepay-transactions.php:1044
 msgid "This payment has no refundable balance."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:1022
+#: admin/class-nicepay-transactions.php:1059
 msgid "Refund could not be completed. Review the order notes before retrying."
 msgstr ""
 
-#: admin/class-nicepay-transactions.php:1026
+#: admin/class-nicepay-transactions.php:1066
 msgid "Refund completed successfully."
+msgstr ""
+
+#: admin/class-nicepay-transactions.php:1096
+msgid "Reconciliation decision recorded with an audit entry."
 msgstr ""
 
 #: includes/class-nicepay-api.php:293
@@ -978,9 +1065,8 @@ msgid "Approval request context is incomplete."
 msgstr ""
 
 #: includes/class-nicepay-api.php:332
-#: includes/class-nicepay-api.php:480
-#: nicepay-payment-gateway.php:423
-#: nicepay-payment-gateway.php:581
+#: includes/class-nicepay-api.php:481
+#: nicepay-payment-gateway.php:624
 msgid "NicePay credentials are not configured."
 msgstr ""
 
@@ -988,57 +1074,57 @@ msgstr ""
 msgid "Invalid approval URL."
 msgstr ""
 
-#: includes/class-nicepay-api.php:392
+#: includes/class-nicepay-api.php:393
 msgid "Missing signature in approval response."
 msgstr ""
 
-#: includes/class-nicepay-api.php:402
+#: includes/class-nicepay-api.php:403
 msgid "Signature verification failed."
 msgstr ""
 
-#: includes/class-nicepay-api.php:423
-#: includes/class-nicepay-api.php:439
+#: includes/class-nicepay-api.php:424
+#: includes/class-nicepay-api.php:440
 msgid "The payment outcome requires merchant reconciliation."
 msgstr ""
 
-#: includes/class-nicepay-api.php:475
+#: includes/class-nicepay-api.php:476
 msgid "Network cancel context is incomplete."
 msgstr ""
 
-#: includes/class-nicepay-api.php:487
-#: includes/class-nicepay-api.php:597
+#: includes/class-nicepay-api.php:488
+#: includes/class-nicepay-api.php:600
 msgid "Invalid cancel URL."
 msgstr ""
 
-#: includes/class-nicepay-api.php:528
+#: includes/class-nicepay-api.php:530
 msgid "Network cancel response could not be verified."
 msgstr ""
 
-#: includes/class-nicepay-api.php:532
+#: includes/class-nicepay-api.php:534
 msgid "Network cancel response signature is invalid."
 msgstr ""
 
-#: includes/class-nicepay-api.php:540
+#: includes/class-nicepay-api.php:542
 msgid "Network cancel response did not match the payment."
 msgstr ""
 
-#: includes/class-nicepay-api.php:544
+#: includes/class-nicepay-api.php:546
 msgid "NicePay did not confirm the network cancel."
 msgstr ""
 
-#: includes/class-nicepay-api.php:566
+#: includes/class-nicepay-api.php:568
 msgid "Cancel request is invalid."
 msgstr ""
 
-#: includes/class-nicepay-api.php:620
+#: includes/class-nicepay-api.php:623
 msgid "Cancel response could not be verified."
 msgstr ""
 
-#: includes/class-nicepay-api.php:625
+#: includes/class-nicepay-api.php:628
 msgid "Cancel signature verification failed."
 msgstr ""
 
-#: includes/class-nicepay-api.php:631
+#: includes/class-nicepay-api.php:634
 msgid "Cancel response did not match the refund request."
 msgstr ""
 
@@ -1088,7 +1174,7 @@ msgstr ""
 
 #: includes/class-nicepay-blocks-integration.php:72
 #: templates/payment-form.php:19
-#: templates/standalone-payment-form.php:92
+#: templates/standalone-payment-form.php:94
 msgid "Test mode — no real payment will be collected."
 msgstr ""
 
@@ -1138,234 +1224,456 @@ msgstr ""
 msgid "Configure MID, Merchant Key, and other API settings on the <a href=\"%s\">NicePay Settings</a> page."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:140
-#: includes/class-nicepay-gateway.php:457
-#: includes/class-nicepay-gateway.php:698
-msgid "Order not found."
+#: includes/class-nicepay-gateway.php:120
+msgid "The order could not be loaded. Please return to checkout and try again."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:146
-msgid "This payment link is invalid or expired."
+#: includes/class-nicepay-gateway.php:126
+msgid "NicePay is not selected for this order."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:151
-msgid "This order is not eligible for a new NicePay payment."
+#: includes/class-nicepay-gateway.php:132
+msgid "NicePay supports KRW orders only."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:157
-msgid "This NicePay payment was already confirmed and the order has been recovered."
+#: includes/class-nicepay-gateway.php:138
+msgid "The order total must be a positive whole KRW amount."
+msgstr ""
+
+#: includes/class-nicepay-gateway.php:144
+msgid "NicePay is not currently available. Please choose another payment method or contact the merchant."
 msgstr ""
 
 #: includes/class-nicepay-gateway.php:158
+msgid "This order no longer requires payment."
+msgstr ""
+
+#: includes/class-nicepay-gateway.php:196
+#: includes/class-nicepay-gateway.php:555
+#: includes/class-nicepay-gateway.php:795
+msgid "Order not found."
+msgstr ""
+
+#: includes/class-nicepay-gateway.php:202
+msgid "This payment link is invalid or expired."
+msgstr ""
+
+#: includes/class-nicepay-gateway.php:207
+msgid "This order is not eligible for a new NicePay payment."
+msgstr ""
+
+#: includes/class-nicepay-gateway.php:213
+msgid "This NicePay payment was already confirmed and the order has been recovered."
+msgstr ""
+
+#: includes/class-nicepay-gateway.php:214
 msgid "View Order"
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:191
+#: includes/class-nicepay-gateway.php:247
 msgid "WooCommerce order completion was recovered from the verified NicePay payment ledger."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:217
+#: includes/class-nicepay-gateway.php:273
 msgid "NicePay is not configured for this order."
 msgstr ""
 
 #. translators: %d: number of additional items
-#: includes/class-nicepay-gateway.php:231
+#: includes/class-nicepay-gateway.php:287
 #, php-format
 msgid " and %d more item"
 msgid_plural " and %d more items"
 msgstr[0] ""
 msgstr[1] ""
 
-#: includes/class-nicepay-gateway.php:243
-msgid "No certified NicePay payment method is enabled."
-msgstr ""
-
-#: includes/class-nicepay-gateway.php:258
-#: includes/class-nicepay-gateway.php:301
-#: includes/class-nicepay-gateway.php:325
-msgid "Return to Checkout"
-msgstr ""
-
-#: includes/class-nicepay-gateway.php:264
-msgid "NicePay could not prepare a unique payment attempt."
-msgstr ""
-
-#: includes/class-nicepay-gateway.php:298
-msgid "NicePay could not initialize a payment attempt. The order remains payable."
-msgstr ""
-
 #: includes/class-nicepay-gateway.php:299
-msgid "Payment initialization failed. Please try again."
-msgstr ""
-
-#: includes/class-nicepay-gateway.php:300
-#: includes/class-nicepay-gateway.php:324
+#: includes/class-nicepay-gateway.php:363
+#: includes/class-nicepay-gateway.php:387
 msgid "Payment initialization failed. Please return to checkout."
 msgstr ""
 
+#: includes/class-nicepay-gateway.php:300
+#: includes/class-nicepay-gateway.php:320
 #: includes/class-nicepay-gateway.php:364
+#: includes/class-nicepay-gateway.php:388
+msgid "Return to Checkout"
+msgstr ""
+
+#: includes/class-nicepay-gateway.php:305
+msgid "No certified NicePay payment method is enabled."
+msgstr ""
+
+#: includes/class-nicepay-gateway.php:326
+msgid "NicePay could not prepare a unique payment attempt."
+msgstr ""
+
+#: includes/class-nicepay-gateway.php:361
+msgid "NicePay could not initialize a payment attempt. The order remains payable."
+msgstr ""
+
+#: includes/class-nicepay-gateway.php:362
+msgid "Payment initialization failed. Please try again."
+msgstr ""
+
+#: includes/class-nicepay-gateway.php:428
 msgid "The mobile-payment goods classification is invalid."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:388
-#: includes/class-nicepay-return-handler.php:37
+#: includes/class-nicepay-gateway.php:454
+#: includes/class-nicepay-return-handler.php:39
 msgid "Invalid request method."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:429
+#: includes/class-nicepay-gateway.php:496
 msgid "We could not verify this payment attempt. Please try again."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:473
+#: includes/class-nicepay-gateway.php:527
 msgid "NicePay authentication succeeded, but its reversal could not be confirmed. Reconcile this order before retrying."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:475
+#: includes/class-nicepay-gateway.php:529
 msgid "NicePay approval was not attempted and the authentication hold was reversed. The order remains payable."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:478
+#: includes/class-nicepay-gateway.php:534
 msgid "Payment processing could not be completed safely."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:501
+#: includes/class-nicepay-gateway.php:562
+msgid "NicePay authentication succeeded, but its locally stored reversal context is incomplete. Manual reconciliation is required."
+msgstr ""
+
+#: includes/class-nicepay-gateway.php:587
 msgid "The order changed after NicePay authentication, and the authorization reversal could not be confirmed. Manual reconciliation is required."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:503
+#: includes/class-nicepay-gateway.php:589
 msgid "The order changed after NicePay authentication; the authorization hold was reversed before approval."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:506
+#: includes/class-nicepay-gateway.php:592
 msgid "The order changed before payment could be confirmed. Please review the order and try again."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:533
+#: includes/class-nicepay-gateway.php:619
 msgid "NicePay payment outcome is unknown. Reconcile this order in the NicePay merchant console before retrying or fulfilling it."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:535
+#: includes/class-nicepay-gateway.php:621
 msgid "NicePay approval did not complete; the reversal was confirmed. The order remains payable."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:539
-#: includes/class-nicepay-gateway.php:562
-#: includes/class-nicepay-return-handler.php:108
-#: includes/class-nicepay-return-handler.php:138
-#: includes/class-nicepay-return-handler.php:157
-#: includes/class-nicepay-return-handler.php:205
+#: includes/class-nicepay-gateway.php:625
+#: includes/class-nicepay-gateway.php:648
+#: includes/class-nicepay-return-handler.php:114
+#: includes/class-nicepay-return-handler.php:125
+#: includes/class-nicepay-return-handler.php:151
+#: includes/class-nicepay-return-handler.php:170
+#: includes/class-nicepay-return-handler.php:218
 msgid "We could not confirm the payment outcome. Please contact the merchant before retrying."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:558
+#: includes/class-nicepay-gateway.php:644
 msgid "NicePay returned an approval that did not match the order snapshot. The original authorization was reversed when possible, but the unmatched approval still requires manual reconciliation."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:619
+#: includes/class-nicepay-gateway.php:705
 msgid "NicePay captured the payment but the local ledger and reversal outcome could not be confirmed. Manual reconciliation is required."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:621
+#: includes/class-nicepay-gateway.php:707
 msgid "NicePay reversed the captured payment after a local ledger failure. The order remains payable."
 msgstr ""
 
+#: includes/class-nicepay-gateway.php:727
+msgid "NicePay sandbox payment approved. This is a test transaction; do not fulfill the order."
+msgstr ""
+
+#. translators: %1$s: payment method, %2$s: sandbox TID
+#: includes/class-nicepay-gateway.php:730
+#, php-format
+msgid "NicePay TEST payment approved. Method: %1$s, sandbox TID: %2$s. No real payment was collected."
+msgstr ""
+
 #. translators: %1$s: payment method, %2$s: TID
-#: includes/class-nicepay-gateway.php:642
+#: includes/class-nicepay-gateway.php:738
 #, php-format
 msgid "NicePay payment completed. Method: %1$s, TID: %2$s"
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:655
+#: includes/class-nicepay-gateway.php:752
 msgid "NicePay captured this payment, but WooCommerce could not finalize the order. Manual reconciliation is required."
 msgstr ""
 
 #. translators: %s: result code
-#: includes/class-nicepay-gateway.php:680
+#: includes/class-nicepay-gateway.php:777
 #, php-format
 msgid "NicePay declined the payment. Result code: %s. The order remains payable."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:685
-#: includes/class-nicepay-return-handler.php:225
+#: includes/class-nicepay-gateway.php:782
+#: includes/class-nicepay-return-handler.php:241
 msgid "Payment was declined. Please try another payment method."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:705
+#: includes/class-nicepay-gateway.php:802
 msgid "Transaction ID not found."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:713
+#: includes/class-nicepay-gateway.php:810
 msgid "This transaction is not in a safe state for another refund."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:720
+#: includes/class-nicepay-gateway.php:817
 msgid "The original payment context does not match the active NicePay configuration."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:733
+#: includes/class-nicepay-gateway.php:832
 msgid "Refund amount is invalid for this currency."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:738
+#: includes/class-nicepay-gateway.php:837
 msgid "No refundable balance remains."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:747
+#: includes/class-nicepay-gateway.php:846
 msgid "Refund amount exceeds the captured balance."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:758
+#: includes/class-nicepay-gateway.php:857
 msgid "WooCommerce refund records do not match this NicePay refund request."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:764
+#: includes/class-nicepay-gateway.php:863
 msgid "Partial mobile-payment refunds remain disabled until the OTID lifecycle is certified."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:768
+#: includes/class-nicepay-gateway.php:867
 msgid "NICEPAY did not certify partial refunds for this card payment."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:774
+#: includes/class-nicepay-gateway.php:873
 msgid "Partial refunds for this simple-pay wallet are disabled because the remaining balance may become irreversible."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:781
+#: includes/class-nicepay-gateway.php:880
 msgid "Refund requested by merchant"
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:786
+#: includes/class-nicepay-gateway.php:885
 msgid "Another refund or reconciliation action is already using this balance."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:802
+#: includes/class-nicepay-gateway.php:901
 msgid "Refund was not sent because its audit record could not be created."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:825
+#: includes/class-nicepay-gateway.php:924
 msgid "NicePay refund outcome is unknown. Do not retry until it is reconciled in the merchant console."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:827
+#: includes/class-nicepay-gateway.php:926
 msgid "Refund outcome is unknown. Reconcile it before retrying."
 msgstr ""
 
 #. translators: %1$s: amount, %2$s: reason
-#: includes/class-nicepay-gateway.php:840
+#: includes/class-nicepay-gateway.php:939
 #, php-format
 msgid "NicePay refund processed. Amount: %1$s, Reason: %2$s"
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:874
+#: includes/class-nicepay-gateway.php:973
 msgid "NicePay confirmed the refund, but its local audit could not be finalized. The WooCommerce refund is retained; manual ledger reconciliation is required."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:897
+#: includes/class-nicepay-gateway.php:996
 msgid "Refund response did not match the request. Reconcile it before retrying."
 msgstr ""
 
-#: includes/class-nicepay-gateway.php:916
+#: includes/class-nicepay-gateway.php:1015
 msgid "NicePay rejected the refund request. Review the transaction details."
+msgstr ""
+
+#: includes/class-nicepay-inbound-validator.php:33
+msgid "Invalid payment flow."
+msgstr ""
+
+#: includes/class-nicepay-inbound-validator.php:53
+msgid "Missing required authentication field."
+msgstr ""
+
+#: includes/class-nicepay-inbound-validator.php:63
+#: includes/class-nicepay-inbound-validator.php:70
+msgid "Payment flow does not match the transaction."
+msgstr ""
+
+#: includes/class-nicepay-inbound-validator.php:66
+msgid "Payment transaction was not found."
+msgstr ""
+
+#: includes/class-nicepay-inbound-validator.php:76
+msgid "Payment return binding does not match the transaction."
+msgstr ""
+
+#: includes/class-nicepay-inbound-validator.php:81
+msgid "Payment transaction is not pending approval."
+msgstr ""
+
+#: includes/class-nicepay-inbound-validator.php:86
+msgid "Payment transaction has no valid expiry."
+msgstr ""
+
+#: includes/class-nicepay-inbound-validator.php:89
+msgid "Payment offer has expired."
+msgstr ""
+
+#: includes/class-nicepay-inbound-validator.php:97
+msgid "Merchant ID does not match the transaction."
+msgstr ""
+
+#: includes/class-nicepay-inbound-validator.php:101
+msgid "Transaction currency is not supported."
+msgstr ""
+
+#: includes/class-nicepay-inbound-validator.php:107
+msgid "Payment amount does not match the transaction."
+msgstr ""
+
+#: includes/class-nicepay-inbound-validator.php:111
+msgid "Payment method does not match the transaction."
+msgstr ""
+
+#: includes/class-nicepay-inbound-validator.php:115
+msgid "NicePay authentication was not successful."
+msgstr ""
+
+#: includes/class-nicepay-inbound-validator.php:119
+msgid "NicePay authentication signature is invalid."
+msgstr ""
+
+#: includes/class-nicepay-inbound-validator.php:139
+msgid "Approval transaction is invalid."
+msgstr ""
+
+#: includes/class-nicepay-inbound-validator.php:147
+msgid "Missing required approval field."
+msgstr ""
+
+#: includes/class-nicepay-inbound-validator.php:156
+msgid "Approval merchant ID does not match the transaction."
+msgstr ""
+
+#: includes/class-nicepay-inbound-validator.php:161
+msgid "Approval order ID does not match the transaction."
+msgstr ""
+
+#: includes/class-nicepay-inbound-validator.php:165
+msgid "Approval transaction currency is not supported."
+msgstr ""
+
+#: includes/class-nicepay-inbound-validator.php:171
+msgid "Approval amount does not match the transaction."
+msgstr ""
+
+#: includes/class-nicepay-inbound-validator.php:177
+msgid "Approval payment method does not match the transaction."
+msgstr ""
+
+#: includes/class-nicepay-inbound-validator.php:182
+msgid "Approval transaction ID does not match the authentication return."
+msgstr ""
+
+#: includes/class-nicepay-inbound-validator.php:186
+msgid "NicePay approval signature is invalid."
+msgstr ""
+
+#: includes/class-nicepay-installer.php:127
+msgid "NicePay schema installation requires a valid wpdb instance."
+msgstr ""
+
+#: includes/class-nicepay-installer.php:139
+msgid "NicePay will not run an older schema over a newer database."
+msgstr ""
+
+#: includes/class-nicepay-installer.php:170
+msgid "Another NicePay schema upgrade is already running."
+msgstr ""
+
+#: includes/class-nicepay-installer.php:180
+msgid "NicePay cannot add the unique Moid index until duplicate Moids are reviewed."
+msgstr ""
+
+#: includes/class-nicepay-installer.php:192
+msgid "NicePay cannot add the unique TID index until duplicate transaction IDs are reviewed."
+msgstr ""
+
+#: includes/class-nicepay-installer.php:208
+msgid "NicePay could not make the legacy transaction ID nullable."
+msgstr ""
+
+#: includes/class-nicepay-installer.php:214
+msgid "NicePay could not normalize legacy transaction IDs."
+msgstr ""
+
+#: includes/class-nicepay-installer.php:227
+msgid "NicePay schema installation requires dbDelta."
+msgstr ""
+
+#: includes/class-nicepay-installer.php:240
+msgid "NicePay transaction schema upgrade failed."
+msgstr ""
+
+#: includes/class-nicepay-installer.php:249
+msgid "NicePay transaction schema upgrade did not create all required tables."
+msgstr ""
+
+#: includes/class-nicepay-installer.php:272
+msgid "NicePay could not store the transaction schema version."
+msgstr ""
+
+#: includes/class-nicepay-installer.php:276
+msgid "NicePay could not store the verified schema version."
+msgstr ""
+
+#: includes/class-nicepay-installer.php:303
+msgid "NicePay cannot verify the upgraded schema."
+msgstr ""
+
+#: includes/class-nicepay-installer.php:336
+msgid "NicePay transaction schema is incomplete after dbDelta."
+msgstr ""
+
+#: includes/class-nicepay-installer.php:349
+msgid "NicePay refund ledger is missing its identity index."
+msgstr ""
+
+#: includes/class-nicepay-installer.php:360
+msgid "NicePay reconciliation audit ledger is missing its transaction index."
+msgstr ""
+
+#: includes/class-nicepay-installer.php:402
+msgid "NicePay could not backfill the legacy transaction ledger."
+msgstr ""
+
+#: includes/class-nicepay-installer.php:460
+msgid "NicePay schema migration requires database write access."
+msgstr ""
+
+#: includes/class-nicepay-installer.php:475
+msgid "NicePay could not safely clean legacy sensitive transaction data."
+msgstr ""
+
+#: includes/class-nicepay-installer.php:493
+msgid "Explicit confirmation is required before legacy payment payloads are removed."
+msgstr ""
+
+#: includes/class-nicepay-installer.php:497
+msgid "The NicePay legacy payment payload column is unavailable."
+msgstr ""
+
+#: includes/class-nicepay-installer.php:510
+msgid "NicePay could not clean legacy payment payloads."
 msgstr ""
 
 #: includes/class-nicepay-offer-resolver.php:38
@@ -1373,7 +1681,7 @@ msgid "Invalid payment configuration identifier."
 msgstr ""
 
 #: includes/class-nicepay-offer-resolver.php:46
-#: nicepay-payment-gateway.php:414
+#: nicepay-payment-gateway.php:452
 msgid "Payment configuration not found."
 msgstr ""
 
@@ -1413,57 +1721,65 @@ msgstr ""
 
 #: includes/class-nicepay-privacy.php:20
 #: includes/class-nicepay-privacy.php:29
-#: includes/class-nicepay-privacy.php:75
+#: includes/class-nicepay-privacy.php:79
+#: includes/class-nicepay-privacy.php:110
 msgid "NicePay payment transactions"
 msgstr ""
 
-#: includes/class-nicepay-privacy.php:78
+#: includes/class-nicepay-privacy.php:82
 msgid "Buyer name"
 msgstr ""
 
-#: includes/class-nicepay-privacy.php:79
+#: includes/class-nicepay-privacy.php:83
 msgid "Buyer email"
 msgstr ""
 
-#: includes/class-nicepay-privacy.php:80
+#: includes/class-nicepay-privacy.php:84
 msgid "Buyer phone"
 msgstr ""
 
-#: includes/class-nicepay-privacy.php:81
+#: includes/class-nicepay-privacy.php:85
 msgid "Merchant reference"
 msgstr ""
 
-#: includes/class-nicepay-privacy.php:82
+#: includes/class-nicepay-privacy.php:86
 msgid "Provider transaction ID"
 msgstr ""
 
-#: includes/class-nicepay-privacy.php:83
+#: includes/class-nicepay-privacy.php:87
 msgid "WooCommerce order ID"
 msgstr ""
 
-#: includes/class-nicepay-privacy.php:84
-#: includes/class-nicepay-return-handler.php:322
-#: includes/class-nicepay-return-handler.php:343
+#: includes/class-nicepay-privacy.php:88
+#: includes/class-nicepay-privacy.php:114
+#: includes/class-nicepay-return-handler.php:338
+#: includes/class-nicepay-return-handler.php:359
 msgid "Amount"
 msgstr ""
 
-#: includes/class-nicepay-privacy.php:85
+#: includes/class-nicepay-privacy.php:89
 msgid "Payment method"
 msgstr ""
 
-#: includes/class-nicepay-privacy.php:86
+#: includes/class-nicepay-privacy.php:90
 msgid "Payment status"
 msgstr ""
 
-#: includes/class-nicepay-privacy.php:87
+#: includes/class-nicepay-privacy.php:91
 msgid "Created at"
 msgstr ""
 
-#: includes/class-nicepay-privacy.php:148
+#: includes/class-nicepay-privacy.php:113
+#: includes/class-nicepay-return-handler.php:351
+msgid "Transaction ID"
+msgstr ""
+
+#: includes/class-nicepay-privacy.php:183
+#: includes/class-nicepay-privacy.php:190
 msgid "NicePay buyer data could not be erased from the transaction ledger."
 msgstr ""
 
-#: includes/class-nicepay-privacy.php:154
+#: includes/class-nicepay-privacy.php:196
 msgid "Financial transaction references and amounts were retained for accounting and reconciliation."
 msgstr ""
 
@@ -1481,93 +1797,162 @@ msgstr ""
 msgid "Confirm the permanent-deletion warning before enabling a finite financial retention period."
 msgstr ""
 
-#: includes/class-nicepay-return-handler.php:81
+#: includes/class-nicepay-retention.php:196
+msgid "NicePay retention parameters are invalid."
+msgstr ""
+
+#: includes/class-nicepay-retention.php:210
+msgid "NicePay retention requires InnoDB tables for transactional deletion."
+msgstr ""
+
+#: includes/class-nicepay-retention.php:214
+msgid "NicePay could not start the retention transaction."
+msgstr ""
+
+#: includes/class-nicepay-retention.php:229
+msgid "NicePay could not select retention records safely."
+msgstr ""
+
+#: includes/class-nicepay-retention.php:241
+msgid "NicePay could not delete refund audit records safely."
+msgstr ""
+
+#: includes/class-nicepay-retention.php:245
+msgid "NicePay could not delete reconciliation audit records safely."
+msgstr ""
+
+#: includes/class-nicepay-retention.php:255
+msgid "NicePay retention records changed before deletion."
+msgstr ""
+
+#: includes/class-nicepay-retention.php:260
+msgid "NicePay could not commit the retention transaction."
+msgstr ""
+
+#: includes/class-nicepay-return-handler.php:85
 msgid "Payment authentication was not completed. You may try again."
 msgstr ""
 
-#: includes/class-nicepay-return-handler.php:82
+#: includes/class-nicepay-return-handler.php:86
 msgid "We could not verify this payment attempt."
 msgstr ""
 
-#: includes/class-nicepay-return-handler.php:89
+#: includes/class-nicepay-return-handler.php:93
 msgid "This payment attempt is already being processed."
 msgstr ""
 
-#: includes/class-nicepay-return-handler.php:109
+#: includes/class-nicepay-return-handler.php:115
 msgid "Payment approval was not started and the authorization hold was reversed. You may try again."
 msgstr ""
 
-#: includes/class-nicepay-return-handler.php:218
-#: includes/class-nicepay-return-handler.php:237
+#: includes/class-nicepay-return-handler.php:232
+msgid "Test payment completed. No real payment was collected."
+msgstr ""
+
+#: includes/class-nicepay-return-handler.php:233
+#: includes/class-nicepay-return-handler.php:253
 msgid "Payment completed successfully."
 msgstr ""
 
-#: includes/class-nicepay-return-handler.php:256
+#: includes/class-nicepay-return-handler.php:272
 msgid "Payment Successful"
 msgstr ""
 
-#: includes/class-nicepay-return-handler.php:257
+#: includes/class-nicepay-return-handler.php:273
 msgid "Payment Failed"
 msgstr ""
 
-#: includes/class-nicepay-return-handler.php:311
+#: includes/class-nicepay-return-handler.php:327
 msgid "Deposit Information"
 msgstr ""
 
-#: includes/class-nicepay-return-handler.php:314
+#: includes/class-nicepay-return-handler.php:330
 msgid "Bank"
 msgstr ""
 
-#: includes/class-nicepay-return-handler.php:318
+#: includes/class-nicepay-return-handler.php:334
 msgid "Account"
 msgstr ""
 
-#: includes/class-nicepay-return-handler.php:326
+#: includes/class-nicepay-return-handler.php:342
 msgid "Deadline"
 msgstr ""
 
-#: includes/class-nicepay-return-handler.php:335
-msgid "Transaction ID"
-msgstr ""
-
-#: includes/class-nicepay-return-handler.php:339
+#: includes/class-nicepay-return-handler.php:355
 msgid "Payment Reference"
 msgstr ""
 
-#: includes/class-nicepay-return-handler.php:357
+#: includes/class-nicepay-return-handler.php:373
 msgid "Open Saved Receipt"
 msgstr ""
 
-#: includes/class-nicepay-return-handler.php:362
+#: includes/class-nicepay-return-handler.php:378
 msgid "Print Receipt"
 msgstr ""
 
-#: includes/class-nicepay-return-handler.php:366
+#: includes/class-nicepay-return-handler.php:382
 msgid "Return to Home"
 msgstr ""
 
-#: includes/nicepay-functions.php:511
+#: includes/nicepay-functions.php:501
+msgid "The claimed payment context is unavailable."
+msgstr ""
+
+#: includes/nicepay-functions.php:520
+msgid "The claimed payment context is incomplete."
+msgstr ""
+
+#: includes/nicepay-functions.php:562
 msgid "NicePay test mode is enabled on a public payment surface. Test approvals collect no real funds; do not fulfil them as paid orders."
 msgstr ""
 
-#: includes/nicepay-functions.php:519
+#: includes/nicepay-functions.php:570
 msgid "NicePay live mode is selected, but the active MID or merchant key is missing. Payment forms remain unavailable."
 msgstr ""
 
-#: includes/nicepay-functions.php:527
+#: includes/nicepay-functions.php:578
 msgid "NicePay has an invalid operating mode. Payment forms remain unavailable until the setting is corrected."
 msgstr ""
 
-#: includes/nicepay-functions.php:1021
+#: includes/nicepay-functions.php:1133
 msgid "Warning: cancelling the WooCommerce order does not refund captured NicePay funds. Verify the remaining balance and create an explicit WooCommerce refund if money must be returned."
 msgstr ""
 
-#: includes/nicepay-functions.php:1159
+#: includes/nicepay-functions.php:1178
+msgid "The reconciliation decision is invalid."
+msgstr ""
+
+#: includes/nicepay-functions.php:1181
+msgid "A reconciliation reason is required."
+msgstr ""
+
+#: includes/nicepay-functions.php:1187
+msgid "The reconciliation update could not be started."
+msgstr ""
+
+#: includes/nicepay-functions.php:1198
+msgid "This transaction no longer requires reconciliation."
+msgstr ""
+
+#: includes/nicepay-functions.php:1205
+msgid "The transaction amount cannot be reconciled safely."
+msgstr ""
+
+#: includes/nicepay-functions.php:1250
+#: includes/nicepay-functions.php:1276
+msgid "The reconciliation decision could not be saved."
+msgstr ""
+
+#: includes/nicepay-functions.php:1269
+msgid "The reconciliation audit record could not be saved."
+msgstr ""
+
+#: includes/nicepay-functions.php:1394
 msgid "Your NicePay payment receipt"
 msgstr ""
 
 #. translators: %1$s: merchant payment reference, %2$s: formatted amount, %3$s: secure receipt URL
-#: includes/nicepay-functions.php:1162
+#: includes/nicepay-functions.php:1397
 #, php-format
 msgid ""
 "Payment reference: %1$s\n"
@@ -1575,223 +1960,229 @@ msgid ""
 "Receipt: %3$s"
 msgstr ""
 
-#: includes/nicepay-functions.php:1418
+#: includes/nicepay-functions.php:1653
 msgid "Buyer information is invalid."
 msgstr ""
 
-#: includes/nicepay-functions.php:1430
+#: includes/nicepay-functions.php:1665
 msgid "Buyer information is required."
 msgstr ""
 
-#: includes/nicepay-functions.php:1433
+#: includes/nicepay-functions.php:1668
 msgid "Buyer information exceeds the payment provider field limits."
 msgstr ""
 
-#: includes/nicepay-functions.php:1442
+#: includes/nicepay-functions.php:1677
 msgid "Buyer email address is invalid."
 msgstr ""
 
-#: includes/nicepay-functions.php:1447
+#: includes/nicepay-functions.php:1682
 msgid "Buyer phone number is invalid."
 msgstr ""
 
-#: includes/nicepay-functions.php:1673
+#: includes/nicepay-functions.php:1908
 msgid "Pending"
 msgstr ""
 
-#: includes/nicepay-functions.php:1674
+#: includes/nicepay-functions.php:1909
 msgid "Paid"
 msgstr ""
 
-#: includes/nicepay-functions.php:1675
+#: includes/nicepay-functions.php:1910
 msgid "Failed"
 msgstr ""
 
-#: includes/nicepay-functions.php:1676
+#: includes/nicepay-functions.php:1911
 msgid "Cancelled"
 msgstr ""
 
-#: includes/nicepay-functions.php:1677
-msgid "Refunded"
-msgstr ""
-
-#: includes/nicepay-functions.php:1678
+#: includes/nicepay-functions.php:1913
 msgid "Waiting for Deposit"
 msgstr ""
 
-#: includes/nicepay-functions.php:1679
+#: includes/nicepay-functions.php:1914
 msgid "Approval in Progress"
 msgstr ""
 
-#: includes/nicepay-functions.php:1680
+#: includes/nicepay-functions.php:1915
 msgid "Partially Refunded"
 msgstr ""
 
-#: includes/nicepay-functions.php:1681
+#: includes/nicepay-functions.php:1916
 msgid "Needs Reconciliation"
 msgstr ""
 
-#: includes/nicepay-functions.php:1682
+#: includes/nicepay-functions.php:1917
 msgid "Abandoned"
 msgstr ""
 
-#: includes/nicepay-functions.php:1683
+#: includes/nicepay-functions.php:1918
 msgid "Expired"
 msgstr ""
 
-#: includes/nicepay-functions.php:1823
-#: includes/nicepay-functions.php:1824
+#: includes/nicepay-functions.php:2049
+#: includes/nicepay-functions.php:2050
 msgid "Quick Payment"
 msgstr ""
 
-#: includes/nicepay-functions.php:1835
-#: includes/nicepay-functions.php:1836
+#: includes/nicepay-functions.php:2061
+#: includes/nicepay-functions.php:2062
 msgid "Donation"
 msgstr ""
 
-#: includes/nicepay-functions.php:1837
+#: includes/nicepay-functions.php:2063
 msgid "Donate"
 msgstr ""
 
-#: includes/nicepay-functions.php:1847
-#: includes/nicepay-functions.php:1848
+#: includes/nicepay-functions.php:2073
+#: includes/nicepay-functions.php:2074
 msgid "Product Purchase"
 msgstr ""
 
-#: includes/nicepay-functions.php:1849
+#: includes/nicepay-functions.php:2075
 msgid "Buy Now"
 msgstr ""
 
-#: nicepay-payment-gateway.php:248
+#: nicepay-payment-gateway.php:285
 msgid "NicePay payments are unavailable because the transaction database could not be upgraded safely. Review duplicate transaction references and the server error log."
 msgstr ""
 
-#: nicepay-payment-gateway.php:266
+#: nicepay-payment-gateway.php:303
 msgid "Review NicePay settings"
 msgstr ""
 
-#: nicepay-payment-gateway.php:384
+#: nicepay-payment-gateway.php:422
 msgid "Payment receipt not found."
 msgstr ""
 
-#: nicepay-payment-gateway.php:396
-#: nicepay-payment-gateway.php:534
+#: nicepay-payment-gateway.php:434
+#: nicepay-payment-gateway.php:577
 msgid "Standalone NicePay payments are not enabled."
 msgstr ""
 
-#: nicepay-payment-gateway.php:400
+#: nicepay-payment-gateway.php:438
+#: nicepay-payment-gateway.php:462
 msgid "NicePay payments are temporarily unavailable."
 msgstr ""
 
-#: nicepay-payment-gateway.php:409
+#: nicepay-payment-gateway.php:447
 msgid "A saved payment configuration is required."
 msgstr ""
 
-#: nicepay-payment-gateway.php:418
+#: nicepay-payment-gateway.php:456
 msgid "NicePay payments require a secure HTTPS page."
 msgstr ""
 
-#: nicepay-payment-gateway.php:432
+#: nicepay-payment-gateway.php:471
 msgid "This saved payment configuration is not ready for use."
 msgstr ""
 
-#: nicepay-payment-gateway.php:510
+#: nicepay-payment-gateway.php:551
 #: templates/payment-form.php:25
 msgid "Processing payment..."
 msgstr ""
 
-#: nicepay-payment-gateway.php:511
+#: nicepay-payment-gateway.php:552
 msgid "Payment error occurred. Please try again."
 msgstr ""
 
-#: nicepay-payment-gateway.php:512
+#: nicepay-payment-gateway.php:553
 msgid "Please select a payment method."
 msgstr ""
 
-#: nicepay-payment-gateway.php:513
+#: nicepay-payment-gateway.php:554
 msgid "This field is required."
 msgstr ""
 
-#: nicepay-payment-gateway.php:514
+#: nicepay-payment-gateway.php:555
 msgid "Please enter a valid email address."
 msgstr ""
 
-#: nicepay-payment-gateway.php:515
+#: nicepay-payment-gateway.php:556
 msgid "Please enter a valid phone number."
 msgstr ""
 
-#: nicepay-payment-gateway.php:516
+#: nicepay-payment-gateway.php:557
 msgid "This field exceeds the payment provider limit."
 msgstr ""
 
-#: nicepay-payment-gateway.php:517
+#: nicepay-payment-gateway.php:558
 msgid "Payment session expired. Please refresh the page and try again."
 msgstr ""
 
-#: nicepay-payment-gateway.php:518
+#: nicepay-payment-gateway.php:559
 msgid "Connection error. Please check your internet."
 msgstr ""
 
-#: nicepay-payment-gateway.php:519
+#: nicepay-payment-gateway.php:560
 msgid "Payment system is currently unavailable. Please try again later."
 msgstr ""
 
-#: nicepay-payment-gateway.php:520
-#: nicepay-payment-gateway.php:612
+#: nicepay-payment-gateway.php:561
+#: nicepay-payment-gateway.php:633
+#: nicepay-payment-gateway.php:661
 msgid "Payment initialization failed."
 msgstr ""
 
-#: nicepay-payment-gateway.php:521
+#: nicepay-payment-gateway.php:562
 msgid "An unexpected error occurred."
 msgstr ""
 
-#: nicepay-payment-gateway.php:522
+#: nicepay-payment-gateway.php:563
 msgid "Another payment is already in progress."
 msgstr ""
 
-#: nicepay-payment-gateway.php:539
-#: nicepay-payment-gateway.php:637
+#: nicepay-payment-gateway.php:564
+msgid "The payment window did not respond. Close it if necessary and try again."
+msgstr ""
+
+#: nicepay-payment-gateway.php:565
+msgid "Too many payment attempts were made. Please wait and try again."
+msgstr ""
+
+#: nicepay-payment-gateway.php:582
+#: nicepay-payment-gateway.php:686
 msgid "Payment service is temporarily unavailable."
 msgstr ""
 
-#: nicepay-payment-gateway.php:544
+#: nicepay-payment-gateway.php:587
 msgid "NicePay payments require HTTPS."
 msgstr ""
 
-#: nicepay-payment-gateway.php:552
+#: nicepay-payment-gateway.php:595
 msgid "Invalid request."
 msgstr ""
 
-#: nicepay-payment-gateway.php:557
+#: nicepay-payment-gateway.php:600
 msgid "Too many payment attempts. Please wait and try again."
 msgstr ""
 
-#: nicepay-payment-gateway.php:642
+#: nicepay-payment-gateway.php:691
 msgid "Too many requests. Please wait and try again."
 msgstr ""
 
-#: nicepay-payment-gateway.php:666
+#: nicepay-payment-gateway.php:715
 msgid "Shortcode name is required."
 msgstr ""
 
-#: nicepay-payment-gateway.php:672
-#: nicepay-payment-gateway.php:781
+#: nicepay-payment-gateway.php:721
+#: nicepay-payment-gateway.php:822
 msgid "Payment configuration ID is invalid."
 msgstr ""
 
-#: nicepay-payment-gateway.php:692
-msgid "Payment configuration contains an invalid amount, product, method, or buyer field."
+#: nicepay-payment-gateway.php:736
+msgid "Payment configuration contains an invalid amount, product, method, display mode, or language."
 msgstr ""
 
-#: nicepay-payment-gateway.php:738
+#: nicepay-payment-gateway.php:779
 msgid "Shortcode not found."
 msgstr ""
 
-#: nicepay-payment-gateway.php:762
+#: nicepay-payment-gateway.php:803
 msgid "Shortcode updated!"
 msgstr ""
 
-#: nicepay-payment-gateway.php:762
+#: nicepay-payment-gateway.php:803
 msgid "Shortcode saved!"
 msgstr ""
 
@@ -1826,18 +2217,18 @@ msgstr ""
 msgid "The saved payment method is not currently available."
 msgstr ""
 
-#: templates/standalone-payment-form.php:85
+#: templates/standalone-payment-form.php:87
 msgid "Close"
 msgstr ""
 
-#: templates/standalone-payment-form.php:131
+#: templates/standalone-payment-form.php:135
 msgid "Enter your name"
 msgstr ""
 
-#: templates/standalone-payment-form.php:140
+#: templates/standalone-payment-form.php:145
 msgid "Enter your email"
 msgstr ""
 
-#: templates/standalone-payment-form.php:149
+#: templates/standalone-payment-form.php:155
 msgid "Enter your phone number"
 msgstr ""

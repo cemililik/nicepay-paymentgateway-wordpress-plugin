@@ -1,5 +1,8 @@
 # Security Assessment
 
+> [!WARNING]
+> **Frozen historical snapshot.** This review describes baseline commit `5855db1` (2026-08-19), before the 2.0 remediation work. Its line references and present-tense security claims do not describe the current code. Reproduction commands have been redacted; use `docs/analysis/pr-review2/` and current tests for release decisions.
+
 NicePay Payment Gateway v2.0.0 gets the *cryptographic primitives* right — every signature preimage matches the vendor spec, every comparison uses `hash_equals()`, the SSRF allowlist is fail-closed and applied to both attacker-influenced URLs, and the SQL layer is clean throughout. What is missing is the layer above the crypto: **nothing binds a verified signature to the order it is supposed to pay for.** The NICEPAY auth-response signature covers `AuthToken + MID + Amt + MerchantKey` and deliberately does *not* cover `Moid`; the spec therefore makes order binding the merchant's responsibility, and this plugin never performs it. Combined with a `nopriv` AJAX endpoint that will sign any amount a caller names using the same MID and merchant key, that yields a money-losing path an unauthenticated attacker can walk end to end. This document enumerates all 28 security findings: 1 critical, 4 high, 9 medium and 14 low, along with the entry-point surface they live on and a hardening checklist ordered so the highest-leverage fixes come first.
 
 ---
@@ -177,7 +180,7 @@ $sign_data = $api->create_auth_sign_data( $edi_date, $amount );
 
 **Impact.** This removes the only real precondition from SECURITY-01. Without it an attacker must place a genuine cheap order to obtain a low-amount signed auth. With it, they simply call the anonymous AJAX endpoint for a 100 KRW `SignData`, complete a real 100 KRW payment through the NICEPAY window, and POST the resulting auth response to `/wc-api/nicepay_return` with any WooCommerce order's `Moid`. Any shop that has both a `[nicepay_payment]` shortcode and WooCommerce checkout enabled is exposed.
 
-**Exploitation path.** (1) Lift the shared anonymous nonce from any page carrying the shortcode. (2) `curl -X POST …/admin-ajax.php -d 'action=nicepay_init_payment&nonce=…&amount=100&goods_name=x&buyer_name=x&buyer_email=x@x.com&buyer_tel=01000000000'` and keep `sign_data` + `edi_date`. (3) Build a payment form with `Amt=100`, that SignData, and the attacker's own Moid; complete the 100 KRW card payment. (4) Intercept the auth response and POST it to `/?wc-api=nicepay_return` with `Moid` set to a victim order's Moid.
+**Historical exploitation path (redacted).** The original report contained a working request sequence against the superseded baseline. Operational reproduction details were removed after remediation; the threat model is retained for audit context.
 
 **Recommendation.** Fix the root cause first (SECURITY-01 order binding + SECURITY-03 server-side price authority). In addition, add a flow discriminator: send a per-transaction random token in `ReqReserved` (spec §4, 500 bytes) recording both the flow and the transaction id, persist it on the row, and `hash_equals()` it in each handler. Cheaply, also reject any `Moid` that does not match the receiving endpoint's flow prefix.
 
@@ -285,11 +288,7 @@ A repo-wide grep for `wp_verify_nonce`, `check_ajax_referer`, `current_user_can`
 
 **Impact.** Unauthenticated order-state tampering and denial of service. Any WooCommerce order whose Moid is known can be flipped to `failed` regardless of its current state (including processing/completed), its transaction row overwritten with attacker-chosen `result_code`/`result_msg`, and an attacker-authored note injected into the order's status history. A buyer can also self-serve: pay, receive goods, then flip their own order to `failed` to manufacture a refund dispute. Not critical because it does not itself move money or leak credentials — it corrupts state.
 
-**Exploitation path.**
-```
-curl -X POST 'https://shop.example/?wc-api=nicepay_return' \
-  -d 'Moid=WC1042_20260819103015_4471&AuthResultCode=9999&AuthResultMsg=Card+declined+by+issuer'
-```
+**Historical exploitation path (redacted).** A working callback-tampering command against the superseded baseline was removed after remediation.
 `nicepay_get_transaction_by_moid()` finds the row, `wc_get_order()` loads, the failure branch fires, both writes execute. The signature block at line 275 is never reached. Identical on the standalone endpoint via `POST /?nicepay_return=1` — reachable through the registered query var alone, since [nicepay-payment-gateway.php:208-211](../../nicepay-payment-gateway.php#L208) makes `nicepay_return` a public query var, so `/?nicepay_return=1` works even if rewrite rules were never flushed.
 
 **Recommendation.** Verify the signature **first**, before branching on `AuthResultCode` and before any write. NICEPAY signs the auth response regardless of outcome, so a genuine failure notification still carries a verifiable `Signature`; a request that cannot present one must be rejected with 403 and no side effects. Combine with SECURITY-05 so a signature-valid failure notification still cannot downgrade an already-paid order.

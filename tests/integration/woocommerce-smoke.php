@@ -73,7 +73,18 @@ nicepay_wc_it_assert( ! $gateway->is_available(), 'Fresh NicePay gateway did not
 // with a locally signed response; every other outbound request is blocked.
 $_SERVER['HTTPS'] = 'on';
 update_option( 'woocommerce_currency', 'KRW' );
+update_option( 'woocommerce_price_num_decimals', 0 );
 $gateway->enabled = 'yes';
+add_filter( 'nicepay_allow_test_mode_checkout', '__return_true' );
+nicepay_wc_it_assert( NicePay_Installer::is_current(), 'NicePay transaction schema is not current in WooCommerce smoke.' );
+$smoke_api = new NicePay_API();
+nicepay_wc_it_assert( '' !== $smoke_api->get_mid(), 'NicePay smoke gateway has no MID.' );
+nicepay_wc_it_assert( '' !== $smoke_api->get_merchant_key(), 'NicePay smoke gateway has no merchant key.' );
+nicepay_wc_it_assert( true === apply_filters( 'nicepay_allow_test_mode_checkout', false ), 'NicePay smoke test-mode opt-in filter was not applied.' );
+nicepay_wc_it_assert( ! empty( nicepay_get_enabled_methods() ), 'NicePay smoke gateway has no enabled payment methods.' );
+nicepay_wc_it_assert( 'KRW' === get_woocommerce_currency(), 'WooCommerce smoke currency is not KRW.' );
+nicepay_wc_it_assert( 0 === (int) wc_get_price_decimals(), 'WooCommerce smoke decimals are not zero.' );
+nicepay_wc_it_assert( is_ssl(), 'WooCommerce smoke request is not HTTPS.' );
 nicepay_wc_it_assert( $gateway->is_available(), 'Configured in-memory NicePay gateway should be available for the smoke order.' );
 
 $outbound_http_requests = 0;

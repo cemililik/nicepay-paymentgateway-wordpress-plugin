@@ -60,6 +60,7 @@ if ( ! class_exists( 'WC_Payment_Gateway' ) ) {
             return isset( $this->form_fields[ $key ]['default'] ) ? $this->form_fields[ $key ]['default'] : $default;
         }
         public function process_admin_options() { return true; }
+		public function get_return_url( $order = null ) { return 'https://example.com/order-received/'; }
     }
 }
 
@@ -87,6 +88,9 @@ class NicePayBlocksSchemaWpdbFake {
     }
 
     public function get_var( $query ) {
+		if ( false !== strpos( $query, 'wp_nicepay_reconciliation_audit' ) ) {
+			return 'wp_nicepay_reconciliation_audit';
+		}
         if ( false !== strpos( $query, 'wp_nicepay_refund_attempts' ) ) {
             return 'wp_nicepay_refund_attempts';
         }
@@ -98,18 +102,23 @@ class NicePayBlocksSchemaWpdbFake {
 }
 
 class NicePayBlocksIntegrationTest extends TestCase {
+	/** @var callable */
+	private $allow_test_checkout;
 
-    protected function setUp(): void {
+	protected function setUp(): void {
         global $wp_options, $nicepay_registered_scripts, $nicepay_wc_test_environment, $wpdb;
         $wp_options = array();
         $nicepay_registered_scripts = array();
         $wpdb = new NicePayBlocksSchemaWpdbFake();
 
-        update_option( NicePay_Installer::VERSION_OPTION, NicePay_Installer::schema_version() );
-        update_option( 'nicepay_mode', 'test' );
+		update_option( NicePay_Installer::VERSION_OPTION, NicePay_Installer::schema_version() );
+		update_option( NicePay_Installer::VERIFIED_VERSION_OPTION, NicePay_Installer::schema_version() );
+		update_option( 'nicepay_mode', 'test' );
         update_option( 'nicepay_test_mid', NICEPAY_TEST_MID );
         update_option( 'nicepay_test_merchant_key', NICEPAY_TEST_MERCHANT_KEY );
-        update_option( 'nicepay_enabled_methods', array( 'CARD' ) );
+		update_option( 'nicepay_enabled_methods', array( 'CARD' ) );
+		$this->allow_test_checkout = static function() { return true; };
+		add_filter( 'nicepay_allow_test_mode_checkout', $this->allow_test_checkout );
 
         $gateway = ( new ReflectionClass( WC_Gateway_NicePay::class ) )->newInstanceWithoutConstructor();
         $gateway->enabled     = 'yes';
@@ -121,8 +130,13 @@ class NicePayBlocksIntegrationTest extends TestCase {
         $api_property->setAccessible( true );
         $api_property->setValue( $gateway, $api );
 
-        $nicepay_wc_test_environment = new NicePayBlocksWooFake( $gateway );
-    }
+		$nicepay_wc_test_environment = new NicePayBlocksWooFake( $gateway );
+	}
+
+	protected function tearDown(): void {
+		remove_filter( 'nicepay_allow_test_mode_checkout', $this->allow_test_checkout );
+		parent::tearDown();
+	}
 
     public function test_blocks_adapter_exposes_only_an_available_product_gateway(): void {
         $integration = new NicePay_Blocks_Integration();

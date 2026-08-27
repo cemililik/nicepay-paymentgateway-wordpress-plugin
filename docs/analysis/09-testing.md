@@ -1,5 +1,8 @@
 # Test Suite & Quality Gates
 
+> [!WARNING]
+> **Frozen historical snapshot.** This review describes baseline commit `5855db1` (2026-08-19), before the 2.0 remediation work. Its line references and present-tense security claims do not describe the current code. Use `docs/analysis/pr-review2/` and current tests for release decisions.
+
 The NicePay plugin ships 98 PHPUnit test methods across four files, and the best of them are genuinely excellent: three of the four signature rules are anchored to real vendor fixtures that reproduce byte-for-byte under `shasum -a 256`, the per-method result-code table is validated with proper data providers including its case-sensitivity edges, and every GitHub Action is pinned to a full commit SHA. But those 98 tests reach **24 of 86 production functions**, and the 62 they do not reach include every function that moves money: `request_approval()`, `request_net_cancel()`, `request_cancel()`, `process_refund()`, both return handlers, and all four AJAX endpoints. `phpunit.xml` compounds this by excluding the gateway and the return handler from the coverage denominator entirely, so the published coverage number is structurally incapable of reporting the gap it should be flagging. This document maps that coverage, records 37 findings, and then — in Section 3 — lays out a prioritised, copy-pasteable backlog of the 15 tests that would retire the most money risk per hour of work.
 
 ---

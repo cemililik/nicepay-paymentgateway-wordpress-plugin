@@ -41,4 +41,29 @@ for (const file of files) {
     }
 }
 
+const combinedCss = files.map((file) => file.source).join('\n');
+const requiredSelectors = [
+    '.nicepay-error',
+    '.nicepay-notice',
+    '.nicepay-notice-warning',
+    '.nicepay-status-pending',
+    '.nicepay-status-approving',
+    '.nicepay-status-paid',
+    '.nicepay-status-failed',
+    '.nicepay-status-partially_refunded',
+    '.nicepay-status-refunded',
+    '.nicepay-status-cancelled',
+    '.nicepay-status-needs_reconciliation',
+    '.nicepay-status-abandoned',
+    '.nicepay-status-expired',
+    '.nicepay-status-waiting'
+];
+
+for (const selector of requiredSelectors) {
+    if (!combinedCss.includes(selector)) {
+        console.error(`ERROR: required NicePay UI selector has no CSS rule: ${selector}`);
+        process.exit(1);
+    }
+}
+
 console.log(`CSS parse check passed: ${files.length} file(s)`);

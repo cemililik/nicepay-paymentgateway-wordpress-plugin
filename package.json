@@ -1,7 +1,8 @@
 {
   "name": "nicepay-payment-gateway",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "private": true,
+  "license": "GPL-2.0-or-later",
   "description": "JavaScript quality gates for the NicePay WordPress plugin",
   "scripts": {
     "lint": "eslint assets/js .github/scripts tests/js eslint.config.js",

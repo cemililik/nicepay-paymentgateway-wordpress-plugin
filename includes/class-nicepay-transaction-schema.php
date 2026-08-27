@@ -21,8 +21,9 @@ final class NicePay_Transaction_Schema {
 	/**
 	 * Schema version. This is intentionally independent from the plugin version.
 	 */
-	const VERSION = '2026.08.24.7';
+	const VERSION = '2026.08.27.3';
 	const COLUMN_VARCHAR_100 = "varchar(100) NOT NULL DEFAULT ''";
+	const COLUMN_VARCHAR_255 = "varchar(255) NOT NULL DEFAULT ''";
 	const COLUMN_VARCHAR_64  = "varchar(64) NOT NULL DEFAULT ''";
 	const COLUMN_VARCHAR_50  = "varchar(50) NOT NULL DEFAULT ''";
 	const COLUMN_VARCHAR_20  = "varchar(20) NOT NULL DEFAULT ''";
@@ -41,10 +42,10 @@ final class NicePay_Transaction_Schema {
 	 */
 	public static function columns() {
 		return array(
-			'id'                          => 'bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT',
+			'id'                          => 'bigint(20) unsigned NOT NULL auto_increment',
 				'tid'                         => 'varchar(50) DEFAULT NULL',
 			'order_id'                    => self::COLUMN_VARCHAR_100,
-			'wc_order_id'                 => 'bigint(20) UNSIGNED DEFAULT NULL',
+			'wc_order_id'                 => 'bigint(20) unsigned DEFAULT NULL',
 			'moid'                        => self::COLUMN_VARCHAR_64,
 			'flow'                        => self::COLUMN_VARCHAR_20,
 				'source_ref'                  => "varchar(191) NOT NULL DEFAULT ''",
@@ -55,6 +56,8 @@ final class NicePay_Transaction_Schema {
 			'binding_token_hash'          => self::COLUMN_CHAR_64,
 			'wc_order_key_hash'           => self::COLUMN_CHAR_64,
 			'edi_date'                     => "char(14) NOT NULL DEFAULT ''",
+			'next_app_url'                 => self::COLUMN_VARCHAR_255,
+			'net_cancel_url'               => self::COLUMN_VARCHAR_255,
 			'offer_expires_at'            => self::COLUMN_DATETIME_NULL,
 			'mid'                         => self::COLUMN_VARCHAR_20,
 			'mode'                        => "varchar(10) NOT NULL DEFAULT ''",
@@ -70,7 +73,7 @@ final class NicePay_Transaction_Schema {
 			'result_msg'                  => 'text NOT NULL',
 			'auth_token'                  => self::COLUMN_VARCHAR_50,
 			'approval_state'              => "varchar(20) NOT NULL DEFAULT 'pending'",
-			'approval_attempts'           => 'smallint(5) UNSIGNED NOT NULL DEFAULT 0',
+			'approval_attempts'           => 'smallint(5) unsigned NOT NULL DEFAULT 0',
 			'approval_started_at'         => self::COLUMN_DATETIME_NULL,
 			'approved_at'                 => self::COLUMN_DATETIME_NULL,
 			'reconciliation_status'       => "varchar(20) NOT NULL DEFAULT 'unreconciled'",
@@ -109,8 +112,8 @@ final class NicePay_Transaction_Schema {
 			'net_cancel_requested_at'     => self::COLUMN_DATETIME_NULL,
 			'net_cancel_completed_at'     => self::COLUMN_DATETIME_NULL,
 			'payment_data'                => 'longtext',
-			'created_at'                  => 'datetime NOT NULL DEFAULT CURRENT_TIMESTAMP',
-			'updated_at'                  => 'datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+			'created_at'                  => 'datetime NOT NULL',
+			'updated_at'                  => 'datetime NOT NULL',
 		);
 	}
 
@@ -130,10 +133,12 @@ final class NicePay_Transaction_Schema {
 			'KEY idx_updated_at (updated_at)',
 			'KEY idx_status_created (status, created_at)',
 			'KEY idx_flow_status (flow, status)',
-			'KEY idx_source_ref (flow, source_ref)',
+			'KEY idx_source_ref (flow, source_ref(100))',
 			'KEY idx_reconciliation_status (reconciliation_status)',
 			'KEY idx_receipt_token_hash (receipt_token_hash)',
 			'KEY idx_vbank_expires_at (vbank_expires_at)',
+			'KEY idx_status_offer_expiry (status, offer_expires_at)',
+			'KEY idx_status_approval_started (status, approval_started_at)',
 		);
 	}
 
@@ -144,9 +149,9 @@ final class NicePay_Transaction_Schema {
 	 */
 	public static function refund_columns() {
 		return array(
-			'id'               => 'bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT',
-			'transaction_id'   => 'bigint(20) UNSIGNED NOT NULL',
-			'wc_order_id'      => 'bigint(20) UNSIGNED NOT NULL',
+			'id'               => 'bigint(20) unsigned NOT NULL auto_increment',
+			'transaction_id'   => 'bigint(20) unsigned NOT NULL',
+			'wc_order_id'      => 'bigint(20) unsigned NOT NULL',
 			'tid'              => self::COLUMN_VARCHAR_50,
 			'cancel_moid'      => self::COLUMN_VARCHAR_64,
 			'requested_amount' => self::COLUMN_DECIMAL_14_2,
@@ -158,7 +163,7 @@ final class NicePay_Transaction_Schema {
 			'response_data'    => 'longtext',
 			'requested_at'     => 'datetime NOT NULL',
 			'completed_at'     => self::COLUMN_DATETIME_NULL,
-			'created_at'       => 'datetime NOT NULL DEFAULT CURRENT_TIMESTAMP',
+			'created_at'       => 'datetime NOT NULL',
 		);
 	}
 
@@ -170,6 +175,30 @@ final class NicePay_Transaction_Schema {
 			'KEY idx_transaction_created (transaction_id, created_at)',
 			'KEY idx_order_created (wc_order_id, created_at)',
 			'KEY idx_refund_status (status)',
+		);
+	}
+
+	/** @return array<string,string> */
+	public static function reconciliation_audit_columns() {
+		return array(
+			'id'                 => 'bigint(20) unsigned NOT NULL auto_increment',
+			'transaction_id'     => 'bigint(20) unsigned NOT NULL',
+			'actor_id'           => 'bigint(20) unsigned NOT NULL',
+			'action'             => self::COLUMN_VARCHAR_20,
+			'reason'             => 'text NOT NULL',
+			'previous_status'    => self::COLUMN_VARCHAR_20,
+			'resulting_status'   => self::COLUMN_VARCHAR_20,
+			'confirmed_amount'   => self::COLUMN_DECIMAL_14_2,
+			'created_at'         => 'datetime NOT NULL',
+		);
+	}
+
+	/** @return string[] */
+	public static function reconciliation_audit_indexes() {
+		return array(
+			'PRIMARY KEY  (id)',
+			'KEY idx_reconciliation_transaction (transaction_id, created_at)',
+			'KEY idx_reconciliation_actor (actor_id, created_at)',
 		);
 	}
 
@@ -200,7 +229,7 @@ final class NicePay_Transaction_Schema {
 			$suffix = ' ' . $suffix;
 		}
 
-		return "CREATE TABLE {$table_name} (\n\t" . implode( ",\n\t", $lines ) . "\n){$suffix};";
+		return "CREATE TABLE {$table_name} (\n\t" . implode( ",\n\t", $lines ) . "\n){$suffix} ENGINE=InnoDB;";
 	}
 
 	/**
@@ -223,7 +252,30 @@ final class NicePay_Transaction_Schema {
 		$suffix = trim( (string) $charset_collate );
 		$suffix = '' !== $suffix ? ' ' . $suffix : '';
 
-		return "CREATE TABLE {$table_name} (\n\t" . implode( ",\n\t", $lines ) . "\n){$suffix};";
+		return "CREATE TABLE {$table_name} (\n\t" . implode( ",\n\t", $lines ) . "\n){$suffix} ENGINE=InnoDB;";
+	}
+
+	/**
+	 * Build the append-only reconciliation audit CREATE TABLE statement.
+	 *
+	 * @param string $table_name Fully-prefixed table name.
+	 * @param string $charset_collate Charset/collation suffix.
+	 * @return string
+	 */
+	public static function create_reconciliation_audit_table_sql( $table_name, $charset_collate = '' ) {
+		if ( ! is_string( $table_name ) || ! preg_match( '/^[A-Za-z0-9_]+$/', $table_name ) ) {
+			throw new InvalidArgumentException( 'Invalid NicePay reconciliation audit table name.' );
+		}
+
+		$lines = array();
+		foreach ( self::reconciliation_audit_columns() as $name => $definition ) {
+			$lines[] = $name . ' ' . $definition;
+		}
+		$lines  = array_merge( $lines, self::reconciliation_audit_indexes() );
+		$suffix = trim( (string) $charset_collate );
+		$suffix = '' !== $suffix ? ' ' . $suffix : '';
+
+		return "CREATE TABLE {$table_name} (\n\t" . implode( ",\n\t", $lines ) . "\n){$suffix} ENGINE=InnoDB;";
 	}
 
 	/**
@@ -249,13 +301,14 @@ final class NicePay_Transaction_Schema {
 	/**
 	 * Whitelist a repository write and return aligned wpdb formats.
 	 *
-	 * Database-owned identity/timestamp fields cannot be supplied by callers.
+	 * The identity field is database-owned. Repository functions supply UTC
+	 * timestamps explicitly so writes never inherit the database session zone.
 	 *
 	 * @param array<string,mixed> $data Candidate transaction data.
 	 * @return array{data:array<string,mixed>,formats:string[]}
 	 */
 	public static function prepare_write( array $data ) {
-		$database_owned = array( 'id', 'created_at', 'updated_at' );
+		$database_owned = array( 'id' );
 		$prepared       = array();
 		$formats        = array();
 
@@ -284,7 +337,7 @@ final class NicePay_Transaction_Schema {
 		$prepared = array();
 		$formats  = array();
 		foreach ( $data as $column => $value ) {
-			if ( in_array( $column, array( 'id', 'created_at' ), true ) || ! array_key_exists( $column, self::refund_columns() ) ) {
+			if ( 'id' === $column || ! array_key_exists( $column, self::refund_columns() ) ) {
 				continue;
 			}
 			$prepared[ $column ] = $value;

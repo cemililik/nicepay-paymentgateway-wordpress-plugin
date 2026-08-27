@@ -1,5 +1,8 @@
 # Payment Lifecycle & Money Correctness
 
+> [!WARNING]
+> **Frozen historical snapshot.** This review describes baseline commit `5855db1` (2026-08-19), before the 2.0 remediation work. Its line references and present-tense security claims do not describe the current code. Use `docs/analysis/pr-review2/` and current tests for release decisions.
+
 This document covers the *payflow* dimension of the NicePay Payment Gateway review: the reconstructed state machine of an authenticated payment, what happens to real money at each edge, and the 42 findings (3 critical, 5 high, 22 medium, 11 low, 1 enhancement) that concern approval, net cancel, virtual accounts, refunds and reconciliation. The cryptographic core of this plugin is genuinely strong — signature construction is contract-tested against the vendor's own worked digests — but the layer above it is missing almost every *binding* and *idempotency* invariant that turns a correct signature into a correct payment: the approved amount is never compared to the order total, the response is bound to an order only by a client-supplied `Moid` that no signature covers, the standalone AJAX endpoint will sign any amount a visitor asks for, and there is no guard at all against a replayed return POST. Virtual account is enabled by default and cannot complete, because no deposit-notification endpoint exists and the account number never reaches the buyer.
 
 ---

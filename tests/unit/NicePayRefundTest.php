@@ -75,10 +75,13 @@ class NicePayRefundWpdbFake {
     public $update_where = array();
     public $insert_id = 29;
     public $insert_data = array();
+	public $insert_result = 1;
+	public $update_results = array();
+	public $update_history = array();
 
     public function insert( $table, $data, $formats ) {
         $this->insert_data = $data;
-        return 1;
+		return $this->insert_result;
     }
 
     public function prepare( $query, ...$values ) {
@@ -102,7 +105,8 @@ class NicePayRefundWpdbFake {
     public function update( $table, $data, $where, $formats = null, $where_formats = null ) {
         $this->update_data  = $data;
         $this->update_where = $where;
-        return $this->update_result;
+		$this->update_history[] = array( 'table' => $table, 'data' => $data, 'where' => $where );
+		return empty( $this->update_results ) ? $this->update_result : array_shift( $this->update_results );
     }
 }
 
@@ -175,6 +179,84 @@ class NicePayRefundTest extends TestCase {
         $this->assertSame( $wpdb->update_data['cancel_status'], 'confirmed' );
     }
 
+	public function test_transport_error_locks_refund_for_reconciliation(): void {
+		global $wpdb, $wp_remote_post_test_queue, $nicepay_refund_test_order;
+		$wp_remote_post_test_queue[] = new WP_Error( 'nicepay_transport_timeout', 'timeout' );
+
+		$result = $this->gateway->process_refund( 42, '500', 'Customer request' );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'nicepay_refund_reconciliation_required', $result->get_error_code() );
+		$this->assertSame( 'needs_reconciliation', $wpdb->update_data['status'] );
+		$this->assertSame( 'unknown', $wpdb->update_data['cancel_status'] );
+		$this->assertArrayNotHasKey( '_nicepay_refund_reconciliation_required', $nicepay_refund_test_order->meta );
+		$this->assertNotEmpty( $nicepay_refund_test_order->notes );
+	}
+
+	public function test_provider_rejection_is_recorded_without_changing_paid_state(): void {
+		global $wpdb, $wp_remote_post_test_queue;
+		$wp_remote_post_test_queue[] = $this->cancelResponse( '500', '2999' );
+
+		$result = $this->gateway->process_refund( 42, '500', 'Customer request' );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'nicepay_refund_error', $result->get_error_code() );
+		$this->assertSame( 'rejected', $wpdb->update_data['cancel_status'] );
+		$this->assertArrayNotHasKey( 'status', $wpdb->update_data );
+	}
+
+	public function test_verified_full_refund_closes_the_balance(): void {
+		global $wpdb, $wp_remote_post_test_queue, $nicepay_refund_test_order;
+		$nicepay_refund_test_order->total_refunded = '1000';
+		$wp_remote_post_test_queue[] = $this->cancelResponse( '1000' );
+
+		$result = $this->gateway->process_refund( 42, '1000', 'Full refund' );
+
+		$this->assertTrue( $result );
+		$this->assertSame( 'refunded', $wpdb->update_data['status'] );
+		$this->assertSame( '1000', $wpdb->update_data['refunded_amount'] );
+		$this->assertSame( '0', $wpdb->update_data['remaining_amount'] );
+	}
+
+	public function test_failed_pretransport_audit_releases_claim_and_sends_nothing(): void {
+		global $wpdb, $wp_remote_post_test_requests;
+		$wpdb->insert_result = false;
+
+		$result = $this->gateway->process_refund( 42, '500', 'Customer request' );
+
+		$this->assertInstanceOf( WP_Error::class, $result );
+		$this->assertSame( 'nicepay_refund_audit_error', $result->get_error_code() );
+		$this->assertSame( array(), $wp_remote_post_test_requests );
+		$this->assertSame( '', $wpdb->update_data['cancel_status'] );
+		$this->assertSame( 'requested', $wpdb->update_where['cancel_status'] );
+	}
+
+	public function test_confirmed_refund_with_ledger_write_failure_is_escalated(): void {
+		global $wpdb, $wp_remote_post_test_queue, $nicepay_refund_test_order;
+		$wpdb->update_results = array( 1, 0, 1 );
+		$wp_remote_post_test_queue[] = $this->cancelResponse( '500' );
+
+		$result = $this->gateway->process_refund( 42, '500', 'Customer request' );
+
+		$this->assertTrue( $result );
+		$this->assertSame( 'needs_reconciliation', $wpdb->update_data['status'] );
+		$this->assertSame( 'refund_confirmed_ledger_update_failed', $wpdb->update_data['reconciliation_note'] );
+		$this->assertSame( 'yes', $nicepay_refund_test_order->meta['_nicepay_refund_reconciliation_required'] );
+	}
+
+	public function test_confirmed_refund_with_attempt_write_failure_is_escalated(): void {
+		global $wpdb, $wp_remote_post_test_queue, $nicepay_refund_test_order;
+		$wpdb->update_results = array( 0, 1, 1 );
+		$wp_remote_post_test_queue[] = $this->cancelResponse( '500' );
+
+		$result = $this->gateway->process_refund( 42, '500', 'Customer request' );
+
+		$this->assertTrue( $result );
+		$this->assertSame( 'needs_reconciliation', $wpdb->update_data['status'] );
+		$this->assertSame( 'refund_confirmed_attempt_audit_failed', $wpdb->update_data['reconciliation_note'] );
+		$this->assertSame( 'yes', $nicepay_refund_test_order->meta['_nicepay_refund_reconciliation_required'] );
+	}
+
     public function test_refund_requires_the_inflight_woocommerce_refund_record(): void {
         global $nicepay_refund_test_order, $wp_remote_post_test_requests;
         $nicepay_refund_test_order->total_refunded = '0';
@@ -200,6 +282,18 @@ class NicePayRefundTest extends TestCase {
         $this->assertSame( '500', $wpdb->update_data['refunded_amount'] );
         $this->assertSame( '500', $wpdb->update_data['remaining_amount'] );
     }
+
+	public function test_legacy_zero_captured_amount_falls_back_to_paid_amount(): void {
+		global $wpdb, $wp_remote_post_test_queue, $wp_remote_post_test_requests;
+		$wpdb->transaction->captured_amount  = '0.00';
+		$wpdb->transaction->remaining_amount = '0.00';
+		$wp_remote_post_test_queue[]          = $this->cancelResponse( '500' );
+
+		$result = $this->gateway->process_refund( 42, '500', 'Legacy refund' );
+
+		$this->assertTrue( $result );
+		$this->assertCount( 1, $wp_remote_post_test_requests );
+	}
 
     public function test_partial_cellphone_refund_is_disabled_before_claim_or_transport(): void {
         global $wpdb, $wp_remote_post_test_requests;
@@ -267,7 +361,7 @@ class NicePayRefundTest extends TestCase {
         );
     }
 
-    private function cancelResponse( string $amount ): array {
+	private function cancelResponse( string $amount, string $result_code = '2001' ): array {
         $tid       = 'nicepay00m01012006221311045107';
         $signature = hash( 'sha256', $tid . NICEPAY_TEST_MID . $amount . NICEPAY_TEST_MERCHANT_KEY );
 
@@ -277,7 +371,7 @@ class NicePayRefundTest extends TestCase {
                 'TID'        => $tid,
                 'CancelAmt'  => $amount,
                 'Signature'  => $signature,
-                'ResultCode' => '2001',
+				'ResultCode' => $result_code,
                 'ResultMsg'  => 'cancelled',
                 'OTID'       => 'cancel-chain-1',
             ) ),

@@ -30,7 +30,7 @@ final class NicePay_Inbound_Validator {
 	 */
 	public static function validate_auth_return( $flow, array $payload, NicePay_API $api ) {
 		if ( ! in_array( $flow, self::FLOWS, true ) ) {
-			return self::error( 'nicepay_inbound_invalid_flow', 'Invalid payment flow.' );
+			return self::error( 'nicepay_inbound_invalid_flow', __( 'Invalid payment flow.', 'nicepay-payment-gateway' ) );
 		}
 
 		$required = array(
@@ -44,12 +44,13 @@ final class NicePay_Inbound_Validator {
 			'Signature',
 			'NextAppURL',
 			'NetCancelURL',
+			'ReqReserved',
 		);
 		$missing = self::first_missing_field( $payload, $required );
 		if ( null !== $missing ) {
 			return self::error(
 				'nicepay_inbound_missing_field',
-				'Missing required authentication field.',
+				__( 'Missing required authentication field.', 'nicepay-payment-gateway' ),
 				array( 'field' => $missing )
 			);
 		}
@@ -59,27 +60,33 @@ final class NicePay_Inbound_Validator {
 		if ( ! is_object( $transaction ) ) {
 			$unscoped = nicepay_get_transaction_by_moid( $moid );
 			if ( is_object( $unscoped ) && self::transaction_value( $unscoped, 'flow' ) !== $flow ) {
-				return self::error( 'nicepay_inbound_flow_mismatch', 'Payment flow does not match the transaction.' );
+				return self::error( 'nicepay_inbound_flow_mismatch', __( 'Payment flow does not match the transaction.', 'nicepay-payment-gateway' ) );
 			}
 
-			return self::error( 'nicepay_inbound_transaction_not_found', 'Payment transaction was not found.' );
+			return self::error( 'nicepay_inbound_transaction_not_found', __( 'Payment transaction was not found.', 'nicepay-payment-gateway' ) );
 		}
 
 		if ( self::transaction_value( $transaction, 'flow' ) !== $flow ) {
-			return self::error( 'nicepay_inbound_flow_mismatch', 'Payment flow does not match the transaction.' );
+			return self::error( 'nicepay_inbound_flow_mismatch', __( 'Payment flow does not match the transaction.', 'nicepay-payment-gateway' ) );
+		}
+
+		$binding_hash = self::transaction_value( $transaction, 'binding_token_hash' );
+		if ( 64 !== strlen( $binding_hash ) ||
+			! hash_equals( $binding_hash, hash( 'sha256', $payload['ReqReserved'] ) ) ) {
+			return self::error( 'nicepay_inbound_binding_mismatch', __( 'Payment return binding does not match the transaction.', 'nicepay-payment-gateway' ) );
 		}
 
 		if ( 'pending' !== self::transaction_value( $transaction, 'status' ) ||
 			'pending' !== self::transaction_value( $transaction, 'approval_state' ) ) {
-			return self::error( 'nicepay_inbound_replay', 'Payment transaction is not pending approval.' );
+			return self::error( 'nicepay_inbound_replay', __( 'Payment transaction is not pending approval.', 'nicepay-payment-gateway' ) );
 		}
 
 		$expiry = self::parse_utc_datetime( self::transaction_value( $transaction, 'offer_expires_at' ) );
 		if ( false === $expiry ) {
-			return self::error( 'nicepay_inbound_invalid_expiry', 'Payment transaction has no valid expiry.' );
+			return self::error( 'nicepay_inbound_invalid_expiry', __( 'Payment transaction has no valid expiry.', 'nicepay-payment-gateway' ) );
 		}
 		if ( $expiry->getTimestamp() <= time() ) {
-			return self::error( 'nicepay_inbound_offer_expired', 'Payment offer has expired.' );
+			return self::error( 'nicepay_inbound_offer_expired', __( 'Payment offer has expired.', 'nicepay-payment-gateway' ) );
 		}
 
 		$stored_mid = self::transaction_value( $transaction, 'mid' );
@@ -87,29 +94,29 @@ final class NicePay_Inbound_Validator {
 		if ( '' === $stored_mid ||
 			! hash_equals( $stored_mid, $payload['MID'] ) ||
 			! hash_equals( $stored_mid, $api_mid ) ) {
-			return self::error( 'nicepay_inbound_mid_mismatch', 'Merchant ID does not match the transaction.' );
+			return self::error( 'nicepay_inbound_mid_mismatch', __( 'Merchant ID does not match the transaction.', 'nicepay-payment-gateway' ) );
 		}
 
 		if ( 'KRW' !== strtoupper( self::transaction_value( $transaction, 'currency' ) ) ) {
-			return self::error( 'nicepay_inbound_currency_mismatch', 'Transaction currency is not supported.' );
+			return self::error( 'nicepay_inbound_currency_mismatch', __( 'Transaction currency is not supported.', 'nicepay-payment-gateway' ) );
 		}
 
 		$stored_amount = nicepay_normalize_amount( self::transaction_value( $transaction, 'amount' ), 'KRW' );
-		$posted_amount = nicepay_normalize_amount( $payload['Amt'], 'KRW' );
+		$posted_amount = nicepay_normalize_response_amount( $payload['Amt'], 'KRW' );
 		if ( false === $stored_amount || false === $posted_amount || ! hash_equals( $stored_amount, $posted_amount ) ) {
-			return self::error( 'nicepay_inbound_amount_mismatch', 'Payment amount does not match the transaction.' );
+			return self::error( 'nicepay_inbound_amount_mismatch', __( 'Payment amount does not match the transaction.', 'nicepay-payment-gateway' ) );
 		}
 
 		if ( ! self::method_matches_transaction( $transaction, $payload['PayMethod'] ) ) {
-			return self::error( 'nicepay_inbound_method_mismatch', 'Payment method does not match the transaction.' );
+			return self::error( 'nicepay_inbound_method_mismatch', __( 'Payment method does not match the transaction.', 'nicepay-payment-gateway' ) );
 		}
 
 		if ( '0000' !== $payload['AuthResultCode'] ) {
-			return self::error( 'nicepay_inbound_auth_failed', 'NicePay authentication was not successful.' );
+			return self::error( 'nicepay_inbound_auth_failed', __( 'NicePay authentication was not successful.', 'nicepay-payment-gateway' ) );
 		}
 
 		if ( ! $api->verify_auth_signature( $payload['AuthToken'], $payload['Amt'], $payload['Signature'] ) ) {
-			return self::error( 'nicepay_inbound_signature_invalid', 'NicePay authentication signature is invalid.' );
+			return self::error( 'nicepay_inbound_signature_invalid', __( 'NicePay authentication signature is invalid.', 'nicepay-payment-gateway' ) );
 		}
 
 		return $transaction;
@@ -129,7 +136,7 @@ final class NicePay_Inbound_Validator {
 	 */
 	public static function validate_approval_response( $transaction, $request_method, array $result, NicePay_API $api ) {
 		if ( ! is_object( $transaction ) ) {
-			return self::error( 'nicepay_approval_invalid_transaction', 'Approval transaction is invalid.' );
+			return self::error( 'nicepay_approval_invalid_transaction', __( 'Approval transaction is invalid.', 'nicepay-payment-gateway' ) );
 		}
 
 		$required = array( 'TID', 'MID', 'Moid', 'Amt', 'PayMethod', 'Signature' );
@@ -137,7 +144,7 @@ final class NicePay_Inbound_Validator {
 		if ( null !== $missing ) {
 			return self::error(
 				'nicepay_approval_missing_field',
-				'Missing required approval field.',
+				__( 'Missing required approval field.', 'nicepay-payment-gateway' ),
 				array( 'field' => $missing )
 			);
 		}
@@ -146,37 +153,37 @@ final class NicePay_Inbound_Validator {
 		if ( '' === $stored_mid ||
 			! hash_equals( $stored_mid, $result['MID'] ) ||
 			! hash_equals( $stored_mid, (string) $api->get_mid() ) ) {
-			return self::error( 'nicepay_approval_mid_mismatch', 'Approval merchant ID does not match the transaction.' );
+			return self::error( 'nicepay_approval_mid_mismatch', __( 'Approval merchant ID does not match the transaction.', 'nicepay-payment-gateway' ) );
 		}
 
 		$stored_moid = self::transaction_value( $transaction, 'moid' );
 		if ( '' === $stored_moid || ! hash_equals( $stored_moid, $result['Moid'] ) ) {
-			return self::error( 'nicepay_approval_moid_mismatch', 'Approval order ID does not match the transaction.' );
+			return self::error( 'nicepay_approval_moid_mismatch', __( 'Approval order ID does not match the transaction.', 'nicepay-payment-gateway' ) );
 		}
 
 		if ( 'KRW' !== strtoupper( self::transaction_value( $transaction, 'currency' ) ) ) {
-			return self::error( 'nicepay_approval_currency_mismatch', 'Approval transaction currency is not supported.' );
+			return self::error( 'nicepay_approval_currency_mismatch', __( 'Approval transaction currency is not supported.', 'nicepay-payment-gateway' ) );
 		}
 
 		$stored_amount = nicepay_normalize_amount( self::transaction_value( $transaction, 'amount' ), 'KRW' );
 		$result_amount = nicepay_normalize_response_amount( $result['Amt'], 'KRW' );
 		if ( false === $stored_amount || false === $result_amount || ! hash_equals( $stored_amount, $result_amount ) ) {
-			return self::error( 'nicepay_approval_amount_mismatch', 'Approval amount does not match the transaction.' );
+			return self::error( 'nicepay_approval_amount_mismatch', __( 'Approval amount does not match the transaction.', 'nicepay-payment-gateway' ) );
 		}
 
 		if ( ! is_string( $request_method ) || '' === trim( $request_method ) ||
 			! hash_equals( $request_method, $result['PayMethod'] ) ||
 			! self::method_matches_transaction( $transaction, $request_method ) ) {
-			return self::error( 'nicepay_approval_method_mismatch', 'Approval payment method does not match the transaction.' );
+			return self::error( 'nicepay_approval_method_mismatch', __( 'Approval payment method does not match the transaction.', 'nicepay-payment-gateway' ) );
 		}
 
 		$stored_tid = self::stored_tid( $transaction );
 		if ( '' !== $stored_tid && ! hash_equals( $stored_tid, $result['TID'] ) ) {
-			return self::error( 'nicepay_approval_tid_mismatch', 'Approval transaction ID does not match the authentication return.' );
+			return self::error( 'nicepay_approval_tid_mismatch', __( 'Approval transaction ID does not match the authentication return.', 'nicepay-payment-gateway' ) );
 		}
 
 		if ( ! $api->verify_approval_signature( $result['TID'], $result['Amt'], $result['Signature'] ) ) {
-			return self::error( 'nicepay_approval_signature_invalid', 'NicePay approval signature is invalid.' );
+			return self::error( 'nicepay_approval_signature_invalid', __( 'NicePay approval signature is invalid.', 'nicepay-payment-gateway' ) );
 		}
 
 		return $transaction;
@@ -294,6 +301,6 @@ final class NicePay_Inbound_Validator {
 	 * @return WP_Error
 	 */
 	private static function error( $code, $message, $data = '' ) {
-		return new WP_Error( $code, __( $message, 'nicepay-payment-gateway' ), $data );
+		return new WP_Error( $code, $message, $data );
 	}
 }

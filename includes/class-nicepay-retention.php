@@ -110,10 +110,6 @@ final class NicePay_Retention {
 	 * @return void
 	 */
 	public static function sync_schedule() {
-		if ( ! function_exists( 'wp_next_scheduled' ) ) {
-			return;
-		}
-
 		$scheduled = wp_next_scheduled( self::CRON_HOOK );
 		$settings  = self::get_settings();
 		if ( 'custom' === $settings['mode'] && ! $scheduled ) {
@@ -197,13 +193,25 @@ final class NicePay_Retention {
 		$limit = self::normalize_integer( $limit );
 		if ( $days < self::MIN_DAYS || $days > self::MAX_DAYS || 1 > $limit || self::BATCH_SIZE < $limit ||
 			! is_object( $wpdb ) || empty( $wpdb->prefix ) ) {
-			return new WP_Error( 'nicepay_retention_invalid_request', 'NicePay retention parameters are invalid.' );
+			return new WP_Error( 'nicepay_retention_invalid_request', __( 'NicePay retention parameters are invalid.', 'nicepay-payment-gateway' ) );
 		}
 
 		$transaction_table = $wpdb->prefix . 'nicepay_transactions';
 		$refund_table      = $wpdb->prefix . 'nicepay_refund_attempts';
+		$audit_table       = $wpdb->prefix . 'nicepay_reconciliation_audit';
+		foreach ( array( $transaction_table, $refund_table, $audit_table ) as $table ) {
+			$engine = $wpdb->get_var(
+				$wpdb->prepare(
+					'SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s',
+					$table
+				)
+			);
+			if ( 'innodb' !== strtolower( (string) $engine ) ) {
+				return new WP_Error( 'nicepay_retention_engine_unsupported', __( 'NicePay retention requires InnoDB tables for transactional deletion.', 'nicepay-payment-gateway' ) );
+			}
+		}
 		if ( false === $wpdb->query( 'START TRANSACTION' ) ) {
-			return new WP_Error( 'nicepay_retention_transaction_start_failed', 'NicePay could not start the retention transaction.' );
+			return new WP_Error( 'nicepay_retention_transaction_start_failed', __( 'NicePay could not start the retention transaction.', 'nicepay-payment-gateway' ) );
 		}
 
 		$where = self::eligible_where_sql( $transaction_table, $refund_table, $days );
@@ -211,14 +219,14 @@ final class NicePay_Retention {
 			"SELECT ledger.id
 			 FROM {$transaction_table} AS ledger
 			 WHERE {$where}
-			 ORDER BY ledger.updated_at ASC, ledger.id ASC
+			 ORDER BY ledger.created_at ASC, ledger.id ASC
 			 LIMIT {$limit}
 			 FOR UPDATE"
 		);
 
-		if ( ! is_array( $rows ) ) {
+		if ( ! is_array( $rows ) || ! empty( $wpdb->last_error ) ) {
 			$wpdb->query( 'ROLLBACK' );
-			return new WP_Error( 'nicepay_retention_select_failed', 'NicePay could not select retention records safely.' );
+			return new WP_Error( 'nicepay_retention_select_failed', __( 'NicePay could not select retention records safely.', 'nicepay-payment-gateway' ) );
 		}
 
 		$ids = array_values( array_unique( array_filter( array_map( 'absint', $rows ) ) ) );
@@ -230,7 +238,11 @@ final class NicePay_Retention {
 		$id_list = implode( ',', $ids );
 		if ( false === $wpdb->query( "DELETE FROM {$refund_table} WHERE transaction_id IN ({$id_list})" ) ) {
 			$wpdb->query( 'ROLLBACK' );
-			return new WP_Error( 'nicepay_retention_refund_delete_failed', 'NicePay could not delete refund audit records safely.' );
+			return new WP_Error( 'nicepay_retention_refund_delete_failed', __( 'NicePay could not delete refund audit records safely.', 'nicepay-payment-gateway' ) );
+		}
+		if ( false === $wpdb->query( "DELETE FROM {$audit_table} WHERE transaction_id IN ({$id_list})" ) ) {
+			$wpdb->query( 'ROLLBACK' );
+			return new WP_Error( 'nicepay_retention_reconciliation_audit_delete_failed', __( 'NicePay could not delete reconciliation audit records safely.', 'nicepay-payment-gateway' ) );
 		}
 
 		$deleted = $wpdb->query(
@@ -240,12 +252,12 @@ final class NicePay_Retention {
 		);
 		if ( count( $ids ) !== (int) $deleted ) {
 			$wpdb->query( 'ROLLBACK' );
-			return new WP_Error( 'nicepay_retention_delete_mismatch', 'NicePay retention records changed before deletion.' );
+			return new WP_Error( 'nicepay_retention_delete_mismatch', __( 'NicePay retention records changed before deletion.', 'nicepay-payment-gateway' ) );
 		}
 
 		if ( false === $wpdb->query( 'COMMIT' ) ) {
 			$wpdb->query( 'ROLLBACK' );
-			return new WP_Error( 'nicepay_retention_commit_failed', 'NicePay could not commit the retention transaction.' );
+			return new WP_Error( 'nicepay_retention_commit_failed', __( 'NicePay could not commit the retention transaction.', 'nicepay-payment-gateway' ) );
 		}
 
 		return (int) $deleted;
@@ -304,7 +316,7 @@ final class NicePay_Retention {
 	/** @return string */
 	private static function eligible_row_predicate( $days ) {
 		$days = absint( $days );
-		return "ledger.updated_at < (UTC_TIMESTAMP() - INTERVAL {$days} DAY)
+			return "ledger.created_at < (UTC_TIMESTAMP() - INTERVAL {$days} DAY)
 			AND ledger.status IN ('paid', 'partially_refunded', 'refunded', 'failed', 'abandoned', 'expired', 'cancelled')
 			AND ledger.status <> 'needs_reconciliation'
 			AND ledger.reconciliation_status <> 'required'

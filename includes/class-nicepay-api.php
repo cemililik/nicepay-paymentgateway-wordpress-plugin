@@ -30,8 +30,8 @@ class NicePay_API {
             $this->mid          = get_option( 'nicepay_test_mid', NICEPAY_TEST_MID );
             $this->merchant_key = get_option( 'nicepay_test_merchant_key', NICEPAY_TEST_MERCHANT_KEY );
         } elseif ( 'live' === $mode ) {
-            $this->mid          = get_option( 'nicepay_live_mid', '' );
-            $this->merchant_key = get_option( 'nicepay_live_merchant_key', '' );
+			$this->mid          = defined( 'NICEPAY_LIVE_MID' ) ? (string) NICEPAY_LIVE_MID : get_option( 'nicepay_live_mid', '' );
+			$this->merchant_key = defined( 'NICEPAY_LIVE_MERCHANT_KEY' ) ? (string) NICEPAY_LIVE_MERCHANT_KEY : get_option( 'nicepay_live_merchant_key', '' );
         } else {
             $this->mid          = '';
             $this->merchant_key = '';
@@ -357,6 +357,7 @@ class NicePay_API {
                 $edi_date
             ),
             'CharSet'   => $this->charset,
+			'EdiType'   => 'JSON',
         );
 
         nicepay_log( 'Approval request', array(
@@ -502,6 +503,7 @@ class NicePay_API {
                 $edi_date
             ),
             'CharSet'   => $this->charset,
+			'EdiType'   => 'JSON',
         );
 
         nicepay_log( 'Network cancel request', array( 'TID' => $auth_data['TxTid'] ) );
@@ -579,6 +581,7 @@ class NicePay_API {
             'EdiDate'            => $edi_date,
             'SignData'           => $this->create_cancel_sign_data( $cancel_amt, $edi_date ),
             'CharSet'            => $this->charset,
+			'EdiType'            => 'JSON',
         );
 
         // Extension fields may never replace identity, money, or signature
@@ -641,10 +644,7 @@ class NicePay_API {
         $success_codes = array(
             'CARD'      => '3001',
             'BANK'      => '4000',
-            'VBANK'     => '4100',
             'CELLPHONE' => 'A000',
-            'SSG_BANK'  => '0000',
-            'GIFT_CULT' => '0000',
         );
 
         if ( ! isset( $success_codes[ $payment_method ] ) ) {

@@ -1,5 +1,8 @@
 # Build, Release & Repository Hygiene
 
+> [!WARNING]
+> **Frozen historical snapshot.** This review describes baseline commit `5855db1` (2026-08-19), before the 2.0 remediation work. Its line references and present-tense security claims do not describe the current code. Use `docs/analysis/pr-review2/` and current tests for release decisions.
+
 This document covers the eleventh dimension of the NicePay Payment Gateway review: how the plugin is built, versioned, tested in CI, packaged, published, and how the repository presents itself to contributors and security researchers. The pipeline itself is small and, in several respects, better engineered than comparable projects — Action SHAs are pinned, permissions are minimal, and the release zip's contents and folder name are correct for WordPress. But the surrounding release engineering has three structural holes that matter for a payment gateway: **there is no update mechanism of any kind**, so a merchant who installs 2.0.0 will never be offered a security patch; **the plugin never declares HPOS compatibility**, so WooCommerce's own admin UI lists it as incompatible with the default order storage even though the code is fully compliant; and **the shipped translation catalogues are stale by 73 strings**, silently regressing an advertised headline feature across all four locales. Twenty-one findings follow — 3 high, 7 medium, 11 low — with a version-bump touchpoint table, a CI matrix gap table, and a missing-files checklist.
 
 ---

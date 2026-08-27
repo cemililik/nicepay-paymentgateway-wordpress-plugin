@@ -53,9 +53,9 @@ Başvuru öncesinde şu konular yazılı olarak netleştirilmelidir:
 
 ### 4. Dağıtım kanalı için `Update URI`
 
-Eklenti şu anda WordPress.org dışı dağıtımda slug çakışmasına karşı GitHub `Update URI` başlığı taşır. WordPress.org üzerinden yayımlanacak sürümde bu üçüncü taraf başlığı kaldırılmalıdır. Sürüm tutarlılık kontrolü normal GitHub paketlerinde başlığı zorunlu tutar; WordPress.org aday modunda ise yalnız başlığın kaldırılmasına veya mevcut resmî GitHub değerine izin verir. Publish işi ayrıca başlığın tamamen kaldırılmış olmasını zorunlu kılar.
+Eklenti WordPress.org dışı dağıtımda slug çakışmasına karşı GitHub `Update URI` başlığı taşır. Sürüm tutarlılık kontrolü normal GitHub paketlerinde bu başlığı zorunlu tutar. `NICEPAY_DISTRIBUTION_CHANNEL=wordpress-org-candidate` ile çalışan paketleyici ise yalnız oluşturduğu geçici WordPress.org payload'ından başlığı otomatik kaldırır; kaynak tag'i değiştirmez.
 
-Korunan publish işi, ana PHP dosyasında `Update URI` bulunduğu sürece durur. Böylece GitHub güncelleme kanalını işaretleyen bir paket yanlışlıkla WordPress.org'a gönderilemez.
+Korunan publish işi, indirilen ve SHA-256 ile doğrulanan aday payload'ı açıp ana PHP dosyasında `Update URI` bulunmadığını yeniden kanıtlar. Kaynak tag'inde başlığın bulunması beklenir; WordPress.org'a yazılan doğrulanmış payload'da bulunması ise yayın hatasıdır.
 
 ### 5. Lisans ve içerik envanteri
 
@@ -161,7 +161,7 @@ Dry run adımlarına ek olarak:
 2. Kesin confirmation metni doğrulanır.
 3. Girilen slug'ın environment içindeki onaylı `WPORG_PLUGIN_SLUG` ile aynı olduğu doğrulanır.
 4. İki environment secret'ın da mevcut olduğu kontrol edilir.
-5. Üçüncü taraf `Update URI` başlığı varsa işlem durur.
+5. Doğrulanmış aday payload'da üçüncü taraf `Update URI` başlığı kalmışsa işlem durur.
 6. Prepare işinin ürettiği aynı ZIP ve SHA-256 indirilip doğrulanır.
 7. Onaylı slug'a ait SVN deposunun mevcut olduğu salt-okunur `svn info` ile kontrol edilir.
 8. Doğrulanmış paket `trunk` ve `/tags/<version>` alanlarına gönderilir.
@@ -175,7 +175,7 @@ Workflow; 10up'ın aktif desteklenen WordPress.org deploy action'ının `2.3.0` 
 - [ ] İsim/marka kullanımı ve onaylı WordPress.org slug yazılı olarak doğrulandı.
 - [ ] WordPress.org incelemesi tamamlandı ve SVN deposu oluşturuldu.
 - [ ] Onaylı WordPress.org contributor kullanıcı adları `readme.txt` dosyasına eklendi; tahmini GitHub kullanıcı adı kullanılmadı.
-- [ ] Eklenti PHP header'ındaki üçüncü taraf `Update URI` kaldırıldı.
+- [ ] WordPress.org aday ZIP'inde üçüncü taraf `Update URI` bulunmadığı smoke kontrolüyle doğrulandı.
 - [ ] `readme.txt` resmi validator'dan hatasız geçti.
 - [ ] Plugin Check sonuçları incelendi; uyarılar açıklanmış veya düzeltilmiş durumda.
 - [ ] Üçüncü taraf hizmet, şartlar ve gizlilik bağlantıları tekrar doğrulandı.

@@ -1,5 +1,8 @@
 # NicePay Protocol Conformance
 
+> [!WARNING]
+> **Frozen historical snapshot.** This review describes baseline commit `5855db1` (2026-08-19), before the 2.0 remediation work. Its line references and present-tense security claims do not describe the current code. Use `docs/analysis/pr-review2/` and current tests for release decisions.
+
 This document audits the plugin against the official NICEPAY 인증결제 (authenticated payment) manual v2.0.8. The cryptographic core is excellent — all eight SignData/Signature concatenation rules are byte-for-byte correct, the SSRF allowlist is real, and `NextAppURL`/`NetCancelURL` are honoured per-transaction rather than hardcoded. The failures are not in the hashing; they are in everything the protocol expects the *merchant* to do around it: the plugin never reconciles the authenticated amount or order id against its own records (allowing an order-swap that settles an expensive order with a cheap payment), never checks whether a 망취소 net cancel actually succeeded, has no virtual-account deposit-notification endpoint at all, treats a replayed return POST as a fresh payment, and ships an EUC-KR charset switch that changes the labels but never transcodes a single byte. Thirty-four findings follow: 2 critical, 5 high, 21 medium, 6 low.
 
 ---

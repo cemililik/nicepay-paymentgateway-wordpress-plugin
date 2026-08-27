@@ -123,6 +123,9 @@ class NicePayAdminOperationsWpdbFake {
 
     public function get_var( $query ) {
         $this->queries[] = $query;
+		if ( false !== strpos( $query, 'wp_nicepay_reconciliation_audit' ) ) {
+			return 'wp_nicepay_reconciliation_audit';
+		}
         if ( false !== strpos( $query, 'wp_nicepay_refund_attempts' ) ) {
             return 'wp_nicepay_refund_attempts';
         }
@@ -146,6 +149,7 @@ class NicePayAdminOperationsTest extends TestCase {
     protected function setUp(): void {
         global $wpdb, $wp_options, $nicepay_admin_test_is_ssl, $nicepay_admin_test_cron;
         global $nicepay_admin_test_can_manage, $nicepay_admin_test_nonce_valid, $nicepay_admin_test_nonce_checks;
+		global $wp_timezone_string_test;
 
         parent::setUp();
         $this->previous_wpdb = isset( $wpdb ) ? $wpdb : null;
@@ -157,6 +161,7 @@ class NicePayAdminOperationsTest extends TestCase {
         $nicepay_admin_test_can_manage  = true;
         $nicepay_admin_test_nonce_valid = true;
         $nicepay_admin_test_nonce_checks = array();
+		$wp_timezone_string_test = 'UTC';
         $_GET = array();
     }
 
@@ -227,6 +232,20 @@ class NicePayAdminOperationsTest extends TestCase {
         $this->assertStringContainsString( 'buyer_name LIKE', $query );
         $this->assertStringNotContainsString( 'SELECT *', $query );
     }
+
+	public function test_local_calendar_filter_bounds_are_converted_to_utc(): void {
+		global $wpdb, $wp_timezone_string_test;
+		$wp_timezone_string_test = 'Asia/Seoul';
+		$state = NicePay_Transactions::parse_filters(
+			array( 'date_from' => '2026-08-20', 'date_to' => '2026-08-20' )
+		);
+
+		NicePay_Transactions::get_financial_summary( $state['filters'] );
+		$query = end( $wpdb->queries );
+
+		$this->assertStringContainsString( "created_at >= '2026-08-19 15:00:00'", $query );
+		$this->assertStringContainsString( "created_at <= '2026-08-20 14:59:59'", $query );
+	}
 
     public function test_financial_summary_revalidates_direct_filters_and_binds_search_text(): void {
         global $wpdb;
@@ -299,7 +318,7 @@ class NicePayAdminOperationsTest extends TestCase {
 
         $this->assertSame( 3, $count );
         $this->assertCount( 4, $rows );
-        $this->assertCount( 16, $rows[0] );
+		$this->assertCount( 20, $rows[0] );
         $this->assertNotContains( 'Buyer Email', $rows[0] );
         $this->assertNotContains( 'Payment Data', $rows[0] );
         $this->assertSame( '\'=HYPERLINK("https://example.invalid")', $rows[1][1] );
@@ -363,7 +382,8 @@ class NicePayAdminOperationsTest extends TestCase {
         }
         $this->assertSame( array( 'nicepay_export_transactions' ), $nicepay_admin_test_nonce_checks );
 
-        update_option( NicePay_Installer::VERSION_OPTION, NicePay_Installer::schema_version() );
+		update_option( NicePay_Installer::VERSION_OPTION, NicePay_Installer::schema_version() );
+		update_option( NicePay_Installer::VERIFIED_VERSION_OPTION, NicePay_Installer::schema_version() );
         $nicepay_admin_test_nonce_valid = true;
         $_GET = array( 'filter_status' => 'not-a-real-status' );
         try {
@@ -377,7 +397,8 @@ class NicePayAdminOperationsTest extends TestCase {
     public function test_system_report_contains_operational_allowlist_and_no_secrets_or_host_data(): void {
         global $wp_options;
 
-        update_option( NicePay_Installer::VERSION_OPTION, NicePay_Installer::schema_version() );
+		update_option( NicePay_Installer::VERSION_OPTION, NicePay_Installer::schema_version() );
+		update_option( NicePay_Installer::VERIFIED_VERSION_OPTION, NicePay_Installer::schema_version() );
         update_option( 'nicepay_mode', 'live' );
         update_option( 'nicepay_currency', 'KRW' );
         update_option( 'nicepay_enabled_methods', array( 'CARD', 'BANK' ) );

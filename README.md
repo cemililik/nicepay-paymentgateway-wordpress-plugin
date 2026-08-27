@@ -103,16 +103,13 @@ Renders a saved payment form on a page or post. Standalone forms must be explici
 | `amount` | No | Saved value | Ignored as a commercial override; the saved configuration is authoritative |
 | `goods_name` | No | Saved value | Ignored as a commercial override; saved UTF-8 value, max 40 bytes on the wire |
 | `pay_method` | No | Saved/selected certified method | Cannot override the saved policy; only `CARD`, `BANK`, `CELLPHONE` may be selected |
-| `buyer_name` | No | — | Pre-fill buyer name (if empty, buyer fills in the form) |
-| `buyer_email` | No | — | Pre-fill buyer email |
-| `buyer_tel` | No | — | Pre-fill buyer phone |
 | `button_text` | No | "Pay Now" | Button label |
 | `button_class` | No | "nicepay-pay-button" | CSS class |
 | `button_color` | No | `#2563eb` | Button background color (hex) |
 | `currency` | No | Saved `KRW` | Ignored as a commercial override; new payments currently support KRW only |
 | `language` | No | Settings value | `KO`, `EN`, or `CN` |
 
-> When `buyer_name`, `buyer_email`, or `buyer_tel` are left empty, the payment form shows input fields for the buyer to fill in. When provided, those fields are pre-filled and hidden.
+> Buyer name, email, and phone are always collected from the customer at payment time. Buyer PII cannot be embedded through shortcode attributes or saved into a public form configuration.
 
 > `amount`, `goods_name`, `currency`, and payment-method policy always come from the saved server-side configuration. Shortcode attributes cannot override those fields. Only presentation fields such as display mode and button styling are customizable. Open/custom-amount payments are not implemented.
 
@@ -141,7 +138,7 @@ Renders a saved payment form on a page or post. Standalone forms must be explici
 - HPOS compatibility is declared after passing the WooCommerce 11.0.1 legacy/HPOS storage smoke matrix. Cart/Checkout Blocks compatibility remains undeclared, and multisite/network activation still requires topology-specific validation before enabling payments.
 - The vendor lifecycle for this legacy PG-Web v3/manual v2.0.8 integration remains subject to DG-01/DG-02 confirmation.
 - Standalone forms support saved fixed-price KRW offers only. They do not support standalone cancellation, open/custom amounts, subscriptions/recurring billing, escrow, or tax workflows.
-- Financial rows are retained indefinitely by default. An administrator may opt into a 1–36,500 day policy under **NicePay > Settings > General**, but must obtain the applicable legal/accounting approval and acknowledge permanent deletion. The daily bounded cleanup affects only eligible rows in this plugin's transaction/refund-attempt tables; it preserves unresolved states and does not delete WooCommerce orders, backups, logs, or NICEPAY records. Deleting a settled ledger row prevents future refunds through this plugin.
+- Financial rows are retained indefinitely by default. An administrator may opt into a 1–36,500 day policy under **NicePay > Settings > General**, but must obtain the applicable legal/accounting approval and acknowledge permanent deletion. The daily bounded cleanup affects only eligible rows in this plugin's transaction, refund-attempt, and reconciliation-audit tables; it preserves unresolved states and does not delete WooCommerce orders, backups, logs, or NICEPAY records. Deleting a settled ledger row prevents future refunds through this plugin.
 
 ## Admin Panel
 
@@ -213,4 +210,4 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribu
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [GNU General Public License v2.0 or later](LICENSE).
