@@ -190,7 +190,7 @@ class NicePay_WooCommerce_Return_Handler {
 			if ( is_wp_error( $binding ) ) {
 				$this->binding_failure( $order, $transaction, $auth_data, $binding );
 			} else {
-				$update = $this->approval_update( $transaction, $auth_data, $result );
+				$update = $this->approval_update( $auth_data, $result );
 				if ( $this->api->is_success_code( $update['result_code'], $update['payment_method'] ) ) {
 					$this->approved( $order, $transaction, $result, $update );
 				} else {
@@ -246,7 +246,7 @@ class NicePay_WooCommerce_Return_Handler {
 	}
 
 	/** Build the provider-neutral ledger update for a bound response. */
-	private function approval_update( $transaction, $auth_data, $result ) {
+	private function approval_update( $auth_data, $result ) {
 		$method = isset( $result['PayMethod'] ) ? $result['PayMethod'] : $auth_data['PayMethod'];
 		$update = array(
 			'tid'             => isset( $result['TID'] ) ? $result['TID'] : $auth_data['TxTid'],

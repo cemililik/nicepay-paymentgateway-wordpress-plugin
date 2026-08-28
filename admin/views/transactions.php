@@ -2,7 +2,7 @@
 /** NicePay transaction administration view. */
 
 if ( ! defined( 'ABSPATH' ) ) {
-	exit;
+    exit;
 }
 ?>
         <div class="wrap nicepay-admin">
@@ -201,7 +201,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                                     : $order->get_id();
                             }
                             $created_at = function_exists( 'get_date_from_gmt' )
-				? get_date_from_gmt( $item->created_at, self::DATE_TIME_FORMAT )
+                ? get_date_from_gmt( $item->created_at, self::DATE_TIME_FORMAT )
                                 : $item->created_at;
                             $currency = ! empty( $item->currency ) ? $item->currency : 'KRW';
                             $captured = ! empty( $item->captured_amount ) ? $item->captured_amount : $item->amount;
@@ -209,7 +209,7 @@ if ( ! defined( 'ABSPATH' ) ) {
                             $remaining = isset( $item->remaining_amount ) ? $item->remaining_amount : $item->amount;
                             $requires_reconciliation = 'needs_reconciliation' === (string) $item->status ||
                                 ( isset( $item->reconciliation_status ) && 'required' === (string) $item->reconciliation_status );
-							$can_refund = current_user_can( 'edit_shop_orders' ) && $order && ! empty( $item->tid ) && ! $requires_reconciliation &&
+                            $can_refund = current_user_can( 'edit_shop_orders' ) && $order && ! empty( $item->tid ) && ! $requires_reconciliation &&
                                 in_array( (string) $item->status, array( 'paid', 'partially_refunded' ), true ) &&
                                 ( ! isset( $item->cancel_status ) || ! in_array( (string) $item->cancel_status, array( 'requested', 'unknown' ), true ) ) &&
                                 '0' !== nicepay_normalize_ledger_amount( $remaining );
@@ -327,28 +327,28 @@ if ( ! defined( 'ABSPATH' ) ) {
                                         <button type="button" class="button button-small nicepay-cancel-btn"
                                                 data-tid="<?php echo esc_attr( $item->tid ); ?>"
                                                 data-id="<?php echo esc_attr( $item->id ); ?>"
-												data-amount="<?php echo esc_attr( nicepay_format_amount( $remaining, $currency ) ); ?>"
+                                                data-amount="<?php echo esc_attr( nicepay_format_amount( $remaining, $currency ) ); ?>"
                                                 data-nonce="<?php echo esc_attr( wp_create_nonce( 'nicepay_cancel_' . $item->id ) ); ?>"
-												aria-label="<?php /* translators: %s: formatted refundable amount */ echo esc_attr( sprintf( __( 'Refund payment %s', 'nicepay-payment-gateway' ), nicepay_format_amount( $remaining, $currency ) ) ); ?>">
+                                                aria-label="<?php /* translators: %s: formatted refundable amount */ echo esc_attr( sprintf( __( 'Refund payment %s', 'nicepay-payment-gateway' ), nicepay_format_amount( $remaining, $currency ) ) ); ?>">
                                             <?php esc_html_e( 'Refund', 'nicepay-payment-gateway' ); ?>
                                         </button>
                                     <?php endif; ?>
-									<?php if ( $requires_reconciliation && current_user_can( 'edit_shop_orders' ) ) : ?>
-										<button type="button" class="button button-small nicepay-reconcile-btn"
-											data-id="<?php echo esc_attr( $item->id ); ?>"
-											data-decision="reversed"
-											data-amount="<?php echo esc_attr( nicepay_format_amount( $item->amount, $currency ) ); ?>"
-											data-nonce="<?php echo esc_attr( wp_create_nonce( 'nicepay_reconcile_' . $item->id ) ); ?>">
-											<?php esc_html_e( 'Confirm reversed', 'nicepay-payment-gateway' ); ?>
-										</button>
-										<button type="button" class="button button-small button-primary nicepay-reconcile-btn"
-											data-id="<?php echo esc_attr( $item->id ); ?>"
-											data-decision="captured"
-											data-amount="<?php echo esc_attr( nicepay_format_amount( $item->amount, $currency ) ); ?>"
-											data-nonce="<?php echo esc_attr( wp_create_nonce( 'nicepay_reconcile_' . $item->id ) ); ?>">
-											<?php esc_html_e( 'Confirm captured', 'nicepay-payment-gateway' ); ?>
-										</button>
-									<?php endif; ?>
+                                    <?php if ( $requires_reconciliation && current_user_can( 'edit_shop_orders' ) ) : ?>
+                                        <button type="button" class="button button-small nicepay-reconcile-btn"
+                                            data-id="<?php echo esc_attr( $item->id ); ?>"
+                                            data-decision="reversed"
+                                            data-amount="<?php echo esc_attr( nicepay_format_amount( $item->amount, $currency ) ); ?>"
+                                            data-nonce="<?php echo esc_attr( wp_create_nonce( 'nicepay_reconcile_' . $item->id ) ); ?>">
+                                            <?php esc_html_e( 'Confirm reversed', 'nicepay-payment-gateway' ); ?>
+                                        </button>
+                                        <button type="button" class="button button-small button-primary nicepay-reconcile-btn"
+                                            data-id="<?php echo esc_attr( $item->id ); ?>"
+                                            data-decision="captured"
+                                            data-amount="<?php echo esc_attr( nicepay_format_amount( $item->amount, $currency ) ); ?>"
+                                            data-nonce="<?php echo esc_attr( wp_create_nonce( 'nicepay_reconcile_' . $item->id ) ); ?>">
+                                            <?php esc_html_e( 'Confirm captured', 'nicepay-payment-gateway' ); ?>
+                                        </button>
+                                    <?php endif; ?>
                                     <?php
                                     printf(
                                         '<a class="button button-small" href="%1$s" aria-label="%2$s">',

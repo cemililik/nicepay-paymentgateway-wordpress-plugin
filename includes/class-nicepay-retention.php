@@ -65,32 +65,47 @@ final class NicePay_Retention {
 	 */
 	public static function sanitize_settings( $input ) {
 		$current = self::get_settings();
-		$result  = $current;
 		if ( ! is_array( $input ) ) {
 			self::settings_error( 'invalid', __( 'The financial retention setting was not changed because its value was invalid.', 'nicepay-payment-gateway' ) );
+			$result = $current;
 		} else {
-			$mode = isset( $input['mode'] ) && is_scalar( $input['mode'] )
-				? sanitize_key( (string) $input['mode'] )
-				: 'indefinite';
-			$days         = isset( $input['days'] ) ? self::normalize_integer( $input['days'] ) : 0;
-			$acknowledged = isset( $input['acknowledged'] ) && 'yes' === $input['acknowledged'] ? 'yes' : 'no';
-			if ( 'custom' !== $mode ) {
-				$result = self::default_settings();
-			} elseif ( $days < self::MIN_DAYS || $days > self::MAX_DAYS ) {
-				self::settings_error(
-					'days',
-					sprintf(
-						/* translators: %1$d: minimum days, %2$d: maximum days */
-						__( 'Enter a financial retention period between %1$d and %2$d days.', 'nicepay-payment-gateway' ),
-						self::MIN_DAYS,
-						self::MAX_DAYS
-					)
-				);
-			} elseif ( 'yes' !== $acknowledged ) {
-				self::settings_error( 'acknowledgement', __( 'Confirm the permanent-deletion warning before enabling a finite financial retention period.', 'nicepay-payment-gateway' ) );
-			} else {
-				$result = array( 'mode' => 'custom', 'days' => $days, 'acknowledged' => 'yes' );
-			}
+			$result = self::validate_retention_choice( self::retention_choice( $input ), $current );
+		}
+		return $result;
+	}
+
+	/** @return array<string,mixed> */
+	private static function retention_choice( array $input ) {
+		$mode = 'indefinite';
+		if ( isset( $input['mode'] ) && is_scalar( $input['mode'] ) ) {
+			$mode = sanitize_key( (string) $input['mode'] );
+		}
+		return array(
+			'mode'         => $mode,
+			'days'         => isset( $input['days'] ) ? self::normalize_integer( $input['days'] ) : 0,
+			'acknowledged' => isset( $input['acknowledged'] ) && 'yes' === $input['acknowledged'] ? 'yes' : 'no',
+		);
+	}
+
+	/** @return array<string,mixed> */
+	private static function validate_retention_choice( array $choice, array $current ) {
+		$result = $current;
+		if ( 'custom' !== $choice['mode'] ) {
+			$result = self::default_settings();
+		} elseif ( $choice['days'] < self::MIN_DAYS || $choice['days'] > self::MAX_DAYS ) {
+			self::settings_error(
+				'days',
+				sprintf(
+					/* translators: %1$d: minimum days, %2$d: maximum days */
+					__( 'Enter a financial retention period between %1$d and %2$d days.', 'nicepay-payment-gateway' ),
+					self::MIN_DAYS,
+					self::MAX_DAYS
+				)
+			);
+		} elseif ( 'yes' !== $choice['acknowledged'] ) {
+			self::settings_error( 'acknowledgement', __( 'Confirm the permanent-deletion warning before enabling a finite financial retention period.', 'nicepay-payment-gateway' ) );
+		} else {
+			$result = $choice;
 		}
 		return $result;
 	}

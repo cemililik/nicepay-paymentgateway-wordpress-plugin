@@ -70,9 +70,11 @@ final class NicePay_Offer_Resolver {
 				$result = $method;
 			} else {
 				$goods_class = self::resolve_goods_class( $config, $method );
-				$result = is_wp_error( $goods_class )
-					? $goods_class
-					: array_merge( $result, array( 'expected_method' => $method, 'goods_class' => $goods_class ) );
+				if ( is_wp_error( $goods_class ) ) {
+					$result = $goods_class;
+				} else {
+					$result = array_merge( $result, array( 'expected_method' => $method, 'goods_class' => $goods_class ) );
+				}
 			}
 		}
 		return $result;

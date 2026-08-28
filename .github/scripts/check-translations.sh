@@ -13,6 +13,7 @@ fi
 temporary_root="$(mktemp -d "${TMPDIR:-/tmp}/nicepay-i18n.XXXXXX")"
 wp_cli_image='wordpress@sha256:837d55d02196b5f4c92d236317c6d089ab1471348b31d1708888d444a0390979'
 english_catalog="$repository_root/languages/nicepay-payment-gateway-en_US.po"
+readonly msgid_pattern='^msgid '
 
 if rg --line-number --glob '*.php' \
 	'(?:__|_e|_x|esc_html__|esc_attr__)\([[:space:]]*\$[A-Za-z_]' \
@@ -59,7 +60,7 @@ fi
 
 node "$repository_root/.github/scripts/check-po-placeholders.js" "$repository_root"/languages/*.po
 
-if msgattrib --untranslated --no-obsolete "$english_catalog" | grep -q '^msgid '; then
+if msgattrib --untranslated --no-obsolete "$english_catalog" | grep -q "$msgid_pattern"; then
     echo 'ERROR: en_US must translate every active source entry' >&2
     exit 1
 fi
@@ -69,11 +70,11 @@ for catalog in "$repository_root"/languages/*.po; do
 		echo "ERROR: $(basename "$catalog") does not contain the active POT msgid set" >&2
 		exit 1
 	fi
-	if msgattrib --only-fuzzy --no-obsolete "$catalog" | grep -q '^msgid '; then
+	if msgattrib --only-fuzzy --no-obsolete "$catalog" | grep -q "$msgid_pattern"; then
 		echo "ERROR: fuzzy translations are forbidden in $(basename "$catalog"); clear an uncertain translation to use the English fallback" >&2
 		exit 1
 	fi
-    if msgattrib --only-obsolete "$catalog" | grep -q '^msgid '; then
+    if msgattrib --only-obsolete "$catalog" | grep -q "$msgid_pattern"; then
         echo "ERROR: obsolete entries remain in $catalog" >&2
         exit 1
     fi
@@ -87,12 +88,12 @@ for catalog in "$repository_root"/languages/*.po; do
     fi
 done
 
-active_count="$(msgattrib --no-obsolete "$repository_root/languages/nicepay-payment-gateway.pot" | grep -c '^msgid ')"
+active_count="$(msgattrib --no-obsolete "$repository_root/languages/nicepay-payment-gateway.pot" | grep -c "$msgid_pattern")"
 for requirement in 'tr_TR:100' 'ko_KR:100' 'zh_CN:100'; do
 	locale="${requirement%%:*}"
 	minimum="${requirement##*:}"
 	catalog="$repository_root/languages/nicepay-payment-gateway-${locale}.po"
-	translated_count="$(msgattrib --translated --no-fuzzy --no-obsolete "$catalog" | grep -c '^msgid ')"
+	translated_count="$(msgattrib --translated --no-fuzzy --no-obsolete "$catalog" | grep -c "$msgid_pattern")"
 	completion=$(( translated_count * 100 / active_count ))
 	if (( completion < minimum )); then
 		echo "ERROR: ${locale} completion ${completion}% is below the reviewed ${minimum}% floor" >&2

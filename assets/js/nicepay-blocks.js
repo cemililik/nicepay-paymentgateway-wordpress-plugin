@@ -1,7 +1,7 @@
 ( function () {
     'use strict';
 
-    if ( ! window.wc || ! window.wc.wcBlocksRegistry || ! window.wc.wcSettings || ! window.wp || ! window.wp.element ) {
+    if ( ! window.wc?.wcBlocksRegistry || ! window.wc?.wcSettings || ! window.wp?.element ) {
         return;
     }
 

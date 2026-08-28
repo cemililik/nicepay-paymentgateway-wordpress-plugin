@@ -1266,23 +1266,26 @@ function nicepay_persist_reconciliation( $wpdb, array $request, array $context )
 	if ( 1 !== (int) $changed ) {
 		$result = new WP_Error( 'nicepay_reconciliation_update_failed', __( 'The reconciliation decision could not be saved.', 'nicepay-payment-gateway' ) );
 	} else {
+		$confirmed_amount = 'captured' === $request['decision'] ? $context['captured'] : '0';
 		$audited = $wpdb->insert(
 			NicePay_Installer::reconciliation_audit_table_name( $wpdb ),
 			array(
 				'transaction_id' => $request['transaction_id'], 'actor_id' => $request['actor_id'],
 				'action' => $request['decision'], 'reason' => $request['reason'],
 				'previous_status' => 'needs_reconciliation', 'resulting_status' => $resolved['status'],
-				'confirmed_amount' => 'captured' === $request['decision'] ? $context['captured'] : '0',
+				'confirmed_amount' => $confirmed_amount,
 				'created_at' => $now,
 			),
 			array( '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s' )
 		);
-		$result = 1 === (int) $audited && false !== $wpdb->query( 'COMMIT' )
-			? array(
+		if ( 1 === (int) $audited && false !== $wpdb->query( 'COMMIT' ) ) {
+			$result = array(
 				'decision' => $request['decision'], 'status' => $resolved['status'],
-				'amount' => 'captured' === $request['decision'] ? $context['captured'] : '0',
-			)
-			: new WP_Error( 'nicepay_reconciliation_audit_failed', __( 'The reconciliation audit record could not be saved.', 'nicepay-payment-gateway' ) );
+				'amount' => $confirmed_amount,
+			);
+		} else {
+			$result = new WP_Error( 'nicepay_reconciliation_audit_failed', __( 'The reconciliation audit record could not be saved.', 'nicepay-payment-gateway' ) );
+		}
 	}
 	return $result;
 }

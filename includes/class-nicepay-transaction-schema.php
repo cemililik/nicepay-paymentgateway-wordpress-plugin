@@ -26,7 +26,7 @@ final class NicePay_Transaction_Schema {
 	 * Schema version. This is intentionally independent from the plugin version.
 	 */
 	const VERSION = '2026.08.27.3';
-	const IDENTIFIER_PATTERN = '/^[A-Za-z0-9_]+$/';
+	const IDENTIFIER_PATTERN = '/^\w+$/';
 	const COLUMN_BIGINT_UNSIGNED_AUTO_INCREMENT = 'bigint(20) unsigned NOT NULL auto_increment';
 	const COLUMN_BIGINT_UNSIGNED = 'bigint(20) unsigned NOT NULL';
 	const COLUMN_DATETIME_REQUIRED = 'datetime NOT NULL';

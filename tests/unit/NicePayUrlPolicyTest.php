@@ -5,10 +5,25 @@
 
 use PHPUnit\Framework\TestCase;
 
+/** Exposes protected API boundaries without changing production visibility. */
+class NicePayUrlPolicyApi extends NicePay_API {
+
+	public function validateUrlForTest( $url ) {
+		return $this->validate_nicepay_url( $url );
+	}
+
+	public function requestArgsForTest( array $body ) {
+		return $this->request_args( $body );
+	}
+
+	public function decodeResponseForTest( $response, $context ) {
+		return $this->decode_response( $response, $context );
+	}
+}
+
 class NicePayUrlPolicyTest extends TestCase {
 
-    private NicePay_API $api;
-    private ReflectionMethod $validate_url;
+	private NicePayUrlPolicyApi $api;
 
     protected function setUp(): void {
         global $wp_options;
@@ -16,10 +31,7 @@ class NicePayUrlPolicyTest extends TestCase {
 
         update_option( 'nicepay_mode', 'test' );
 
-        $this->api          = new NicePay_API();
-        $this->validate_url = new ReflectionMethod( NicePay_API::class, 'validate_nicepay_url' );
-		// Test-only reflection verifies the non-public SSRF boundary without widening production visibility.
-        $this->validate_url->setAccessible( true );
+		$this->api = new NicePayUrlPolicyApi();
     }
 
     protected function tearDown(): void {
@@ -81,15 +93,11 @@ class NicePayUrlPolicyTest extends TestCase {
     }
 
     private function validate( string $url ): bool {
-        return (bool) $this->validate_url->invoke( $this->api, $url );
+		return (bool) $this->api->validateUrlForTest( $url );
     }
 
     public function test_http_policy_disables_redirects_and_pins_utf8(): void {
-        $method = new ReflectionMethod( NicePay_API::class, 'request_args' );
-		// Test-only reflection verifies an internal HTTP hardening policy without changing production visibility.
-        $method->setAccessible( true );
-
-        $args = $method->invoke( $this->api, array( 'MID' => 'nicepay00m' ) );
+		$args = $this->api->requestArgsForTest( array( 'MID' => 'nicepay00m' ) );
 
         $this->assertSame( 30, $args['timeout'] );
         $this->assertSame( 0, $args['redirection'] );
@@ -98,12 +106,7 @@ class NicePayUrlPolicyTest extends TestCase {
     }
 
     public function test_decode_response_rejects_non_2xx_before_json_parsing(): void {
-        $method = new ReflectionMethod( NicePay_API::class, 'decode_response' );
-		// Test-only reflection exercises hostile transport responses at the private parsing boundary.
-        $method->setAccessible( true );
-
-        $result = $method->invoke(
-            $this->api,
+		$result = $this->api->decodeResponseForTest(
             array(
                 'response' => array( 'code' => 502 ),
                 'body'     => '{"ResultCode":"3001"}',
@@ -116,12 +119,7 @@ class NicePayUrlPolicyTest extends TestCase {
     }
 
     public function test_decode_response_requires_valid_json_object(): void {
-        $method = new ReflectionMethod( NicePay_API::class, 'decode_response' );
-		// Test-only reflection exercises hostile transport responses at the private parsing boundary.
-        $method->setAccessible( true );
-
-        $result = $method->invoke(
-            $this->api,
+		$result = $this->api->decodeResponseForTest(
             array(
                 'response' => array( 'code' => 200 ),
                 'body'     => '<html>upstream error</html>',

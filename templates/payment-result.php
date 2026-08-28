@@ -6,7 +6,10 @@
  */
 
 defined( 'ABSPATH' ) || exit;
-?>
+
+/** Render the complete standalone payment result document. */
+function nicepay_render_payment_result_template( $success, $message, $page_title, $is_vbank, array $data ) {
+    ?>
         <!DOCTYPE html>
         <html <?php language_attributes(); ?>>
         <head>
@@ -56,48 +59,9 @@ defined( 'ABSPATH' ) || exit;
                 <p class="result-message"><?php echo esc_html( $message ); ?></p>
 
                 <?php if ( $success && $is_vbank ) : ?>
-                    <div class="result-vbank">
-                        <p class="result-vbank-title"><?php esc_html_e( 'Deposit Information', 'nicepay-payment-gateway' ); ?></p>
-                        <dl>
-                            <?php if ( ! empty( $data['VbankBankName'] ) ) : ?>
-                                <dt><?php esc_html_e( 'Bank', 'nicepay-payment-gateway' ); ?></dt>
-                                <dd><?php echo esc_html( $data['VbankBankName'] ); ?></dd>
-                            <?php endif; ?>
-                            <?php if ( ! empty( $data['VbankNum'] ) ) : ?>
-                                <dt><?php esc_html_e( 'Account', 'nicepay-payment-gateway' ); ?></dt>
-                                <dd><?php echo esc_html( $data['VbankNum'] ); ?></dd>
-                            <?php endif; ?>
-                            <?php if ( ! empty( $data['Amt'] ) ) : ?>
-                                <dt><?php esc_html_e( 'Amount', 'nicepay-payment-gateway' ); ?></dt>
-                                <dd><?php echo esc_html( nicepay_format_amount( $data['Amt'] ) ); ?></dd>
-                            <?php endif; ?>
-                            <?php if ( ! empty( $data['VbankExpDate'] ) ) : ?>
-                                <dt><?php esc_html_e( 'Deadline', 'nicepay-payment-gateway' ); ?></dt>
-                                <dd><?php echo esc_html( $data['VbankExpDate'] ); ?></dd>
-                            <?php endif; ?>
-                        </dl>
-                    </div>
+                    <?php nicepay_render_vbank_result_details( $data ); ?>
                 <?php elseif ( $success && ! empty( $data ) ) : ?>
-                    <div class="result-details">
-                        <dl>
-                            <?php if ( ! empty( $data['TID'] ) ) : ?>
-                                <dt><?php esc_html_e( 'Transaction ID', 'nicepay-payment-gateway' ); ?></dt>
-                                <dd><?php echo esc_html( $data['TID'] ); ?></dd>
-                            <?php endif; ?>
-                            <?php if ( ! empty( $data['Moid'] ) ) : ?>
-                                <dt><?php esc_html_e( 'Payment Reference', 'nicepay-payment-gateway' ); ?></dt>
-                                <dd><?php echo esc_html( $data['Moid'] ); ?></dd>
-                            <?php endif; ?>
-                            <?php if ( ! empty( $data['Amt'] ) ) : ?>
-                                <dt><?php esc_html_e( 'Amount', 'nicepay-payment-gateway' ); ?></dt>
-                                <dd><?php echo esc_html( nicepay_format_amount( $data['Amt'] ) ); ?></dd>
-                            <?php endif; ?>
-                            <?php if ( ! empty( $data['PayMethod'] ) ) : ?>
-                                <dt><?php esc_html_e( 'Method', 'nicepay-payment-gateway' ); ?></dt>
-                                <dd><?php echo esc_html( NicePay_API::get_payment_method_name( $data['PayMethod'] ) ); ?></dd>
-                            <?php endif; ?>
-                        </dl>
-                    </div>
+                    <?php nicepay_render_transaction_result_details( $data ); ?>
                 <?php endif; ?>
 
                 <div class="result-actions">
@@ -117,4 +81,59 @@ defined( 'ABSPATH' ) || exit;
                 </div>
             </div>
         </body>
-	        </html>
+            </html>
+<?php
+    }
+
+/** Render virtual-bank deposit details. */
+function nicepay_render_vbank_result_details( array $data ) {
+    ?>
+        <div class="result-vbank">
+            <p class="result-vbank-title"><?php esc_html_e( 'Deposit Information', 'nicepay-payment-gateway' ); ?></p>
+            <dl>
+                <?php if ( ! empty( $data['VbankBankName'] ) ) : ?>
+                    <dt><?php esc_html_e( 'Bank', 'nicepay-payment-gateway' ); ?></dt>
+                    <dd><?php echo esc_html( $data['VbankBankName'] ); ?></dd>
+                <?php endif; ?>
+                <?php if ( ! empty( $data['VbankNum'] ) ) : ?>
+                    <dt><?php esc_html_e( 'Account', 'nicepay-payment-gateway' ); ?></dt>
+                    <dd><?php echo esc_html( $data['VbankNum'] ); ?></dd>
+                <?php endif; ?>
+                <?php if ( ! empty( $data['Amt'] ) ) : ?>
+                    <dt><?php esc_html_e( 'Amount', 'nicepay-payment-gateway' ); ?></dt>
+                    <dd><?php echo esc_html( nicepay_format_amount( $data['Amt'] ) ); ?></dd>
+                <?php endif; ?>
+                <?php if ( ! empty( $data['VbankExpDate'] ) ) : ?>
+                    <dt><?php esc_html_e( 'Deadline', 'nicepay-payment-gateway' ); ?></dt>
+                    <dd><?php echo esc_html( $data['VbankExpDate'] ); ?></dd>
+                <?php endif; ?>
+            </dl>
+        </div>
+    <?php
+}
+
+/** Render captured transaction details. */
+function nicepay_render_transaction_result_details( array $data ) {
+    ?>
+        <div class="result-details">
+            <dl>
+                <?php if ( ! empty( $data['TID'] ) ) : ?>
+                    <dt><?php esc_html_e( 'Transaction ID', 'nicepay-payment-gateway' ); ?></dt>
+                    <dd><?php echo esc_html( $data['TID'] ); ?></dd>
+                <?php endif; ?>
+                <?php if ( ! empty( $data['Moid'] ) ) : ?>
+                    <dt><?php esc_html_e( 'Payment Reference', 'nicepay-payment-gateway' ); ?></dt>
+                    <dd><?php echo esc_html( $data['Moid'] ); ?></dd>
+                <?php endif; ?>
+                <?php if ( ! empty( $data['Amt'] ) ) : ?>
+                    <dt><?php esc_html_e( 'Amount', 'nicepay-payment-gateway' ); ?></dt>
+                    <dd><?php echo esc_html( nicepay_format_amount( $data['Amt'] ) ); ?></dd>
+                <?php endif; ?>
+                <?php if ( ! empty( $data['PayMethod'] ) ) : ?>
+                    <dt><?php esc_html_e( 'Method', 'nicepay-payment-gateway' ); ?></dt>
+                    <dd><?php echo esc_html( NicePay_API::get_payment_method_name( $data['PayMethod'] ) ); ?></dd>
+                <?php endif; ?>
+            </dl>
+        </div>
+    <?php
+}

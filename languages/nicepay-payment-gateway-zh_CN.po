@@ -4,7 +4,7 @@ msgstr ""
 "Project-Id-Version: NicePay Payment Gateway 2.0.1\n"
 "Report-Msgid-Bugs-To: https://github.com/cemililik/nicepay-paymentgateway-"
 "wordpress-plugin/issues\n"
-"POT-Creation-Date: 2026-08-27T15:44:35+00:00\n"
+"POT-Creation-Date: 2026-08-28T06:55:53+00:00\n"
 "PO-Revision-Date: 2026-08-27 10:10+0300\n"
 "Last-Translator: NicePay maintainers\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -54,7 +54,7 @@ msgid "Transactions"
 msgstr "交易记录"
 
 #: admin/class-nicepay-admin.php:41 admin/class-nicepay-admin.php:42
-#: nicepay-payment-gateway.php:883
+#: nicepay-payment-gateway.php:913
 msgid "Settings"
 msgstr "设置"
 
@@ -92,7 +92,7 @@ msgstr "必须填写退款原因。"
 msgid "Refund failed."
 msgstr "退款失败。"
 
-#: admin/class-nicepay-admin.php:89 admin/class-nicepay-admin.php:813
+#: admin/class-nicepay-admin.php:89 admin/class-nicepay-admin.php:836
 msgid "Request failed. Please try again."
 msgstr "请求失败，请重试。"
 
@@ -104,7 +104,7 @@ msgstr "已复制到剪贴板！"
 msgid "Copy failed."
 msgstr "复制失败。"
 
-#: admin/class-nicepay-admin.php:92 includes/nicepay-functions.php:1923
+#: admin/class-nicepay-admin.php:92 includes/nicepay-functions.php:1926
 msgid "Refunded"
 msgstr "已退款"
 
@@ -152,7 +152,7 @@ msgstr "记录决定"
 msgid "Reconciliation decision could not be recorded."
 msgstr "无法记录对账决定。"
 
-#: admin/class-nicepay-admin.php:104 nicepay-payment-gateway.php:867
+#: admin/class-nicepay-admin.php:104 nicepay-payment-gateway.php:897
 msgid "Shortcode deleted."
 msgstr "简码已删除。"
 
@@ -164,7 +164,7 @@ msgstr "删除简码"
 msgid "Are you sure? This cannot be undone."
 msgstr "你确定吗？此操作无法撤消。"
 
-#: admin/class-nicepay-admin.php:107 admin/class-nicepay-admin.php:758
+#: admin/class-nicepay-admin.php:107 admin/class-nicepay-admin.php:781
 msgid "Delete"
 msgstr "删除"
 
@@ -291,11 +291,11 @@ msgid ""
 "scheduled."
 msgstr "必须安排等待尝试到期和过时批准恢复任务。"
 
-#: admin/class-nicepay-admin.php:556 admin/class-nicepay-admin.php:558
+#: admin/class-nicepay-admin.php:579 admin/class-nicepay-admin.php:581
 msgid "NicePay System Report"
 msgstr "NicePay系统报告"
 
-#: admin/class-nicepay-admin.php:557
+#: admin/class-nicepay-admin.php:580
 msgid ""
 "This report contains operational status only. It excludes merchant "
 "credentials, payment tokens, customer data, paths, URLs and server headers."
@@ -303,182 +303,182 @@ msgstr ""
 "该报告仅包含运行状态。它不包括商家凭证、支付令牌、客户数据、路径、URL 和服务"
 "器标头。"
 
-#: admin/class-nicepay-admin.php:564
+#: admin/class-nicepay-admin.php:587
 msgid "Copy system report"
 msgstr "复制系统报告"
 
-#: admin/class-nicepay-admin.php:581
+#: admin/class-nicepay-admin.php:604
 msgid "You are currently in Test mode."
 msgstr "当前为测试模式。"
 
-#: admin/class-nicepay-admin.php:585
+#: admin/class-nicepay-admin.php:608
 msgid ""
 "You are currently in Live mode. Payments will be processed with real money."
 msgstr "当前为正式模式，将使用真实资金处理支付。"
 
-#: admin/class-nicepay-admin.php:589
+#: admin/class-nicepay-admin.php:612
 msgid "Test Credentials"
 msgstr "测试凭证"
 
-#: admin/class-nicepay-admin.php:592
+#: admin/class-nicepay-admin.php:615
 msgid "Test MID"
 msgstr "测试MID"
 
-#: admin/class-nicepay-admin.php:599
+#: admin/class-nicepay-admin.php:622
 msgid "Test Merchant Key"
 msgstr "测试商户密钥"
 
-#: admin/class-nicepay-admin.php:603 admin/class-nicepay-admin.php:635
+#: admin/class-nicepay-admin.php:626 admin/class-nicepay-admin.php:658
 msgid "Configured — leave blank to keep unchanged"
 msgstr "已配置 — 留空以保持不变"
 
-#: admin/class-nicepay-admin.php:606
+#: admin/class-nicepay-admin.php:629
 msgid "Clear the stored test merchant key"
 msgstr "清除已存储的测试商户密钥"
 
-#: admin/class-nicepay-admin.php:612
+#: admin/class-nicepay-admin.php:635
 msgid "Live Credentials"
 msgstr "正式凭证"
 
-#: admin/class-nicepay-admin.php:615
+#: admin/class-nicepay-admin.php:638
 msgid "Live MID"
 msgstr "正式MID"
 
-#: admin/class-nicepay-admin.php:619
+#: admin/class-nicepay-admin.php:642
 msgid "Managed in wp-config.php"
 msgstr "由 wp-config.php 管理"
 
-#: admin/class-nicepay-admin.php:627
+#: admin/class-nicepay-admin.php:650
 msgid "Live Merchant Key"
 msgstr "正式商户密钥"
 
-#: admin/class-nicepay-admin.php:631
+#: admin/class-nicepay-admin.php:654
 msgid "Managed in wp-config.php; the secret is not stored in WordPress."
 msgstr "由 wp-config.php 管理；密钥不会存储在 WordPress 中。"
 
-#: admin/class-nicepay-admin.php:635
+#: admin/class-nicepay-admin.php:658
 msgid "Enter live merchant key"
 msgstr "输入实时商户密钥"
 
-#: admin/class-nicepay-admin.php:638
+#: admin/class-nicepay-admin.php:661
 msgid "Clear the stored live merchant key"
 msgstr "清除已存储的实时商户密钥"
 
-#: admin/class-nicepay-admin.php:657
+#: admin/class-nicepay-admin.php:680
 msgid "Standalone payment forms"
 msgstr "独立付款表格"
 
-#: admin/class-nicepay-admin.php:663
+#: admin/class-nicepay-admin.php:686
 msgid "Enable saved NicePay shortcode payment forms"
 msgstr "启用已保存的 NicePay 短代码付款表单"
 
-#: admin/class-nicepay-admin.php:666
+#: admin/class-nicepay-admin.php:689
 msgid ""
 "Enable only after reviewing credentials, currency, fixed prices, and return "
 "routing."
 msgstr "仅在审核凭据、货币、固定价格和返回路线后启用。"
 
-#: admin/class-nicepay-admin.php:671
+#: admin/class-nicepay-admin.php:694
 msgid "Enabled Payment Methods"
 msgstr "已启用的支付方式"
 
-#: admin/class-nicepay-admin.php:698
+#: admin/class-nicepay-admin.php:721
 msgid ""
 "Manage your saved payment shortcodes. Copy and paste them into any page or "
 "post."
 msgstr "管理您保存的付款短代码。将它们复制并粘贴到任何页面或帖子中。"
 
-#: admin/class-nicepay-admin.php:700
+#: admin/class-nicepay-admin.php:723
 msgid "Create New"
 msgstr "新建"
 
-#: admin/class-nicepay-admin.php:707
+#: admin/class-nicepay-admin.php:730
 msgid "No shortcodes yet"
 msgstr "还没有短代码"
 
-#: admin/class-nicepay-admin.php:708
+#: admin/class-nicepay-admin.php:731
 msgid "Create your first payment shortcode to get started."
 msgstr "创建您的第一个付款短代码以开始。"
 
-#: admin/class-nicepay-admin.php:747
+#: admin/class-nicepay-admin.php:770
 msgid "Edit"
 msgstr "编辑"
 
-#: admin/class-nicepay-admin.php:752 admin/class-nicepay-admin.php:805
+#: admin/class-nicepay-admin.php:775 admin/class-nicepay-admin.php:828
 #: admin/views/shortcode-generator.php:214
 msgid "Copy"
 msgstr "复制"
 
-#: admin/class-nicepay-admin.php:800
+#: admin/class-nicepay-admin.php:823
 msgid "Save the configuration to generate its reference shortcode."
 msgstr "保存配置以生成其参考短代码。"
 
-#: admin/class-nicepay-admin.php:801 admin/views/shortcode-generator.php:203
-#: includes/nicepay-functions.php:2062 nicepay-payment-gateway.php:497
+#: admin/class-nicepay-admin.php:824 admin/views/shortcode-generator.php:203
+#: includes/nicepay-functions.php:2065 nicepay-payment-gateway.php:502
 msgid "Pay Now"
 msgstr "立即支付"
 
-#: admin/class-nicepay-admin.php:802 admin/views/shortcode-generator.php:175
+#: admin/class-nicepay-admin.php:825 admin/views/shortcode-generator.php:175
 msgid "Product Name"
 msgstr "产品名称"
 
-#: admin/class-nicepay-admin.php:803
+#: admin/class-nicepay-admin.php:826
 msgid "Amount is required"
 msgstr "金额为必填项"
 
-#: admin/class-nicepay-admin.php:804
+#: admin/class-nicepay-admin.php:827
 msgid "Product name is required"
 msgstr "产品名称为必填项"
 
-#: admin/class-nicepay-admin.php:806
+#: admin/class-nicepay-admin.php:829
 msgid "Copied!"
 msgstr "复制了！"
 
-#: admin/class-nicepay-admin.php:807
+#: admin/class-nicepay-admin.php:830
 msgid "Copy failed"
 msgstr "复制失败"
 
-#: admin/class-nicepay-admin.php:808
+#: admin/class-nicepay-admin.php:831
 msgid "Saving..."
 msgstr "正在保存..."
 
-#: admin/class-nicepay-admin.php:809 admin/views/shortcode-generator.php:156
+#: admin/class-nicepay-admin.php:832 admin/views/shortcode-generator.php:156
 msgid "Save Shortcode"
 msgstr "保存简码"
 
-#: admin/class-nicepay-admin.php:810 admin/views/shortcode-generator.php:156
+#: admin/class-nicepay-admin.php:833 admin/views/shortcode-generator.php:156
 msgid "Update Shortcode"
 msgstr "更新简码"
 
-#: admin/class-nicepay-admin.php:811
+#: admin/class-nicepay-admin.php:834
 msgid "Saved."
 msgstr "已保存。"
 
-#: admin/class-nicepay-admin.php:812
+#: admin/class-nicepay-admin.php:835
 msgid "Error"
 msgstr "错误"
 
-#: admin/class-nicepay-admin.php:850
+#: admin/class-nicepay-admin.php:880
 msgid "NicePay payment"
 msgstr "尼斯支付支付"
 
-#: admin/class-nicepay-admin.php:852
+#: admin/class-nicepay-admin.php:882
 msgid "Ledger status:"
 msgstr "账本状态："
 
-#: admin/class-nicepay-admin.php:856
+#: admin/class-nicepay-admin.php:886
 msgid "Captured:"
 msgstr "捕获："
 
-#: admin/class-nicepay-admin.php:858
+#: admin/class-nicepay-admin.php:888
 msgid "Refunded:"
 msgstr "已退款："
 
-#: admin/class-nicepay-admin.php:860
+#: admin/class-nicepay-admin.php:890
 msgid "Remaining:"
 msgstr "剩余："
 
-#: admin/class-nicepay-admin.php:873
+#: admin/class-nicepay-admin.php:903
 msgid "View NicePay transaction"
 msgstr "查看NicePay交易"
 
@@ -558,43 +558,43 @@ msgid ""
 "error before using this screen."
 msgstr "NicePay 交易存储尚未准备好。使用此屏幕之前请解决数据库迁移错误。"
 
-#: admin/class-nicepay-transactions.php:637
+#: admin/class-nicepay-transactions.php:659
 msgid "Refund could not be completed. Review the order notes before retrying."
 msgstr "退款无法完成。重试之前请查看订单备注。"
 
-#: admin/class-nicepay-transactions.php:649
+#: admin/class-nicepay-transactions.php:671
 msgid "Refund completed successfully."
 msgstr "退款成功完成。"
 
-#: admin/class-nicepay-transactions.php:680
-#: admin/class-nicepay-transactions.php:728 nicepay-payment-gateway.php:747
-#: nicepay-payment-gateway.php:851
+#: admin/class-nicepay-transactions.php:702
+#: admin/class-nicepay-transactions.php:750 nicepay-payment-gateway.php:769
+#: nicepay-payment-gateway.php:881
 msgid "Unauthorized."
 msgstr "未授权。"
 
-#: admin/class-nicepay-transactions.php:690
+#: admin/class-nicepay-transactions.php:712
 msgid "Transaction not found."
 msgstr "未找到交易。"
 
-#: admin/class-nicepay-transactions.php:692
+#: admin/class-nicepay-transactions.php:714
 msgid ""
 "Standalone cancellation is unavailable until its reconciliation workflow is "
 "configured."
 msgstr "在配置协调工作流程之前，独立取消不可用。"
 
-#: admin/class-nicepay-transactions.php:697
+#: admin/class-nicepay-transactions.php:719
 msgid "WooCommerce order not found."
 msgstr "找不到 WooCommerce 订单。"
 
-#: admin/class-nicepay-transactions.php:709
+#: admin/class-nicepay-transactions.php:731
 msgid "This transaction is not in a safe state for refund."
 msgstr "此交易不处于安全退款状态。"
 
-#: admin/class-nicepay-transactions.php:713
+#: admin/class-nicepay-transactions.php:735
 msgid "This payment has no refundable balance."
 msgstr "这笔付款没有可退还的余额。"
 
-#: admin/class-nicepay-transactions.php:740
+#: admin/class-nicepay-transactions.php:762
 msgid "Reconciliation decision recorded with an audit entry."
 msgstr "对账决定已与审计记录一并保存。"
 
@@ -989,7 +989,7 @@ msgstr "订单"
 msgid "Balance"
 msgstr "平衡"
 
-#: admin/views/transactions.php:167 templates/payment-result.php:96
+#: admin/views/transactions.php:167 templates/payment-result.php:133
 msgid "Method"
 msgstr "支付方式"
 
@@ -1098,7 +1098,7 @@ msgid "Approval request context is incomplete."
 msgstr "批准请求上下文不完整。"
 
 #: includes/class-nicepay-api.php:346 includes/class-nicepay-api.php:514
-#: nicepay-payment-gateway.php:626
+#: nicepay-payment-gateway.php:645
 msgid "NicePay credentials are not configured."
 msgstr "NicePay 凭证未配置。"
 
@@ -1437,99 +1437,99 @@ msgstr "批准金额与交易不匹配。"
 msgid "Approval payment method does not match the transaction."
 msgstr "批准结果中的支付方式与交易不匹配。"
 
-#: includes/class-nicepay-installer.php:132
+#: includes/class-nicepay-installer.php:51
+msgid "NicePay schema migration requires database write access."
+msgstr "NicePay 架构迁移需要数据库写入权限。"
+
+#: includes/class-nicepay-installer.php:65
+msgid "NicePay could not safely clean legacy sensitive transaction data."
+msgstr "NicePay 无法安全清理旧版交易敏感数据。"
+
+#: includes/class-nicepay-installer.php:77
+msgid ""
+"Explicit confirmation is required before legacy payment payloads are removed."
+msgstr "删除旧版支付负载前需要明确确认。"
+
+#: includes/class-nicepay-installer.php:80
+msgid "The NicePay legacy payment payload column is unavailable."
+msgstr "NicePay 旧版支付负载列不可用。"
+
+#: includes/class-nicepay-installer.php:93
+msgid "NicePay could not clean legacy payment payloads."
+msgstr "NicePay 无法清理旧版支付负载。"
+
+#: includes/class-nicepay-installer.php:216
 msgid "Another NicePay schema upgrade is already running."
 msgstr "另一个 NicePay 架构升级已在运行。"
 
-#: includes/class-nicepay-installer.php:149
+#: includes/class-nicepay-installer.php:233
 msgid "NicePay schema installation requires a valid wpdb instance."
 msgstr "NicePay 架构安装需要有效的 wpdb 实例。"
 
-#: includes/class-nicepay-installer.php:153
+#: includes/class-nicepay-installer.php:237
 msgid "NicePay will not run an older schema over a newer database."
 msgstr "NicePay 不会在更新的数据库上运行旧版架构。"
 
-#: includes/class-nicepay-installer.php:220
+#: includes/class-nicepay-installer.php:304
 msgid ""
 "NicePay cannot add the unique Moid index until duplicate Moids are reviewed."
 msgstr "在审核重复的 Moid 前，NicePay 无法添加唯一 Moid 索引。"
 
-#: includes/class-nicepay-installer.php:226
+#: includes/class-nicepay-installer.php:310
 msgid ""
 "NicePay cannot add the unique TID index until duplicate transaction IDs are "
 "reviewed."
 msgstr "在审核重复的交易 ID 前，NicePay 无法添加唯一 TID 索引。"
 
-#: includes/class-nicepay-installer.php:243
+#: includes/class-nicepay-installer.php:327
 msgid "NicePay could not make the legacy transaction ID nullable."
 msgstr "NicePay 无法将旧版交易 ID 列改为允许 NULL。"
 
-#: includes/class-nicepay-installer.php:249
+#: includes/class-nicepay-installer.php:333
 msgid "NicePay could not normalize legacy transaction IDs."
 msgstr "NicePay 无法规范化旧版交易 ID。"
 
-#: includes/class-nicepay-installer.php:264
+#: includes/class-nicepay-installer.php:348
 msgid "NicePay schema installation requires dbDelta."
 msgstr "NicePay 架构安装需要 dbDelta。"
 
-#: includes/class-nicepay-installer.php:280
+#: includes/class-nicepay-installer.php:364
 msgid "NicePay transaction schema upgrade failed."
 msgstr "NicePay 交易架构升级失败。"
 
-#: includes/class-nicepay-installer.php:294
+#: includes/class-nicepay-installer.php:378
 msgid "NicePay transaction schema upgrade did not create all required tables."
 msgstr "NicePay 交易架构升级未创建所有必需的表。"
 
-#: includes/class-nicepay-installer.php:304
+#: includes/class-nicepay-installer.php:389
 msgid "NicePay could not store the transaction schema version."
 msgstr "NicePay 无法保存交易架构版本。"
 
-#: includes/class-nicepay-installer.php:309
+#: includes/class-nicepay-installer.php:394
 msgid "NicePay could not store the verified schema version."
 msgstr "NicePay 无法保存已验证的架构版本。"
 
-#: includes/class-nicepay-installer.php:334
+#: includes/class-nicepay-installer.php:419
 msgid "NicePay cannot verify the upgraded schema."
 msgstr "NicePay 无法验证升级后的架构。"
 
-#: includes/class-nicepay-installer.php:348
+#: includes/class-nicepay-installer.php:433
 msgid "NicePay transaction schema is incomplete after dbDelta."
 msgstr "dbDelta 执行后 NicePay 交易架构仍不完整。"
 
-#: includes/class-nicepay-installer.php:352
+#: includes/class-nicepay-installer.php:437
 msgid "NicePay refund ledger is missing its identity index."
 msgstr "NicePay 退款账本缺少标识索引。"
 
-#: includes/class-nicepay-installer.php:354
+#: includes/class-nicepay-installer.php:439
 msgid "NicePay reconciliation audit ledger is missing its transaction index."
 msgstr "NicePay 对账审计账本缺少交易索引。"
 
-#: includes/class-nicepay-installer.php:407
+#: includes/class-nicepay-installer.php:492
 msgid "NicePay could not backfill the legacy transaction ledger."
 msgstr "NicePay 无法回填旧版交易账本。"
 
-#: includes/class-nicepay-installer.php:465
-msgid "NicePay schema migration requires database write access."
-msgstr "NicePay 架构迁移需要数据库写入权限。"
-
-#: includes/class-nicepay-installer.php:480
-msgid "NicePay could not safely clean legacy sensitive transaction data."
-msgstr "NicePay 无法安全清理旧版交易敏感数据。"
-
-#: includes/class-nicepay-installer.php:498
-msgid ""
-"Explicit confirmation is required before legacy payment payloads are removed."
-msgstr "删除旧版支付负载前需要明确确认。"
-
-#: includes/class-nicepay-installer.php:502
-msgid "The NicePay legacy payment payload column is unavailable."
-msgstr "NicePay 旧版支付负载列不可用。"
-
-#: includes/class-nicepay-installer.php:515
-msgid "NicePay could not clean legacy payment payloads."
-msgstr "NicePay 无法清理旧版支付负载。"
-
-#: includes/class-nicepay-offer-resolver.php:37 nicepay-payment-gateway.php:462
+#: includes/class-nicepay-offer-resolver.php:37 nicepay-payment-gateway.php:480
 msgid "Payment configuration not found."
 msgstr "未找到付款配置。"
 
@@ -1537,35 +1537,35 @@ msgstr "未找到付款配置。"
 msgid "Invalid payment configuration identifier."
 msgstr "支付配置标识符无效。"
 
-#: includes/class-nicepay-offer-resolver.php:98
+#: includes/class-nicepay-offer-resolver.php:100
 msgid "This payment currency is not supported."
 msgstr "不支持此付款货币。"
 
-#: includes/class-nicepay-offer-resolver.php:100
+#: includes/class-nicepay-offer-resolver.php:102
 msgid "The saved payment amount is invalid."
 msgstr "保存的付款金额无效。"
 
-#: includes/class-nicepay-offer-resolver.php:102
+#: includes/class-nicepay-offer-resolver.php:104
 msgid "The saved goods name is invalid."
 msgstr "保存的商品名称无效。"
 
-#: includes/class-nicepay-offer-resolver.php:115
+#: includes/class-nicepay-offer-resolver.php:117
 msgid "Invalid payment method."
 msgstr "付款方式无效。"
 
-#: includes/class-nicepay-offer-resolver.php:117
+#: includes/class-nicepay-offer-resolver.php:119
 msgid "The selected payment method does not match this configuration."
 msgstr "所选的付款方式与此配置不匹配。"
 
-#: includes/class-nicepay-offer-resolver.php:120
+#: includes/class-nicepay-offer-resolver.php:122
 msgid "The saved payment method is not available."
 msgstr "保存的支付方式不可用。"
 
-#: includes/class-nicepay-offer-resolver.php:121
+#: includes/class-nicepay-offer-resolver.php:123
 msgid "The selected payment method is not available."
 msgstr "所选的付款方式不可用。"
 
-#: includes/class-nicepay-offer-resolver.php:136
+#: includes/class-nicepay-offer-resolver.php:138
 msgid ""
 "A content or physical-goods classification is required for mobile payments."
 msgstr "移动支付需要对内容或实物商品进行分类。"
@@ -1600,8 +1600,8 @@ msgid "WooCommerce order ID"
 msgstr "WooCommerce 订单 ID"
 
 #: includes/class-nicepay-privacy.php:118
-#: includes/class-nicepay-privacy.php:134 templates/payment-result.php:71
-#: templates/payment-result.php:92
+#: includes/class-nicepay-privacy.php:134 templates/payment-result.php:103
+#: templates/payment-result.php:129
 msgid "Amount"
 msgstr "金额"
 
@@ -1617,7 +1617,7 @@ msgstr "付款状态"
 msgid "Created at"
 msgstr "创建于"
 
-#: includes/class-nicepay-privacy.php:133 templates/payment-result.php:84
+#: includes/class-nicepay-privacy.php:133 templates/payment-result.php:121
 msgid "Transaction ID"
 msgstr "交易ID"
 
@@ -1721,54 +1721,54 @@ msgstr "退款回复与请求不符。在重试之前对其进行协调。"
 msgid "NicePay rejected the refund request. Review the transaction details."
 msgstr "NicePay 拒绝了退款请求。查看交易详情。"
 
-#: includes/class-nicepay-retention.php:70
+#: includes/class-nicepay-retention.php:69
 msgid ""
 "The financial retention setting was not changed because its value was "
 "invalid."
 msgstr "财务保留设置未更改，因为其值无效。"
 
 #. translators: %1$d: minimum days, %2$d: maximum days
-#: includes/class-nicepay-retention.php:84
+#: includes/class-nicepay-retention.php:100
 #, php-format
 msgid "Enter a financial retention period between %1$d and %2$d days."
 msgstr "输入介于 %1$d 天和 %2$d 天之间的财务保留期。"
 
-#: includes/class-nicepay-retention.php:90
+#: includes/class-nicepay-retention.php:106
 msgid ""
 "Confirm the permanent-deletion warning before enabling a finite financial "
 "retention period."
 msgstr "在启用有限财务保留期之前确认永久删除警告。"
 
-#: includes/class-nicepay-retention.php:194
+#: includes/class-nicepay-retention.php:209
 msgid "NicePay retention parameters are invalid."
 msgstr "NicePay 保留参数无效。"
 
-#: includes/class-nicepay-retention.php:203
+#: includes/class-nicepay-retention.php:218
 msgid "NicePay retention requires InnoDB tables for transactional deletion."
 msgstr "NicePay 保留功能需要 InnoDB 表才能执行事务性删除。"
 
-#: includes/class-nicepay-retention.php:229
+#: includes/class-nicepay-retention.php:244
 msgid "NicePay could not start the retention transaction."
 msgstr "NicePay 无法启动保留事务。"
 
-#: includes/class-nicepay-retention.php:236
-#: includes/class-nicepay-retention.php:277
+#: includes/class-nicepay-retention.php:251
+#: includes/class-nicepay-retention.php:292
 msgid "NicePay could not commit the retention transaction."
 msgstr "NicePay 无法提交保留事务。"
 
-#: includes/class-nicepay-retention.php:258
+#: includes/class-nicepay-retention.php:273
 msgid "NicePay could not select retention records safely."
 msgstr "NicePay 无法安全选择保留记录。"
 
-#: includes/class-nicepay-retention.php:266
+#: includes/class-nicepay-retention.php:281
 msgid "NicePay could not delete refund audit records safely."
 msgstr "NicePay 无法安全删除退款审计记录。"
 
-#: includes/class-nicepay-retention.php:268
+#: includes/class-nicepay-retention.php:283
 msgid "NicePay could not delete reconciliation audit records safely."
 msgstr "NicePay 无法安全删除对账审计记录。"
 
-#: includes/class-nicepay-retention.php:275
+#: includes/class-nicepay-retention.php:290
 msgid "NicePay retention records changed before deletion."
 msgstr "NicePay 保留记录在删除前已发生变化。"
 
@@ -1821,11 +1821,11 @@ msgstr "测试付款完成。没有收取任何实际付款。"
 msgid "Payment was declined. Please try another payment method."
 msgstr "付款被拒绝。请尝试其他付款方式。"
 
-#: includes/class-nicepay-return-handler.php:270
+#: includes/class-nicepay-return-handler.php:271
 msgid "Payment Successful"
 msgstr "支付成功"
 
-#: includes/class-nicepay-return-handler.php:271
+#: includes/class-nicepay-return-handler.php:272
 msgid "Payment Failed"
 msgstr "支付失败"
 
@@ -2004,16 +2004,16 @@ msgstr "此交易不再需要对账。"
 msgid "The transaction amount cannot be reconciled safely."
 msgstr "交易金额无法安全核对。"
 
-#: includes/nicepay-functions.php:1285
+#: includes/nicepay-functions.php:1287
 msgid "The reconciliation audit record could not be saved."
 msgstr "无法保存对账审核记录。"
 
-#: includes/nicepay-functions.php:1399
+#: includes/nicepay-functions.php:1402
 msgid "Your NicePay payment receipt"
 msgstr "您的 NicePay 付款收据"
 
 #. translators: %1$s: merchant payment reference, %2$s: formatted amount, %3$s: secure receipt URL
-#: includes/nicepay-functions.php:1402
+#: includes/nicepay-functions.php:1405
 #, php-format
 msgid ""
 "Payment reference: %1$s\n"
@@ -2024,83 +2024,83 @@ msgstr ""
 "金额：%2$s\n"
 "收据：%3$s"
 
-#: includes/nicepay-functions.php:1657
+#: includes/nicepay-functions.php:1660
 msgid "Buyer information is invalid."
 msgstr "买家信息无效。"
 
-#: includes/nicepay-functions.php:1685
+#: includes/nicepay-functions.php:1688
 msgid "Buyer information is required."
 msgstr "需要买家信息。"
 
-#: includes/nicepay-functions.php:1689
+#: includes/nicepay-functions.php:1692
 msgid "Buyer information exceeds the payment provider field limits."
 msgstr "买家信息超出支付提供商字段限制。"
 
-#: includes/nicepay-functions.php:1702
+#: includes/nicepay-functions.php:1705
 msgid "Buyer email address is invalid."
 msgstr "买家电子邮件地址无效。"
 
-#: includes/nicepay-functions.php:1704
+#: includes/nicepay-functions.php:1707
 msgid "Buyer phone number is invalid."
 msgstr "买家电话号码无效。"
 
-#: includes/nicepay-functions.php:1919
+#: includes/nicepay-functions.php:1922
 msgid "Pending"
 msgstr "待处理"
 
-#: includes/nicepay-functions.php:1920
+#: includes/nicepay-functions.php:1923
 msgid "Paid"
 msgstr "已支付"
 
-#: includes/nicepay-functions.php:1921
+#: includes/nicepay-functions.php:1924
 msgid "Failed"
 msgstr "失败"
 
-#: includes/nicepay-functions.php:1922
+#: includes/nicepay-functions.php:1925
 msgid "Cancelled"
 msgstr "已取消"
 
-#: includes/nicepay-functions.php:1924
+#: includes/nicepay-functions.php:1927
 msgid "Waiting for Deposit"
 msgstr "等待汇款"
 
-#: includes/nicepay-functions.php:1925
+#: includes/nicepay-functions.php:1928
 msgid "Approval in Progress"
 msgstr "审批正在进行中"
 
-#: includes/nicepay-functions.php:1926
+#: includes/nicepay-functions.php:1929
 msgid "Partially Refunded"
 msgstr "部分退款"
 
-#: includes/nicepay-functions.php:1927
+#: includes/nicepay-functions.php:1930
 msgid "Needs Reconciliation"
 msgstr "需要协调"
 
-#: includes/nicepay-functions.php:1928
+#: includes/nicepay-functions.php:1931
 msgid "Abandoned"
 msgstr "被遗弃"
 
-#: includes/nicepay-functions.php:1929
+#: includes/nicepay-functions.php:1932
 msgid "Expired"
 msgstr "已过期"
 
-#: includes/nicepay-functions.php:2072 includes/nicepay-functions.php:2073
+#: includes/nicepay-functions.php:2075 includes/nicepay-functions.php:2076
 msgid "Donation"
 msgstr "捐赠"
 
-#: includes/nicepay-functions.php:2074
+#: includes/nicepay-functions.php:2077
 msgid "Donate"
 msgstr "捐赠"
 
-#: includes/nicepay-functions.php:2086
+#: includes/nicepay-functions.php:2089
 msgid "Buy Now"
 msgstr "立即购买"
 
-#: includes/nicepay-functions.php:2101
+#: includes/nicepay-functions.php:2104
 msgid "Quick Payment"
 msgstr "快捷支付"
 
-#: includes/nicepay-functions.php:2102
+#: includes/nicepay-functions.php:2105
 msgid "Product Purchase"
 msgstr "产品购买"
 
@@ -2121,131 +2121,131 @@ msgstr "查看 NicePay 设置"
 msgid "Payment receipt not found."
 msgstr "未找到付款收据。"
 
-#: nicepay-payment-gateway.php:456 nicepay-payment-gateway.php:600
-msgid "Standalone NicePay payments are not enabled."
-msgstr "未启用独立 NicePay 付款。"
-
-#: nicepay-payment-gateway.php:458 nicepay-payment-gateway.php:469
-msgid "NicePay payments are temporarily unavailable."
-msgstr "NicePay 付款暂时不可用。"
-
-#: nicepay-payment-gateway.php:460
-msgid "A saved payment configuration is required."
-msgstr "需要保存的付款配置。"
-
-#: nicepay-payment-gateway.php:464
-msgid "NicePay payments require a secure HTTPS page."
-msgstr "NicePay 付款需要安全的 HTTPS 页面。"
-
-#: nicepay-payment-gateway.php:481
+#: nicepay-payment-gateway.php:463
 msgid "This saved payment configuration is not ready for use."
 msgstr "此已保存的付款配置尚未可供使用。"
 
-#: nicepay-payment-gateway.php:557 templates/payment-form.php:25
+#: nicepay-payment-gateway.php:474 nicepay-payment-gateway.php:614
+msgid "Standalone NicePay payments are not enabled."
+msgstr "未启用独立 NicePay 付款。"
+
+#: nicepay-payment-gateway.php:476 nicepay-payment-gateway.php:487
+msgid "NicePay payments are temporarily unavailable."
+msgstr "NicePay 付款暂时不可用。"
+
+#: nicepay-payment-gateway.php:478
+msgid "A saved payment configuration is required."
+msgstr "需要保存的付款配置。"
+
+#: nicepay-payment-gateway.php:482
+msgid "NicePay payments require a secure HTTPS page."
+msgstr "NicePay 付款需要安全的 HTTPS 页面。"
+
+#: nicepay-payment-gateway.php:562 templates/payment-form.php:25
 msgid "Processing payment..."
 msgstr "正在处理支付..."
 
-#: nicepay-payment-gateway.php:558
+#: nicepay-payment-gateway.php:563
 msgid "Payment error occurred. Please try again."
 msgstr "支付出错，请重试。"
 
-#: nicepay-payment-gateway.php:559
+#: nicepay-payment-gateway.php:564
 msgid "Please select a payment method."
 msgstr "请选择支付方式。"
 
-#: nicepay-payment-gateway.php:560
+#: nicepay-payment-gateway.php:565
 msgid "This field is required."
 msgstr "此字段为必填字段。"
 
-#: nicepay-payment-gateway.php:561
+#: nicepay-payment-gateway.php:566
 msgid "Please enter a valid email address."
 msgstr "请输入有效的电子邮件地址。"
 
-#: nicepay-payment-gateway.php:562
+#: nicepay-payment-gateway.php:567
 msgid "Please enter a valid phone number."
 msgstr "请输入有效的电话号码。"
 
-#: nicepay-payment-gateway.php:563
+#: nicepay-payment-gateway.php:568
 msgid "This field exceeds the payment provider limit."
 msgstr "该字段超出了支付提供商的限制。"
 
-#: nicepay-payment-gateway.php:564
+#: nicepay-payment-gateway.php:569
 msgid "Payment session expired. Please refresh the page and try again."
 msgstr "付款会话已过期。请刷新页面并重试。"
 
-#: nicepay-payment-gateway.php:565
+#: nicepay-payment-gateway.php:570
 msgid "Connection error. Please check your internet."
 msgstr "连接错误。请检查您的互联网。"
 
-#: nicepay-payment-gateway.php:566
+#: nicepay-payment-gateway.php:571
 msgid "Payment system is currently unavailable. Please try again later."
 msgstr "支付系统暂不可用，请稍后再试。"
 
-#: nicepay-payment-gateway.php:567 nicepay-payment-gateway.php:644
-#: nicepay-payment-gateway.php:669
+#: nicepay-payment-gateway.php:572 nicepay-payment-gateway.php:661
+#: nicepay-payment-gateway.php:686
 msgid "Payment initialization failed."
 msgstr "支付初始化失败。"
 
-#: nicepay-payment-gateway.php:568
+#: nicepay-payment-gateway.php:573
 msgid "An unexpected error occurred."
 msgstr "发生意外错误。"
 
-#: nicepay-payment-gateway.php:569
+#: nicepay-payment-gateway.php:574
 msgid "Another payment is already in progress."
 msgstr "另一项付款已经在进行中。"
 
-#: nicepay-payment-gateway.php:570
+#: nicepay-payment-gateway.php:575
 msgid ""
 "The payment window did not respond. Close it if necessary and try again."
 msgstr "付款窗口没有任何反应。如有必要，请将其关闭，然后重试。"
 
-#: nicepay-payment-gateway.php:571
+#: nicepay-payment-gateway.php:576
 msgid "Too many payment attempts were made. Please wait and try again."
 msgstr "付款尝试次数过多。请等待并重试。"
 
-#: nicepay-payment-gateway.php:602 nicepay-payment-gateway.php:695
+#: nicepay-payment-gateway.php:616 nicepay-payment-gateway.php:712
 msgid "Payment service is temporarily unavailable."
 msgstr "暂时无法提供付款服务。"
 
-#: nicepay-payment-gateway.php:604
+#: nicepay-payment-gateway.php:618
 msgid "NicePay payments require HTTPS."
 msgstr "NicePay 付款需要 HTTPS。"
 
-#: nicepay-payment-gateway.php:606
+#: nicepay-payment-gateway.php:620
 msgid "Invalid request."
 msgstr "无效请求。"
 
-#: nicepay-payment-gateway.php:608
+#: nicepay-payment-gateway.php:622
 msgid "Too many payment attempts. Please wait and try again."
 msgstr "付款尝试次数过多。请等待并重试。"
 
-#: nicepay-payment-gateway.php:700
+#: nicepay-payment-gateway.php:717
 msgid "Too many requests. Please wait and try again."
 msgstr "请求太多。请等待并重试。"
 
-#: nicepay-payment-gateway.php:749
+#: nicepay-payment-gateway.php:771
 msgid "Shortcode name is required."
 msgstr "需要短代码名称。"
 
-#: nicepay-payment-gateway.php:751 nicepay-payment-gateway.php:857
+#: nicepay-payment-gateway.php:773 nicepay-payment-gateway.php:887
 msgid "Payment configuration ID is invalid."
 msgstr "付款配置 ID 无效。"
 
-#: nicepay-payment-gateway.php:764
+#: nicepay-payment-gateway.php:794
 msgid ""
 "Payment configuration contains an invalid amount, product, method, display "
 "mode, or language."
 msgstr "付款配置包含无效的金额、产品、方法、显示模式或语言。"
 
-#: nicepay-payment-gateway.php:817
+#: nicepay-payment-gateway.php:847
 msgid "Shortcode updated!"
 msgstr "简码已更新！"
 
-#: nicepay-payment-gateway.php:819
+#: nicepay-payment-gateway.php:849
 msgid "Shortcode not found."
 msgstr "未找到简码。"
 
-#: nicepay-payment-gateway.php:834
+#: nicepay-payment-gateway.php:864
 msgid "Shortcode saved!"
 msgstr "简码已保存！"
 
@@ -2267,37 +2267,37 @@ msgstr "选择支付方式"
 msgid "Proceed to Payment"
 msgstr "继续支付"
 
-#: templates/payment-result.php:60
-msgid "Deposit Information"
-msgstr "汇款信息"
-
-#: templates/payment-result.php:63
-msgid "Bank"
-msgstr "银行"
-
-#: templates/payment-result.php:67
-msgid "Account"
-msgstr "账号"
-
-#: templates/payment-result.php:75
-msgid "Deadline"
-msgstr "截止日期"
-
-#: templates/payment-result.php:88
-msgid "Payment Reference"
-msgstr "付款参考"
-
-#: templates/payment-result.php:106
+#: templates/payment-result.php:70
 msgid "Open Saved Receipt"
 msgstr "打开保存的收据"
 
-#: templates/payment-result.php:111
+#: templates/payment-result.php:75
 msgid "Print Receipt"
 msgstr "打印收据"
 
-#: templates/payment-result.php:115
+#: templates/payment-result.php:79
 msgid "Return to Home"
 msgstr "返回首页"
+
+#: templates/payment-result.php:92
+msgid "Deposit Information"
+msgstr "汇款信息"
+
+#: templates/payment-result.php:95
+msgid "Bank"
+msgstr "银行"
+
+#: templates/payment-result.php:99
+msgid "Account"
+msgstr "账号"
+
+#: templates/payment-result.php:107
+msgid "Deadline"
+msgstr "截止日期"
+
+#: templates/payment-result.php:125
+msgid "Payment Reference"
+msgstr "付款参考"
 
 #: templates/standalone-payment-form.php:43
 msgid "Invalid payment amount."

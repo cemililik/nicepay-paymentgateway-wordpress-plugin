@@ -15,6 +15,90 @@ if ( ! defined( 'ABSPATH' ) ) {
 require_once __DIR__ . '/class-nicepay-transaction-schema.php';
 
 /**
+ * Database inspection and sensitive-data cleanup used by the installer.
+ *
+ * Kept separate from the schema orchestrator so installation flow and low-level
+ * database operations can evolve independently.
+ */
+final class NicePay_Installer_Database {
+
+	/** @return bool */
+	public static function table_exists( $wpdb, $table ) {
+		if ( ! method_exists( $wpdb, 'prepare' ) || ! method_exists( $wpdb, 'get_var' ) ) {
+			return false;
+		}
+
+		$query = $wpdb->prepare( 'SHOW TABLES LIKE %s', $table );
+		return $table === $wpdb->get_var( $query );
+	}
+
+	/** @return bool */
+	public static function column_exists( $wpdb, $table, $column ) {
+		if ( ! preg_match( NicePay_Transaction_Schema::IDENTIFIER_PATTERN, $table ) ||
+			! preg_match( NicePay_Transaction_Schema::IDENTIFIER_PATTERN, $column ) ||
+			! method_exists( $wpdb, 'prepare' ) || ! method_exists( $wpdb, 'get_var' ) ) {
+			return false;
+		}
+
+		$query = $wpdb->prepare( "SHOW COLUMNS FROM {$table} LIKE %s", $column );
+		return $column === $wpdb->get_var( $query );
+	}
+
+	/** @return true|WP_Error */
+	public static function scrub_legacy_sensitive_data( $wpdb, $table ) {
+		$result = true;
+		if ( ! method_exists( $wpdb, 'query' ) ) {
+			$result = new WP_Error( 'nicepay_schema_missing_query', __( 'NicePay schema migration requires database write access.', 'nicepay-payment-gateway' ) );
+		} else {
+			$queries = array();
+			if ( self::column_exists( $wpdb, $table, 'card_no' ) ) {
+				$queries[] = "UPDATE {$table} SET card_no = '' WHERE card_no <> ''";
+			}
+			if ( self::column_exists( $wpdb, $table, 'auth_token' ) && self::column_exists( $wpdb, $table, 'status' ) ) {
+				$queries[] = "UPDATE {$table} SET auth_token = '' WHERE auth_token <> '' AND status NOT IN ('pending', 'approving', 'needs_reconciliation')";
+			}
+			foreach ( $queries as $query ) {
+				$changed = $wpdb->query( $query );
+				if ( false === $changed || ! empty( $wpdb->last_error ) ) {
+					$result = new WP_Error(
+						'nicepay_schema_sensitive_data_cleanup_failed',
+						__( 'NicePay could not safely clean legacy sensitive transaction data.', 'nicepay-payment-gateway' ),
+						array( 'database_error' => $wpdb->last_error )
+					);
+					break;
+				}
+			}
+		}
+		return $result;
+	}
+
+	/** @return int|WP_Error */
+	public static function scrub_legacy_payment_payloads( $wpdb, $table, $confirmed ) {
+		$result = new WP_Error( 'nicepay_schema_scrub_confirmation_required', __( 'Explicit confirmation is required before legacy payment payloads are removed.', 'nicepay-payment-gateway' ) );
+		if ( true === $confirmed ) {
+			if ( ! self::table_exists( $wpdb, $table ) || ! self::column_exists( $wpdb, $table, 'payment_data' ) ) {
+				$result = new WP_Error( 'nicepay_schema_scrub_unavailable', __( 'The NicePay legacy payment payload column is unavailable.', 'nicepay-payment-gateway' ) );
+			} else {
+				$changed = $wpdb->query(
+					"UPDATE {$table} SET payment_data = NULL
+					 WHERE payment_data IS NOT NULL AND payment_data <> ''
+					   AND (payment_data LIKE '%\"CardNo\"%'
+					     OR payment_data LIKE '%\"AuthToken\"%'
+					     OR payment_data LIKE '%\"Signature\"%'
+					     OR payment_data LIKE '%\"BuyerEmail\"%'
+					     OR payment_data LIKE '%\"BuyerTel\"%'
+					     OR payment_data LIKE '%\"VbankNum\"%')"
+				);
+				$result = false === $changed || ! empty( $wpdb->last_error )
+					? new WP_Error( 'nicepay_schema_sensitive_data_cleanup_failed', __( 'NicePay could not clean legacy payment payloads.', 'nicepay-payment-gateway' ) )
+					: (int) $changed;
+			}
+		}
+		return $result;
+	}
+}
+
+/**
  * Installs and upgrades the NicePay transactions table without deleting data.
  */
 final class NicePay_Installer {
@@ -53,9 +137,9 @@ final class NicePay_Installer {
 			return false;
 		}
 
-		return self::table_exists( $wpdb, self::table_name( $wpdb ) )
-			&& self::table_exists( $wpdb, self::refund_table_name( $wpdb ) )
-			&& self::table_exists( $wpdb, self::reconciliation_audit_table_name( $wpdb ) );
+		return NicePay_Installer_Database::table_exists( $wpdb, self::table_name( $wpdb ) )
+			&& NicePay_Installer_Database::table_exists( $wpdb, self::refund_table_name( $wpdb ) )
+			&& NicePay_Installer_Database::table_exists( $wpdb, self::reconciliation_audit_table_name( $wpdb ) );
 	}
 
 	/**
@@ -166,9 +250,9 @@ final class NicePay_Installer {
 			'refund_table'        => self::refund_table_name( $wpdb ),
 			'audit_table'         => self::reconciliation_audit_table_name( $wpdb ),
 		);
-		$context['table_exists']        = self::table_exists( $wpdb, $context['table'] );
-		$context['refund_table_exists'] = self::table_exists( $wpdb, $context['refund_table'] );
-		$context['audit_table_exists']  = self::table_exists( $wpdb, $context['audit_table'] );
+		$context['table_exists']        = NicePay_Installer_Database::table_exists( $wpdb, $context['table'] );
+		$context['refund_table_exists'] = NicePay_Installer_Database::table_exists( $wpdb, $context['refund_table'] );
+		$context['audit_table_exists']  = NicePay_Installer_Database::table_exists( $wpdb, $context['audit_table'] );
 
 		if ( $current === $target &&
 			(string) get_option( self::VERIFIED_VERSION_OPTION, '' ) === $target &&
@@ -226,7 +310,7 @@ final class NicePay_Installer {
 					__( 'NicePay cannot add the unique TID index until duplicate transaction IDs are reviewed.', 'nicepay-payment-gateway' ),
 					array( 'table' => $table, 'duplicate_groups' => $duplicate_tids )
 				);
-			} elseif ( self::column_exists( $wpdb, $table, 'tid' ) ) {
+			} elseif ( NicePay_Installer_Database::column_exists( $wpdb, $table, 'tid' ) ) {
 				$result = self::normalize_legacy_tid( $wpdb, $table );
 			}
 		}
@@ -286,17 +370,18 @@ final class NicePay_Installer {
 
 	/** @return true|WP_Error */
 	private static function finalize_install( $wpdb, array $context ) {
-		$tables_exist = self::table_exists( $wpdb, $context['table'] ) &&
-			self::table_exists( $wpdb, $context['refund_table'] ) &&
-			self::table_exists( $wpdb, $context['audit_table'] );
+		$tables_exist = NicePay_Installer_Database::table_exists( $wpdb, $context['table'] ) &&
+			NicePay_Installer_Database::table_exists( $wpdb, $context['refund_table'] ) &&
+			NicePay_Installer_Database::table_exists( $wpdb, $context['audit_table'] );
 		$result = $tables_exist
 			? self::verify_schema( $wpdb, $context['table'], $context['refund_table'], $context['audit_table'] )
 			: new WP_Error( 'nicepay_schema_table_missing', __( 'NicePay transaction schema upgrade did not create all required tables.', 'nicepay-payment-gateway' ) );
 
-		foreach ( array( 'backfill_legacy_rows', 'scrub_legacy_sensitive_data' ) as $operation ) {
-			if ( ! is_wp_error( $result ) ) {
-				$result = self::{$operation}( $wpdb, $context['table'] );
-			}
+		if ( ! is_wp_error( $result ) ) {
+			$result = self::backfill_legacy_rows( $wpdb, $context['table'] );
+		}
+		if ( ! is_wp_error( $result ) ) {
+			$result = NicePay_Installer_Database::scrub_legacy_sensitive_data( $wpdb, $context['table'] );
 		}
 
 		if ( ! is_wp_error( $result ) && $context['current'] !== $context['target'] &&
@@ -415,78 +500,6 @@ final class NicePay_Installer {
 	}
 
 	/**
-	 * Determine whether the table already exists.
-	 *
-	 * @param object $wpdb WordPress database object.
-	 * @param string $table Fully-prefixed table name.
-	 * @return bool
-	 */
-	private static function table_exists( $wpdb, $table ) {
-		if ( ! method_exists( $wpdb, 'prepare' ) || ! method_exists( $wpdb, 'get_var' ) ) {
-			return false;
-		}
-
-		$query = $wpdb->prepare( 'SHOW TABLES LIKE %s', $table );
-		return $table === $wpdb->get_var( $query );
-	}
-
-	/**
-	 * Determine whether an existing transaction table contains a column.
-	 *
-	 * @param object $wpdb   WordPress database object.
-	 * @param string $table  Fully-prefixed table name.
-	 * @param string $column Column name.
-	 * @return bool
-	 */
-	private static function column_exists( $wpdb, $table, $column ) {
-		if ( ! preg_match( NicePay_Transaction_Schema::IDENTIFIER_PATTERN, $table ) ||
-			! preg_match( NicePay_Transaction_Schema::IDENTIFIER_PATTERN, $column ) ||
-			! method_exists( $wpdb, 'prepare' ) || ! method_exists( $wpdb, 'get_var' ) ) {
-			return false;
-		}
-
-		$query = $wpdb->prepare( "SHOW COLUMNS FROM {$table} LIKE %s", $column );
-		return $column === $wpdb->get_var( $query );
-	}
-
-	/**
-	 * Remove legacy secrets/PAN-bearing response blobs before upgrading indexes.
-	 *
-	 * Financial identity, amount and result fields remain intact. Only empty TID
-	 * sentinels and fields that the old plugin populated with sensitive response
-	 * material are normalized.
-	 *
-	 * @param object $wpdb  WordPress database object.
-	 * @param string $table Fully-prefixed table name.
-	 * @return true|WP_Error
-	 */
-	private static function scrub_legacy_sensitive_data( $wpdb, $table ) {
-		if ( ! method_exists( $wpdb, 'query' ) ) {
-			return new WP_Error( 'nicepay_schema_missing_query', __( 'NicePay schema migration requires database write access.', 'nicepay-payment-gateway' ) );
-		}
-
-		$queries = array();
-		if ( self::column_exists( $wpdb, $table, 'card_no' ) ) {
-			$queries[] = "UPDATE {$table} SET card_no = '' WHERE card_no <> ''";
-		}
-		if ( self::column_exists( $wpdb, $table, 'auth_token' ) && self::column_exists( $wpdb, $table, 'status' ) ) {
-			$queries[] = "UPDATE {$table} SET auth_token = '' WHERE auth_token <> '' AND status NOT IN ('pending', 'approving', 'needs_reconciliation')";
-		}
-		foreach ( $queries as $query ) {
-			$result = $wpdb->query( $query );
-			if ( false === $result || ! empty( $wpdb->last_error ) ) {
-				return new WP_Error(
-					'nicepay_schema_sensitive_data_cleanup_failed',
-					__( 'NicePay could not safely clean legacy sensitive transaction data.', 'nicepay-payment-gateway' ),
-					array( 'database_error' => $wpdb->last_error )
-				);
-			}
-		}
-
-		return true;
-	}
-
-	/**
 	 * Irreversibly remove legacy response payloads after explicit confirmation.
 	 *
 	 * @param object $wpdb      WordPress database object.
@@ -494,26 +507,7 @@ final class NicePay_Installer {
 	 * @return int|WP_Error Number of scrubbed rows.
 	 */
 	public static function scrub_legacy_payment_payloads( $wpdb, $confirmed = false ) {
-		if ( true !== $confirmed ) {
-			return new WP_Error( 'nicepay_schema_scrub_confirmation_required', __( 'Explicit confirmation is required before legacy payment payloads are removed.', 'nicepay-payment-gateway' ) );
-		}
 		$table = self::table_name( $wpdb );
-		if ( ! self::table_exists( $wpdb, $table ) || ! self::column_exists( $wpdb, $table, 'payment_data' ) ) {
-			return new WP_Error( 'nicepay_schema_scrub_unavailable', __( 'The NicePay legacy payment payload column is unavailable.', 'nicepay-payment-gateway' ) );
-		}
-		$result = $wpdb->query(
-			"UPDATE {$table} SET payment_data = NULL
-			 WHERE payment_data IS NOT NULL AND payment_data <> ''
-			   AND (payment_data LIKE '%\"CardNo\"%'
-			     OR payment_data LIKE '%\"AuthToken\"%'
-			     OR payment_data LIKE '%\"Signature\"%'
-			     OR payment_data LIKE '%\"BuyerEmail\"%'
-			     OR payment_data LIKE '%\"BuyerTel\"%'
-			     OR payment_data LIKE '%\"VbankNum\"%')"
-		);
-		if ( false === $result || ! empty( $wpdb->last_error ) ) {
-			return new WP_Error( 'nicepay_schema_sensitive_data_cleanup_failed', __( 'NicePay could not clean legacy payment payloads.', 'nicepay-payment-gateway' ) );
-		}
-		return (int) $result;
+		return NicePay_Installer_Database::scrub_legacy_payment_payloads( $wpdb, $table, $confirmed );
 	}
 }

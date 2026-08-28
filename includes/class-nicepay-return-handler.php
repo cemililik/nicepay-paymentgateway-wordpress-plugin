@@ -263,6 +263,7 @@ class NicePay_Return_Handler {
      * Render result page
      */
     private function render_result_page( $success, $message, $data = array() ) {
+		$message = (string) $message;
         if ( function_exists( 'status_header' ) ) {
             status_header( $success ? 200 : 400 );
         }
@@ -271,7 +272,8 @@ class NicePay_Return_Handler {
             : __( 'Payment Failed', 'nicepay-payment-gateway' );
 
         $is_vbank = ! empty( $data['VbankBankName'] ) || ! empty( $data['VbankNum'] );
-        include NICEPAY_PLUGIN_DIR . 'templates/payment-result.php';
+		include_once NICEPAY_PLUGIN_DIR . 'templates/payment-result.php';
+		nicepay_render_payment_result_template( $success, $message, $page_title, $is_vbank, $data );
     }
 
 }

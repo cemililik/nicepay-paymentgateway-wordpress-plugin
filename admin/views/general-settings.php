@@ -136,19 +136,19 @@ defined( 'ABSPATH' ) || exit;
                         </fieldset>
                     </td>
                 </tr>
-				<tr>
-					<th scope="row"><?php esc_html_e( 'Plugin uninstall', 'nicepay-payment-gateway' ); ?></th>
-					<td>
-						<input type="hidden" name="nicepay_delete_data_on_uninstall" value="no">
-						<label>
-							<input type="checkbox" name="nicepay_delete_data_on_uninstall" value="yes" <?php checked( get_option( 'nicepay_delete_data_on_uninstall', 'no' ), 'yes' ); ?>>
-							<strong><?php esc_html_e( 'Permanently delete NicePay tables and settings when the plugin is uninstalled.', 'nicepay-payment-gateway' ); ?></strong>
-						</label>
-						<div class="notice notice-error inline">
-							<p><?php esc_html_e( 'Leave this disabled unless you have exported the ledger and verified a recoverable backup. Uninstall deletion cannot be undone and can remove records needed for refunds, reconciliation, accounting or legal retention.', 'nicepay-payment-gateway' ); ?></p>
-						</div>
-					</td>
-				</tr>
+                <tr>
+                    <th scope="row"><?php esc_html_e( 'Plugin uninstall', 'nicepay-payment-gateway' ); ?></th>
+                    <td>
+                        <input type="hidden" name="nicepay_delete_data_on_uninstall" value="no">
+                        <label>
+                            <input type="checkbox" name="nicepay_delete_data_on_uninstall" value="yes" <?php checked( get_option( 'nicepay_delete_data_on_uninstall', 'no' ), 'yes' ); ?>>
+                            <strong><?php esc_html_e( 'Permanently delete NicePay tables and settings when the plugin is uninstalled.', 'nicepay-payment-gateway' ); ?></strong>
+                        </label>
+                        <div class="notice notice-error inline">
+                            <p><?php esc_html_e( 'Leave this disabled unless you have exported the ledger and verified a recoverable backup. Uninstall deletion cannot be undone and can remove records needed for refunds, reconciliation, accounting or legal retention.', 'nicepay-payment-gateway' ); ?></p>
+                        </div>
+                    </td>
+                </tr>
             </table>
             <?php submit_button(); ?>
-	        </form>
+            </form>

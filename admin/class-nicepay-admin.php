@@ -78,29 +78,29 @@ class NicePay_Admin_Core {
             'i18n'    => array(
                 'confirm'               => __( 'Confirm', 'nicepay-payment-gateway' ),
                 'cancel'                => __( 'Cancel', 'nicepay-payment-gateway' ),
-				'refundTitle'           => __( 'Refund payment', 'nicepay-payment-gateway' ),
-				/* translators: %s: formatted refundable amount */
-				'refundMessage'         => __( 'Refund %s? The provider action cannot be undone.', 'nicepay-payment-gateway' ),
-				'refundReasonLabel'     => __( 'Refund reason', 'nicepay-payment-gateway' ),
-				'refundReasonPlaceholder' => __( 'Enter the refund reason...', 'nicepay-payment-gateway' ),
-				'refundReasonRequired'  => __( 'A refund reason is required.', 'nicepay-payment-gateway' ),
-				'refundConfirm'         => __( 'Refund payment', 'nicepay-payment-gateway' ),
-				'refundFailed'          => __( 'Refund failed.', 'nicepay-payment-gateway' ),
+                'refundTitle'           => __( 'Refund payment', 'nicepay-payment-gateway' ),
+                /* translators: %s: formatted refundable amount */
+                'refundMessage'         => __( 'Refund %s? The provider action cannot be undone.', 'nicepay-payment-gateway' ),
+                'refundReasonLabel'     => __( 'Refund reason', 'nicepay-payment-gateway' ),
+                'refundReasonPlaceholder' => __( 'Enter the refund reason...', 'nicepay-payment-gateway' ),
+                'refundReasonRequired'  => __( 'A refund reason is required.', 'nicepay-payment-gateway' ),
+                'refundConfirm'         => __( 'Refund payment', 'nicepay-payment-gateway' ),
+                'refundFailed'          => __( 'Refund failed.', 'nicepay-payment-gateway' ),
                 'requestFailed'         => __( 'Request failed. Please try again.', 'nicepay-payment-gateway' ),
                 'copied'                => __( 'Copied to clipboard!', 'nicepay-payment-gateway' ),
-				'copyFailed'            => __( 'Copy failed.', 'nicepay-payment-gateway' ),
-				'statusRefunded'        => __( 'Refunded', 'nicepay-payment-gateway' ),
-				'reconcileReversedTitle'=> __( 'Confirm provider reversal', 'nicepay-payment-gateway' ),
-				'reconcileCapturedTitle'=> __( 'Confirm captured funds', 'nicepay-payment-gateway' ),
-				/* translators: %s: formatted transaction amount */
-				'reconcileReversedMessage' => __( 'Record that NICEPAY confirms reversal of %s. Verify the merchant console before continuing.', 'nicepay-payment-gateway' ),
-				/* translators: %s: formatted transaction amount */
-				'reconcileCapturedMessage' => __( 'Record that NICEPAY confirms capture of %s. Verify the merchant console before continuing.', 'nicepay-payment-gateway' ),
-				'reconcileReasonLabel'  => __( 'Evidence and reason', 'nicepay-payment-gateway' ),
-				'reconcileReasonPlaceholder' => __( 'Enter the console reference and verification details...', 'nicepay-payment-gateway' ),
-				'reconcileReasonRequired' => __( 'Reconciliation evidence and a reason are required.', 'nicepay-payment-gateway' ),
-				'reconcileConfirm'      => __( 'Record decision', 'nicepay-payment-gateway' ),
-				'reconcileFailed'       => __( 'Reconciliation decision could not be recorded.', 'nicepay-payment-gateway' ),
+                'copyFailed'            => __( 'Copy failed.', 'nicepay-payment-gateway' ),
+                'statusRefunded'        => __( 'Refunded', 'nicepay-payment-gateway' ),
+                'reconcileReversedTitle'=> __( 'Confirm provider reversal', 'nicepay-payment-gateway' ),
+                'reconcileCapturedTitle'=> __( 'Confirm captured funds', 'nicepay-payment-gateway' ),
+                /* translators: %s: formatted transaction amount */
+                'reconcileReversedMessage' => __( 'Record that NICEPAY confirms reversal of %s. Verify the merchant console before continuing.', 'nicepay-payment-gateway' ),
+                /* translators: %s: formatted transaction amount */
+                'reconcileCapturedMessage' => __( 'Record that NICEPAY confirms capture of %s. Verify the merchant console before continuing.', 'nicepay-payment-gateway' ),
+                'reconcileReasonLabel'  => __( 'Evidence and reason', 'nicepay-payment-gateway' ),
+                'reconcileReasonPlaceholder' => __( 'Enter the console reference and verification details...', 'nicepay-payment-gateway' ),
+                'reconcileReasonRequired' => __( 'Reconciliation evidence and a reason are required.', 'nicepay-payment-gateway' ),
+                'reconcileConfirm'      => __( 'Record decision', 'nicepay-payment-gateway' ),
+                'reconcileFailed'       => __( 'Reconciliation decision could not be recorded.', 'nicepay-payment-gateway' ),
                 'shortcodeDeleted'      => __( 'Shortcode deleted.', 'nicepay-payment-gateway' ),
                 'deleteConfirmTitle'    => __( 'Delete Shortcode', 'nicepay-payment-gateway' ),
                 'deleteConfirmMsg'      => __( 'Are you sure? This cannot be undone.', 'nicepay-payment-gateway' ),
@@ -132,11 +132,11 @@ class NicePay_Admin_Core {
             'sanitize_callback' => array( 'NicePay_Retention', 'sanitize_settings' ),
             'default'           => NicePay_Retention::default_settings(),
         ) );
-		register_setting( 'nicepay_general', 'nicepay_delete_data_on_uninstall', array(
-			'type'              => 'string',
-			'sanitize_callback' => array( $this, 'sanitize_checkbox' ),
-			'default'           => 'no',
-		) );
+        register_setting( 'nicepay_general', 'nicepay_delete_data_on_uninstall', array(
+            'type'              => 'string',
+            'sanitize_callback' => array( $this, 'sanitize_checkbox' ),
+            'default'           => 'no',
+        ) );
 
         // API settings
         register_setting( 'nicepay_api', 'nicepay_test_mid', array(
@@ -196,10 +196,10 @@ class NicePay_Admin_Core {
     }
 
     public function sanitize_live_merchant_key( $value ) {
-		if ( defined( 'NICEPAY_LIVE_MERCHANT_KEY' ) ) {
-			// Never copy a wp-config.php secret into the options table.
-			return '';
-		}
+        if ( defined( 'NICEPAY_LIVE_MERCHANT_KEY' ) ) {
+            // Never copy a wp-config.php secret into the options table.
+            return '';
+        }
         return $this->sanitize_merchant_key( $value, 'nicepay_live_merchant_key', '', 'nicepay_clear_live_merchant_key' );
     }
 
@@ -236,15 +236,15 @@ class NicePay_Admin_Core {
         return max( 1, min( 30, absint( $value ) ) );
     }
 
-	/** Preserve the public support-report API on the admin facade. */
-	public static function get_system_report_data() {
-		return NicePay_System_Report::get_system_report_data();
-	}
+    /** Preserve the public support-report API on the admin facade. */
+    public static function get_system_report_data() {
+        return NicePay_System_Report::get_system_report_data();
+    }
 
-	/** Preserve the public support-report formatter on the admin facade. */
-	public static function format_system_report( $report ) {
-		return NicePay_System_Report::format_system_report( $report );
-	}
+    /** Preserve the public support-report formatter on the admin facade. */
+    public static function format_system_report( $report ) {
+        return NicePay_System_Report::format_system_report( $report );
+    }
 }
 
 /** Builds the privacy-safe operational support report. */
@@ -256,25 +256,25 @@ class NicePay_System_Report {
      * @return array<string,string>
      */
     public static function get_system_report_data() {
-		$wordpress_version = self::wordpress_version();
+        $wordpress_version = self::wordpress_version();
         $woocommerce_version = defined( 'WC_VERSION' ) ? WC_VERSION : 'not_available';
-		$mode = self::report_mode();
-		$gateway_enabled = self::is_gateway_enabled();
+        $mode = self::report_mode();
+        $gateway_enabled = self::is_gateway_enabled();
         $methods          = nicepay_get_enabled_methods();
         $methods          = array_values( array_intersect( array_keys( NicePay_API::get_available_methods() ), $methods ) );
         sort( $methods, SORT_STRING );
 
-		$https_status = is_ssl() ? 'yes' : 'no';
-		$cron_status  = wp_next_scheduled( 'nicepay_expire_pending_transactions' ) ? 'scheduled' : 'missing';
+        $https_status = is_ssl() ? 'yes' : 'no';
+        $cron_status  = wp_next_scheduled( 'nicepay_expire_pending_transactions' ) ? 'scheduled' : 'missing';
         $permalink_option = get_option( 'permalink_structure', '' );
         $permalink_status = is_scalar( $permalink_option ) && '' !== (string) $permalink_option ? 'pretty' : 'plain';
 
-		$blocks_status = self::blocks_status();
-		$hpos_status   = self::hpos_status();
-		$currency      = self::report_currency();
+        $blocks_status = self::blocks_status();
+        $hpos_status   = self::hpos_status();
+        $currency      = self::report_currency();
         $retention = NicePay_Retention::get_settings();
-		$retention_status = self::retention_status( $retention );
-		$retention_cron   = self::retention_cron_status( $retention );
+        $retention_status = self::retention_status( $retention );
+        $retention_cron   = self::retention_cron_status( $retention );
 
         $report = array(
             'nicepay_plugin_version'    => self::sanitize_version_value( defined( 'NICEPAY_VERSION' ) ? NICEPAY_VERSION : 'unknown' ),
@@ -302,76 +302,76 @@ class NicePay_System_Report {
             $report[ $key ] = self::sanitize_report_value( $value );
         }
 
-		return $report;
+        return $report;
     }
 
-	/** @return string */
-	private static function wordpress_version() {
-		global $wp_version;
-		$version = isset( $wp_version ) ? $wp_version : 'unknown';
-		return function_exists( 'get_bloginfo' ) ? get_bloginfo( 'version' ) : $version;
-	}
+    /** @return string */
+    private static function wordpress_version() {
+        global $wp_version;
+        $version = isset( $wp_version ) ? $wp_version : 'unknown';
+        return function_exists( 'get_bloginfo' ) ? get_bloginfo( 'version' ) : $version;
+    }
 
-	/** @return string */
-	private static function report_mode() {
-		$stored = get_option( 'nicepay_mode', '' );
-		$mode   = is_scalar( $stored ) ? strtolower( (string) $stored ) : 'invalid';
-		return in_array( $mode, array( 'test', 'live' ), true ) ? $mode : 'invalid';
-	}
+    /** @return string */
+    private static function report_mode() {
+        $stored = get_option( 'nicepay_mode', '' );
+        $mode   = is_scalar( $stored ) ? strtolower( (string) $stored ) : 'invalid';
+        return in_array( $mode, array( 'test', 'live' ), true ) ? $mode : 'invalid';
+    }
 
-	/** @return bool */
-	public static function is_gateway_enabled() {
-		$settings = get_option( 'woocommerce_nicepay_settings', array() );
-		return is_array( $settings ) && isset( $settings['enabled'] ) && 'yes' === $settings['enabled'];
-	}
+    /** @return bool */
+    public static function is_gateway_enabled() {
+        $settings = get_option( 'woocommerce_nicepay_settings', array() );
+        return is_array( $settings ) && isset( $settings['enabled'] ) && 'yes' === $settings['enabled'];
+    }
 
-	/** @return string */
-	private static function blocks_status() {
-		$status = 'not_available';
-		if ( class_exists( 'Automattic\\WooCommerce\\Blocks\\Payments\\Integrations\\AbstractPaymentMethodType' ) ) {
-			if ( class_exists( 'NicePay_Blocks_Integration', false ) ) {
-				$status = 'adapter_loaded';
-			} elseif ( function_exists( 'did_action' ) && 0 < did_action( 'woocommerce_blocks_loaded' ) ) {
-				$status = 'adapter_not_loaded';
-			} else {
-				$status = 'awaiting_load';
-			}
-		}
-		return $status;
-	}
+    /** @return string */
+    private static function blocks_status() {
+        $status = 'not_available';
+        if ( class_exists( 'Automattic\\WooCommerce\\Blocks\\Payments\\Integrations\\AbstractPaymentMethodType' ) ) {
+            if ( class_exists( 'NicePay_Blocks_Integration', false ) ) {
+                $status = 'adapter_loaded';
+            } elseif ( function_exists( 'did_action' ) && 0 < did_action( 'woocommerce_blocks_loaded' ) ) {
+                $status = 'adapter_not_loaded';
+            } else {
+                $status = 'awaiting_load';
+            }
+        }
+        return $status;
+    }
 
-	/** @return string */
-	private static function hpos_status() {
-		$order_util = 'Automattic\\WooCommerce\\Utilities\\OrderUtil';
-		$status     = 'not_available';
-		if ( class_exists( $order_util ) && is_callable( array( $order_util, 'custom_orders_table_usage_is_enabled' ) ) ) {
-			try {
-				$status = call_user_func( array( $order_util, 'custom_orders_table_usage_is_enabled' ) ) ? 'enabled' : 'disabled';
-			} catch ( Throwable $error ) {
-				$status = 'unknown';
-			}
-		}
-		return $status;
-	}
+    /** @return string */
+    private static function hpos_status() {
+        $order_util = 'Automattic\\WooCommerce\\Utilities\\OrderUtil';
+        $status     = 'not_available';
+        if ( class_exists( $order_util ) && is_callable( array( $order_util, 'custom_orders_table_usage_is_enabled' ) ) ) {
+            try {
+                $status = call_user_func( array( $order_util, 'custom_orders_table_usage_is_enabled' ) ) ? 'enabled' : 'disabled';
+            } catch ( Throwable $error ) {
+                $status = 'unknown';
+            }
+        }
+        return $status;
+    }
 
-	/** @return string */
-	private static function report_currency() {
-		$currency = get_option( 'nicepay_currency', 'KRW' );
-		return is_scalar( $currency ) && nicepay_is_supported_currency( (string) $currency )
-			? strtoupper( (string) $currency )
-			: 'invalid';
-	}
+    /** @return string */
+    private static function report_currency() {
+        $currency = get_option( 'nicepay_currency', 'KRW' );
+        return is_scalar( $currency ) && nicepay_is_supported_currency( (string) $currency )
+            ? strtoupper( (string) $currency )
+            : 'invalid';
+    }
 
-	/** @return string */
-	private static function retention_status( array $retention ) {
-		return 'custom' === $retention['mode'] ? (string) $retention['days'] . '_days' : 'indefinite';
-	}
+    /** @return string */
+    private static function retention_status( array $retention ) {
+        return 'custom' === $retention['mode'] ? (string) $retention['days'] . '_days' : 'indefinite';
+    }
 
-	/** @return string */
-	private static function retention_cron_status( array $retention ) {
-		$status = 'custom' === $retention['mode'] ? 'missing' : 'not_required';
-		return wp_next_scheduled( NicePay_Retention::CRON_HOOK ) ? 'scheduled' : $status;
-	}
+    /** @return string */
+    private static function retention_cron_status( array $retention ) {
+        $status = 'custom' === $retention['mode'] ? 'missing' : 'not_required';
+        return wp_next_scheduled( NicePay_Retention::CRON_HOOK ) ? 'scheduled' : $status;
+    }
 
     /**
      * Convert an allowlisted system report to copyable plain text.
@@ -429,7 +429,7 @@ class NicePay_Admin_Settings_View extends NicePay_Admin_Core {
                 </span>
             </h1>
 
-			<?php settings_errors(); ?>
+            <?php settings_errors(); ?>
 
             <?php $this->render_readiness_panel(); ?>
 
@@ -493,9 +493,9 @@ class NicePay_Admin_Settings_View extends NicePay_Admin_Core {
      * Show a non-secret operational readiness summary on every settings tab.
      */
     private function render_readiness_panel() {
-		$gateway_enabled = NicePay_System_Report::is_gateway_enabled();
-		$checks          = $this->readiness_checks( $gateway_enabled );
-		$ready           = ! in_array( false, array_column( $checks, 0 ), true );
+        $gateway_enabled = NicePay_System_Report::is_gateway_enabled();
+        $checks          = $this->readiness_checks( $gateway_enabled );
+        $ready           = ! in_array( false, array_column( $checks, 0 ), true );
         ?>
         <div class="notice <?php echo $ready ? 'notice-success' : 'notice-warning'; ?> inline">
             <p><strong><?php echo esc_html( $ready ? __( 'Core readiness checks passed.', 'nicepay-payment-gateway' ) : __( 'NicePay is not ready for production payments.', 'nicepay-payment-gateway' ) ); ?></strong></p>
@@ -516,23 +516,23 @@ class NicePay_Admin_Settings_View extends NicePay_Admin_Core {
         <?php
     }
 
-	/** @return array<int,array{bool,string,string}> */
-	private function readiness_checks( $gateway_enabled ) {
-		$api             = new NicePay_API();
-		$cron_ready      = ( ! defined( 'DISABLE_WP_CRON' ) || ! DISABLE_WP_CRON ) && (bool) wp_next_scheduled( 'nicepay_expire_pending_transactions' );
-		$whole_krw_ready = ! $gateway_enabled ||
-			( function_exists( 'wc_get_price_decimals' ) && 0 === (int) wc_get_price_decimals() );
-		return array(
-			array( NicePay_Installer::is_current(), __( 'Transaction schema', 'nicepay-payment-gateway' ), __( 'Database migration must complete successfully.', 'nicepay-payment-gateway' ) ),
-			array( is_ssl(), __( 'HTTPS', 'nicepay-payment-gateway' ), __( 'Checkout, payment forms, AJAX and return URLs must use HTTPS.', 'nicepay-payment-gateway' ) ),
-			array( '' !== (string) $api->get_mode(), __( 'Operating mode', 'nicepay-payment-gateway' ), __( 'Select a valid test or live mode.', 'nicepay-payment-gateway' ) ),
-			array( '' !== (string) $api->get_mid() && '' !== (string) $api->get_merchant_key(), __( 'Active credentials', 'nicepay-payment-gateway' ), __( 'Configure both the MID and merchant key for the selected mode.', 'nicepay-payment-gateway' ) ),
-			array( 'KRW' === strtoupper( (string) get_option( 'nicepay_currency', 'KRW' ) ), __( 'Currency', 'nicepay-payment-gateway' ), __( 'Only KRW is certified for new payment requests.', 'nicepay-payment-gateway' ) ),
-			array( $whole_krw_ready, __( 'KRW decimals', 'nicepay-payment-gateway' ), __( 'Set the WooCommerce number of decimals to 0 before accepting NicePay payments.', 'nicepay-payment-gateway' ) ),
-			array( ! empty( nicepay_get_enabled_methods() ), __( 'Payment methods', 'nicepay-payment-gateway' ), __( 'Enable at least one certified payment method.', 'nicepay-payment-gateway' ) ),
-			array( $cron_ready, __( 'Recovery cron', 'nicepay-payment-gateway' ), __( 'The pending-attempt expiry and stale-approval recovery task must be scheduled.', 'nicepay-payment-gateway' ) ),
-		);
-	}
+    /** @return array<int,array{bool,string,string}> */
+    private function readiness_checks( $gateway_enabled ) {
+        $api             = new NicePay_API();
+        $cron_ready      = ( ! defined( 'DISABLE_WP_CRON' ) || ! DISABLE_WP_CRON ) && (bool) wp_next_scheduled( 'nicepay_expire_pending_transactions' );
+        $whole_krw_ready = ! $gateway_enabled ||
+            ( function_exists( 'wc_get_price_decimals' ) && 0 === (int) wc_get_price_decimals() );
+        return array(
+            array( NicePay_Installer::is_current(), __( 'Transaction schema', 'nicepay-payment-gateway' ), __( 'Database migration must complete successfully.', 'nicepay-payment-gateway' ) ),
+            array( is_ssl(), __( 'HTTPS', 'nicepay-payment-gateway' ), __( 'Checkout, payment forms, AJAX and return URLs must use HTTPS.', 'nicepay-payment-gateway' ) ),
+            array( '' !== (string) $api->get_mode(), __( 'Operating mode', 'nicepay-payment-gateway' ), __( 'Select a valid test or live mode.', 'nicepay-payment-gateway' ) ),
+            array( '' !== (string) $api->get_mid() && '' !== (string) $api->get_merchant_key(), __( 'Active credentials', 'nicepay-payment-gateway' ), __( 'Configure both the MID and merchant key for the selected mode.', 'nicepay-payment-gateway' ) ),
+            array( 'KRW' === strtoupper( (string) get_option( 'nicepay_currency', 'KRW' ) ), __( 'Currency', 'nicepay-payment-gateway' ), __( 'Only KRW is certified for new payment requests.', 'nicepay-payment-gateway' ) ),
+            array( $whole_krw_ready, __( 'KRW decimals', 'nicepay-payment-gateway' ), __( 'Set the WooCommerce number of decimals to 0 before accepting NicePay payments.', 'nicepay-payment-gateway' ) ),
+            array( ! empty( nicepay_get_enabled_methods() ), __( 'Payment methods', 'nicepay-payment-gateway' ), __( 'Enable at least one certified payment method.', 'nicepay-payment-gateway' ) ),
+            array( $cron_ready, __( 'Recovery cron', 'nicepay-payment-gateway' ), __( 'The pending-attempt expiry and stale-approval recovery task must be scheduled.', 'nicepay-payment-gateway' ) ),
+        );
+    }
 
     private function render_general_tab() {
         $retention       = NicePay_Retention::get_settings();
@@ -540,9 +540,32 @@ class NicePay_Admin_Settings_View extends NicePay_Admin_Core {
         $retention_count = 'custom' === $retention['mode']
             ? NicePay_Retention::count_eligible( $retention_days )
             : null;
-		$retention_next  = wp_next_scheduled( NicePay_Retention::CRON_HOOK );
-        $last_run = get_option( NicePay_Retention::LAST_RUN_OPTION, array() );
-        include NICEPAY_PLUGIN_DIR . 'admin/views/general-settings.php';
+        $this->render_admin_view(
+            'general-settings.php',
+            array(
+                'retention'       => $retention,
+                'retention_days'  => $retention_days,
+                'retention_count' => $retention_count,
+                'retention_next'  => wp_next_scheduled( NicePay_Retention::CRON_HOOK ),
+                'last_run'        => get_option( NicePay_Retention::LAST_RUN_OPTION, array() ),
+            )
+        );
+    }
+
+    /**
+     * Render one allowlisted admin view with an explicit variable context.
+     *
+     * @param string              $view    View filename.
+     * @param array<string,mixed> $context Variables exposed to the view.
+     */
+    private function render_admin_view( $view, array $context ) {
+        $allowed_views = array( 'general-settings.php', 'shortcode-generator.php' );
+        if ( ! in_array( $view, $allowed_views, true ) ) {
+            return;
+        }
+
+        extract( $context, EXTR_SKIP );
+        include_once NICEPAY_PLUGIN_DIR . 'admin/views/' . $view;
     }
 
     /**
@@ -570,8 +593,8 @@ class NicePay_Admin_Settings_View extends NicePay_Admin_Core {
 
     private function render_api_tab() {
         $mode = get_option( 'nicepay_mode', 'test' );
-		$live_mid_external = defined( 'NICEPAY_LIVE_MID' );
-		$live_key_external = defined( 'NICEPAY_LIVE_MERCHANT_KEY' );
+        $live_mid_external = defined( 'NICEPAY_LIVE_MID' );
+        $live_key_external = defined( 'NICEPAY_LIVE_MERCHANT_KEY' );
         ?>
         <form method="post" action="options.php">
             <?php settings_fields( 'nicepay_api' ); ?>
@@ -614,30 +637,30 @@ class NicePay_Admin_Settings_View extends NicePay_Admin_Core {
                 <tr>
                     <th scope="row"><label for="nicepay-live-mid"><?php esc_html_e( 'Live MID', 'nicepay-payment-gateway' ); ?></label></th>
                     <td>
-						<?php if ( $live_mid_external ) : ?>
-							<input type="hidden" name="nicepay_live_mid" value="">
-							<input type="text" id="nicepay-live-mid" class="regular-text" value="<?php esc_attr_e( 'Managed in wp-config.php', 'nicepay-payment-gateway' ); ?>" readonly>
-						<?php else : ?>
-							<input type="text" id="nicepay-live-mid" name="nicepay_live_mid" class="regular-text"
-								value="<?php echo esc_attr( get_option( 'nicepay_live_mid' ) ); ?>">
-						<?php endif; ?>
+                        <?php if ( $live_mid_external ) : ?>
+                            <input type="hidden" name="nicepay_live_mid" value="">
+                            <input type="text" id="nicepay-live-mid" class="regular-text" value="<?php esc_attr_e( 'Managed in wp-config.php', 'nicepay-payment-gateway' ); ?>" readonly>
+                        <?php else : ?>
+                            <input type="text" id="nicepay-live-mid" name="nicepay_live_mid" class="regular-text"
+                                value="<?php echo esc_attr( get_option( 'nicepay_live_mid' ) ); ?>">
+                        <?php endif; ?>
                     </td>
                 </tr>
                 <tr>
                     <th scope="row"><label for="nicepay-live-merchant-key"><?php esc_html_e( 'Live Merchant Key', 'nicepay-payment-gateway' ); ?></label></th>
                     <td>
-						<?php if ( $live_key_external ) : ?>
-							<input type="hidden" name="nicepay_live_merchant_key" value="">
-							<input type="text" id="nicepay-live-merchant-key" class="large-text" value="<?php esc_attr_e( 'Managed in wp-config.php; the secret is not stored in WordPress.', 'nicepay-payment-gateway' ); ?>" readonly>
-						<?php else : ?>
-							<input type="password" id="nicepay-live-merchant-key" name="nicepay_live_merchant_key" class="large-text"
-								value="" autocomplete="new-password"
-								placeholder="<?php echo get_option( 'nicepay_live_merchant_key', '' ) ? esc_attr__( 'Configured — leave blank to keep unchanged', 'nicepay-payment-gateway' ) : esc_attr__( 'Enter live merchant key', 'nicepay-payment-gateway' ); ?>">
-							<label>
-								<input type="checkbox" id="nicepay-clear-live-merchant-key" name="nicepay_clear_live_merchant_key" value="yes">
-								<?php esc_html_e( 'Clear the stored live merchant key', 'nicepay-payment-gateway' ); ?>
-							</label>
-						<?php endif; ?>
+                        <?php if ( $live_key_external ) : ?>
+                            <input type="hidden" name="nicepay_live_merchant_key" value="">
+                            <input type="text" id="nicepay-live-merchant-key" class="large-text" value="<?php esc_attr_e( 'Managed in wp-config.php; the secret is not stored in WordPress.', 'nicepay-payment-gateway' ); ?>" readonly>
+                        <?php else : ?>
+                            <input type="password" id="nicepay-live-merchant-key" name="nicepay_live_merchant_key" class="large-text"
+                                value="" autocomplete="new-password"
+                                placeholder="<?php echo get_option( 'nicepay_live_merchant_key', '' ) ? esc_attr__( 'Configured — leave blank to keep unchanged', 'nicepay-payment-gateway' ) : esc_attr__( 'Enter live merchant key', 'nicepay-payment-gateway' ); ?>">
+                            <label>
+                                <input type="checkbox" id="nicepay-clear-live-merchant-key" name="nicepay_clear_live_merchant_key" value="yes">
+                                <?php esc_html_e( 'Clear the stored live merchant key', 'nicepay-payment-gateway' ); ?>
+                            </label>
+                        <?php endif; ?>
                     </td>
                 </tr>
             </table>
@@ -813,7 +836,14 @@ class NicePay_Admin_Settings_View extends NicePay_Admin_Core {
                 'requestFailed'      => __( 'Request failed. Please try again.', 'nicepay-payment-gateway' ),
             ),
         ) );
-        include NICEPAY_PLUGIN_DIR . 'admin/views/shortcode-generator.php';
+        $this->render_admin_view(
+            'shortcode-generator.php',
+            array(
+                'enabled_methods' => $enabled_methods,
+                'edit_id'         => $edit_id,
+                'edit_data'       => $edit_data,
+            )
+        );
     }
 
 }
@@ -834,17 +864,17 @@ class NicePay_Admin extends NicePay_Admin_Settings_View {
      * @param object $order WooCommerce order object.
      */
     public function render_order_payment_summary( $order ) {
-		$context = $this->order_payment_summary_context( $order );
-		if ( null === $context ) {
-			return;
-		}
-		$currency      = $context['currency'];
-		$captured      = $context['captured'];
-		$refunded      = $context['refunded'];
-		$remaining     = $context['remaining'];
-		$status        = $context['status'];
-		$detail_fields = $context['detail_fields'];
-		$detail_url    = $context['detail_url'];
+        $context = $this->order_payment_summary_context( $order );
+        if ( null === $context ) {
+            return;
+        }
+        $currency      = $context['currency'];
+        $captured      = $context['captured'];
+        $refunded      = $context['refunded'];
+        $remaining     = $context['remaining'];
+        $status        = $context['status'];
+        $detail_fields = $context['detail_fields'];
+        $detail_url    = $context['detail_url'];
         ?>
         <div class="nicepay-order-payment-summary">
             <h4><?php esc_html_e( 'NicePay payment', 'nicepay-payment-gateway' ); ?></h4>
@@ -877,47 +907,64 @@ class NicePay_Admin extends NicePay_Admin_Settings_View {
         <?php
     }
 
-	/** @return array<string,mixed>|null */
-	private function order_payment_summary_context( $order ) {
-		$context = null;
-		$valid_order = nicepay_current_user_can_manage_payments() && is_object( $order ) &&
-			is_callable( array( $order, 'get_id' ) ) && is_callable( array( $order, 'get_meta' ) );
-		if ( $valid_order ) {
-			$order_id = absint( $order->get_id() );
-			$raw_tid  = $order->get_meta( '_nicepay_tid' );
-			$tid      = is_scalar( $raw_tid ) ? (string) $raw_tid : '';
-			$transaction = $order_id > 0 && '' !== $tid ? nicepay_get_transaction_by_tid( $tid, $order_id ) : null;
-			$transaction_id = is_object( $transaction ) && isset( $transaction->id ) && is_scalar( $transaction->id )
-				? absint( $transaction->id )
-				: 0;
-			if ( $transaction_id > 0 ) {
-				$currency = isset( $transaction->currency ) && is_scalar( $transaction->currency )
-					? strtoupper( (string) $transaction->currency )
-					: 'KRW';
-				$currency = preg_match( '/^[A-Z]{3}$/', $currency ) ? $currency : 'KRW';
-				$context = array(
-					'currency'      => $currency,
-					'captured'      => self::transaction_scalar( $transaction, 'captured_amount', 0 ),
-					'refunded'      => self::transaction_scalar( $transaction, 'refunded_amount', 0 ),
-					'remaining'     => self::transaction_scalar( $transaction, 'remaining_amount', 0 ),
-					'status'        => (string) self::transaction_scalar( $transaction, 'status', '' ),
-					'detail_fields' => NicePay_Transactions::get_safe_detail_fields( $transaction ),
-					'detail_url'    => add_query_arg(
-						array( 'page' => 'nicepay-transactions', 'transaction_id' => $transaction_id ),
-						admin_url( 'admin.php' )
-					),
-				);
-			}
-		}
-		return $context;
-	}
+    /** @return array<string,mixed>|null */
+    private function order_payment_summary_context( $order ) {
+        $transaction = $this->order_summary_transaction( $order );
+        $context     = is_object( $transaction ) ? $this->transaction_summary_context( $transaction ) : null;
+        return $context;
+    }
 
-	/** @return mixed */
-	private static function transaction_scalar( $transaction, $property, $default ) {
-		return isset( $transaction->{$property} ) && is_scalar( $transaction->{$property} )
-			? $transaction->{$property}
-			: $default;
-	}
+    /** @return object|null */
+    private function order_summary_transaction( $order ) {
+        $transaction = null;
+        $valid_order = nicepay_current_user_can_manage_payments() && is_object( $order ) &&
+            is_callable( array( $order, 'get_id' ) ) && is_callable( array( $order, 'get_meta' ) );
+        if ( $valid_order ) {
+            $order_id = absint( $order->get_id() );
+            $raw_tid  = $order->get_meta( '_nicepay_tid' );
+            $tid      = is_scalar( $raw_tid ) ? (string) $raw_tid : '';
+            if ( $order_id > 0 && '' !== $tid ) {
+                $transaction = nicepay_get_transaction_by_tid( $tid, $order_id );
+            }
+        }
+        return is_object( $transaction ) ? $transaction : null;
+    }
+
+    /** @return array<string,mixed>|null */
+    private function transaction_summary_context( $transaction ) {
+        $transaction_id = isset( $transaction->id ) && is_scalar( $transaction->id ) ? absint( $transaction->id ) : 0;
+        $context        = null;
+        if ( $transaction_id > 0 ) {
+            $context = array(
+                'currency'      => $this->transaction_currency( $transaction ),
+                'captured'      => self::transaction_scalar( $transaction, 'captured_amount', 0 ),
+                'refunded'      => self::transaction_scalar( $transaction, 'refunded_amount', 0 ),
+                'remaining'     => self::transaction_scalar( $transaction, 'remaining_amount', 0 ),
+                'status'        => (string) self::transaction_scalar( $transaction, 'status', '' ),
+                'detail_fields' => NicePay_Transactions::get_safe_detail_fields( $transaction ),
+                'detail_url'    => add_query_arg(
+                    array( 'page' => 'nicepay-transactions', 'transaction_id' => $transaction_id ),
+                    admin_url( 'admin.php' )
+                ),
+            );
+        }
+        return $context;
+    }
+
+    /** @return string */
+    private function transaction_currency( $transaction ) {
+        $currency = isset( $transaction->currency ) && is_scalar( $transaction->currency )
+            ? strtoupper( (string) $transaction->currency )
+            : 'KRW';
+        return preg_match( '/^[A-Z]{3}$/', $currency ) ? $currency : 'KRW';
+    }
+
+    /** @return mixed */
+    private static function transaction_scalar( $transaction, $property, $default ) {
+        return isset( $transaction->{$property} ) && is_scalar( $transaction->{$property} )
+            ? $transaction->{$property}
+            : $default;
+    }
 }
 
 new NicePay_Admin();

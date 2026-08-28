@@ -57,6 +57,7 @@ if ( ! function_exists( 'admin_url' ) ) {
 
 if ( ! function_exists( 'apply_filters' ) ) {
     function apply_filters( $hook, $value ) {
+		unset( $hook );
         return $value;
     }
 }
