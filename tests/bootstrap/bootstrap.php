@@ -11,7 +11,7 @@ require_once __DIR__ . '/wp-stubs.php';
 
 // Define WordPress constants
 define( 'ABSPATH', '/tmp/wordpress/' );
-define( 'NICEPAY_VERSION', '2.0.0' );
+define( 'NICEPAY_VERSION', '2.0.1' );
 define( 'NICEPAY_PLUGIN_FILE', dirname( __DIR__, 2 ) . '/nicepay-payment-gateway.php' );
 define( 'NICEPAY_PLUGIN_DIR', dirname( __DIR__, 2 ) . '/' );
 define( 'NICEPAY_PLUGIN_URL', 'https://example.com/wp-content/plugins/nicepay-payment-gateway/' );
@@ -24,3 +24,5 @@ define( 'NICEPAY_TEST_MERCHANT_KEY', 'EYzu8jGGMfqaDEp76gSckuvnaHHu+bC4opsSN6lHv3
 // Load plugin files under test
 require_once NICEPAY_PLUGIN_DIR . 'includes/nicepay-functions.php';
 require_once NICEPAY_PLUGIN_DIR . 'includes/class-nicepay-api.php';
+require_once NICEPAY_PLUGIN_DIR . 'includes/class-nicepay-installer.php';
+require_once NICEPAY_PLUGIN_DIR . 'includes/class-nicepay-retention.php';

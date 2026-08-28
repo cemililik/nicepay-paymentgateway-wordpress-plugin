@@ -1,0 +1,300 @@
+name: WordPress.org deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Stable version without the v prefix (for example, 2.0.0)
+        required: true
+        type: string
+      plugin_slug:
+        description: Exact slug approved by the WordPress.org Plugin Review Team
+        required: true
+        type: string
+      mode:
+        description: Dry run only packages the candidate; publish can write to WordPress.org SVN
+        required: true
+        default: dry-run
+        type: choice
+        options:
+          - dry-run
+          - publish
+      confirmation:
+        description: For publish only, enter PUBLISH:<slug>:<version>
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wordpress-org-${{ inputs.plugin_slug }}-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Build and verify immutable candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Validate dispatch inputs
+        env:
+          PLUGIN_SLUG: ${{ inputs.plugin_slug }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo 'ERROR: WordPress.org releases require a numeric x.y.z stable version.' >&2
+            exit 1
+          fi
+
+          if [[ ! "$PLUGIN_SLUG" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
+            echo 'ERROR: plugin_slug must be the exact lowercase, hyphenated slug approved by WordPress.org.' >&2
+            exit 1
+          fi
+
+      - name: Checkout immutable release tag
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: refs/tags/v${{ inputs.version }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup PHP for package smoke checks
+        uses: shivammathur/setup-php@cf4cade2721270509d5b1c766ab3549210a39a2a # v2.33.0
+        with:
+          php-version: '8.2'
+          coverage: none
+
+      - name: Verify tag ancestry and release metadata
+        env:
+          NICEPAY_DISTRIBUTION_CHANNEL: wordpress-org-candidate
+          PLUGIN_SLUG: ${{ inputs.plugin_slug }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+
+          tag_commit="$(git rev-list -n 1 "refs/tags/v${VERSION}")"
+          head_commit="$(git rev-parse HEAD)"
+          if [[ -z "$tag_commit" || "$tag_commit" != "$head_commit" ]]; then
+            echo "ERROR: checkout is not the immutable v${VERSION} tag." >&2
+            exit 1
+          fi
+
+          git fetch --no-tags origin development:refs/remotes/origin/development
+          if ! git merge-base --is-ancestor "$head_commit" refs/remotes/origin/development; then
+            echo "ERROR: v${VERSION} is not contained in the development branch." >&2
+            exit 1
+          fi
+
+          node .github/scripts/check-version.js "$VERSION"
+
+          readme_value() {
+            awk -F ':' -v key="$1" '
+              tolower($1) == tolower(key) {
+                sub(/^[^:]*:[[:space:]]*/, "", $0)
+                print $0
+                exit
+              }
+            ' readme.txt
+          }
+
+          stable_tag="$(readme_value 'Stable tag')"
+          readme_requires="$(readme_value 'Requires at least')"
+          readme_php="$(readme_value 'Requires PHP')"
+          readme_license="$(readme_value 'License')"
+          plugin_requires="$(sed -nE 's/^\s*\*\s*Requires at least:\s*([^[:space:]]+).*/\1/p' nicepay-payment-gateway.php | head -n 1)"
+          plugin_php="$(sed -nE 's/^\s*\*\s*Requires PHP:\s*([^[:space:]]+).*/\1/p' nicepay-payment-gateway.php | head -n 1)"
+          plugin_license="$(sed -nE 's/^\s*\*\s*License:\s*(.+[^[:space:]])\s*$/\1/p' nicepay-payment-gateway.php | head -n 1)"
+          text_domain="$(sed -nE 's/^\s*\*\s*Text Domain:\s*([^[:space:]]+).*/\1/p' nicepay-payment-gateway.php | head -n 1)"
+
+          [[ "$stable_tag" == "$VERSION" ]] || {
+            echo "ERROR: readme.txt Stable tag ($stable_tag) does not match $VERSION." >&2
+            exit 1
+          }
+          [[ "$readme_requires" == "$plugin_requires" ]] || {
+            echo 'ERROR: WordPress minimum differs between readme.txt and the plugin header.' >&2
+            exit 1
+          }
+          [[ "$readme_php" == "$plugin_php" ]] || {
+            echo 'ERROR: PHP minimum differs between readme.txt and the plugin header.' >&2
+            exit 1
+          }
+          [[ "$readme_license" == "$plugin_license" ]] || {
+            echo 'ERROR: License differs between readme.txt and the plugin header.' >&2
+            exit 1
+          }
+          [[ "$text_domain" == "$PLUGIN_SLUG" ]] || {
+            echo "ERROR: approved slug ($PLUGIN_SLUG) must match Text Domain ($text_domain) before publishing." >&2
+            exit 1
+          }
+
+          grep -Fq 'https://www.nicepay.co.kr/cs/terms/policy1.do' readme.txt
+          grep -Fq 'https://www.nicepay.co.kr/cs/terms/private.do' readme.txt
+
+      - name: Build WordPress.org candidate from the release package
+        env:
+          NICEPAY_DISTRIBUTION_CHANNEL: wordpress-org-candidate
+          PLUGIN_SLUG: ${{ inputs.plugin_slug }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+
+          source_zip="$RUNNER_TEMP/nicepay-payment-gateway-${VERSION}.zip"
+          stage_dir="$RUNNER_TEMP/wordpress-org-stage"
+          payload_zip="$GITHUB_WORKSPACE/wordpress-org-${PLUGIN_SLUG}-${VERSION}.zip"
+
+          bash .github/scripts/build-release.sh "$VERSION" "$source_zip"
+          bash .github/scripts/smoke-check-artifact.sh "$source_zip"
+
+          mkdir -p "$stage_dir"
+          unzip -q "$source_zip" -d "$stage_dir"
+          if [[ "$PLUGIN_SLUG" != 'nicepay-payment-gateway' ]]; then
+            mv "$stage_dir/nicepay-payment-gateway" "$stage_dir/$PLUGIN_SLUG"
+          fi
+          cp readme.txt "$stage_dir/$PLUGIN_SLUG/readme.txt"
+
+          if find "$stage_dir/$PLUGIN_SLUG" -type l -print -quit | grep -q .; then
+            echo 'ERROR: symbolic links are not allowed in the WordPress.org payload.' >&2
+            exit 1
+          fi
+
+          (
+            cd "$stage_dir"
+            find "$PLUGIN_SLUG" -print | LC_ALL=C sort | zip -X -q "$payload_zip" -@
+          )
+
+          bash .github/scripts/smoke-check-artifact.sh "$payload_zip" "$PLUGIN_SLUG"
+
+          sha256sum "$(basename "$payload_zip")" > "${payload_zip}.sha256"
+
+      - name: Upload verified candidate
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: wordpress-org-${{ inputs.plugin_slug }}-${{ inputs.version }}
+          path: |
+            wordpress-org-${{ inputs.plugin_slug }}-${{ inputs.version }}.zip
+            wordpress-org-${{ inputs.plugin_slug }}-${{ inputs.version }}.zip.sha256
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Record dry-run result
+        if: inputs.mode == 'dry-run'
+        env:
+          PLUGIN_SLUG: ${{ inputs.plugin_slug }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          {
+            echo '## WordPress.org package-only dry run'
+            echo
+            echo "Candidate \`${PLUGIN_SLUG}\` version \`${VERSION}\` was built and uploaded as a workflow artifact."
+            echo
+            echo 'No WordPress.org SVN connection or write was attempted.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  publish:
+    name: Protected WordPress.org SVN publish
+    if: inputs.mode == 'publish'
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: wordpress-org-production
+      url: https://wordpress.org/plugins/${{ inputs.plugin_slug }}/
+
+    steps:
+      - name: Checkout immutable release tag and directory assets
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: refs/tags/v${{ inputs.version }}
+          persist-credentials: false
+
+      - name: Download verified candidate
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: wordpress-org-${{ inputs.plugin_slug }}-${{ inputs.version }}
+          path: ${{ runner.temp }}/wordpress-org-candidate
+
+      - name: Verify production authorization and payload
+        env:
+          APPROVED_PLUGIN_SLUG: ${{ vars.WPORG_PLUGIN_SLUG }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+          PLUGIN_SLUG: ${{ inputs.plugin_slug }}
+          SVN_PASSWORD: ${{ secrets.WPORG_SVN_PASSWORD }}
+          SVN_USERNAME: ${{ secrets.WPORG_SVN_USERNAME }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+
+          expected_confirmation="PUBLISH:${PLUGIN_SLUG}:${VERSION}"
+          if [[ "$CONFIRMATION" != "$expected_confirmation" ]]; then
+            echo "ERROR: confirmation must exactly match $expected_confirmation" >&2
+            exit 1
+          fi
+
+          if [[ -z "$APPROVED_PLUGIN_SLUG" || "$PLUGIN_SLUG" != "$APPROVED_PLUGIN_SLUG" ]]; then
+            echo 'ERROR: plugin_slug must match the WPORG_PLUGIN_SLUG value protected by the production environment.' >&2
+            exit 1
+          fi
+
+          if [[ -z "$SVN_USERNAME" || -z "$SVN_PASSWORD" ]]; then
+            echo 'ERROR: protected environment secrets WPORG_SVN_USERNAME and WPORG_SVN_PASSWORD are required.' >&2
+            exit 1
+          fi
+
+          if ! grep -Eq '^Contributors:[[:space:]]*[a-zA-Z0-9_.-]+' readme.txt; then
+            echo 'ERROR: add and verify at least one real WordPress.org username in readme.txt Contributors before publishing.' >&2
+            exit 1
+          fi
+
+          candidate_dir="$RUNNER_TEMP/wordpress-org-candidate"
+          candidate_zip="$candidate_dir/wordpress-org-${PLUGIN_SLUG}-${VERSION}.zip"
+          checksum_file="${candidate_zip}.sha256"
+          payload_dir="$RUNNER_TEMP/wordpress-org-payload"
+
+          [[ -f "$candidate_zip" && -f "$checksum_file" ]] || {
+            echo 'ERROR: verified candidate artifact is incomplete.' >&2
+            exit 1
+          }
+
+          (
+            cd "$candidate_dir"
+            sha256sum --check "$(basename "$checksum_file")"
+          )
+
+          mkdir -p "$payload_dir"
+          unzip -q "$candidate_zip" -d "$payload_dir"
+          [[ -f "$payload_dir/$PLUGIN_SLUG/readme.txt" ]]
+          [[ -f "$payload_dir/$PLUGIN_SLUG/nicepay-payment-gateway.php" ]]
+          if grep -Eq '^\s*\*\s*Update URI:' "$payload_dir/$PLUGIN_SLUG/nicepay-payment-gateway.php"; then
+            echo 'ERROR: the verified WordPress.org payload contains a third-party Update URI.' >&2
+            exit 1
+          fi
+
+          svn info "https://plugins.svn.wordpress.org/${PLUGIN_SLUG}/" \
+            --non-interactive --no-auth-cache \
+            --username "$SVN_USERNAME" --password "$SVN_PASSWORD" >/dev/null
+
+      - name: Publish verified payload to WordPress.org SVN
+        id: deploy
+        uses: 10up/action-wordpress-plugin-deploy@54bd289b8525fd23a5c365ec369185f2966529c2 # 2.3.0
+        with:
+          dry-run: false
+          generate-zip: true
+        env:
+          ASSETS_DIR: .wordpress-org
+          BUILD_DIR: ${{ runner.temp }}/wordpress-org-payload/${{ inputs.plugin_slug }}
+          SLUG: ${{ inputs.plugin_slug }}
+          SVN_PASSWORD: ${{ secrets.WPORG_SVN_PASSWORD }}
+          SVN_USERNAME: ${{ secrets.WPORG_SVN_USERNAME }}
+          VERSION: ${{ inputs.version }}
+
+      - name: Upload deployed SVN trunk snapshot
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: wordpress-org-deployed-${{ inputs.plugin_slug }}-${{ inputs.version }}
+          path: ${{ steps.deploy.outputs.zip-path }}
+          if-no-files-found: error
+          retention-days: 30

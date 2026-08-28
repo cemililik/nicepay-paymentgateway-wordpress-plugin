@@ -2,6 +2,10 @@
 
 This guide covers how to extend, customize, and integrate with the NicePay Payment Gateway plugin.
 
+> **Supported boundary:** New requests are certified only for `CARD`, `BANK`, and `CELLPHONE`, KRW, and UTF-8. WooCommerce and standalone surfaces default disabled independently. Standalone initialization requires a saved fixed-price configuration ID and resolves amount, goods, currency, and method policy server-side. `VBANK`, `SSG_BANK`, `GIFT_CULT`, recurring/subscription, escrow, tax, and open/custom-amount features are unsupported.
+
+> **DG-01 / DG-02:** The adapter targets legacy PG-Web v3/manual v2.0.8. Obtain vendor confirmation that the MID remains provisioned for this flow and sanitized vendor/sandbox fixtures before production certification or expanding protocol features.
+
 ## Table of Contents
 
 - [Plugin Lifecycle](#plugin-lifecycle)
@@ -40,16 +44,18 @@ flowchart TD
 ### Activation
 
 On activation, the plugin:
-1. Creates the `wp_nicepay_transactions` database table
-2. Sets default option values
-3. Flushes rewrite rules (for `/nicepay-return/` endpoint)
+1. Creates or upgrades the transaction, refund-attempt, and reconciliation-audit tables, then verifies required columns and indexes
+2. Sets fail-closed default option values, including indefinite financial retention
+3. Registers the recovery cron and, only for an acknowledged custom policy, the daily retention cron
+4. Invalidates rewrite rules (for `/nicepay-return/` endpoint); multisite activation does this per site without cross-site flushing
 
 ### Deactivation
 
 On deactivation, the plugin:
-1. Flushes rewrite rules
+1. Clears the recovery and financial-retention cron hooks
+2. Invalidates rewrite rules for regeneration
 
-> **Note:** The database table and options are NOT removed on deactivation. This is intentional to preserve transaction history. To fully clean up, use an uninstall hook or manual deletion.
+> **Note:** Deactivation and uninstall retain the financial ledger by default. Uninstall deletes all three plugin tables and options only when the administrator explicitly enables the irreversible **Delete all NicePay data on uninstall** setting. The default retention policy is indefinite. A custom 1–36,500 day policy requires explicit acknowledgement and deletes only settled/failed local ledger rows that have no active, unknown, refund-pending, or reconciliation-required state. Cleanup is transactional and bounded to 100 rows per batch and five batches per daily run. WordPress's personal-data exporter returns matching transaction and refund-attempt records; its eraser removes settled records' buyer contact data, refund reasons, receipt access, and raw allowlisted payloads while retaining transaction references, amounts, and states. Active or unresolved payment records are not anonymized mid-flow.
 
 ---
 
@@ -76,21 +82,13 @@ add_action( 'woocommerce_payment_complete', function( $order_id ) {
 });
 ```
 
-### Modify Payment Form Data
+### Payment Form Data
 
-To add or modify form fields before the NicePay payment window opens, use the `woocommerce_receipt_nicepay` action timing. Since the form is generated in a template, you can override the template (see [Customizing Templates](#customizing-templates)).
+Do not alter commercial fields at render time. WooCommerce amount/goods/currency come from the order; standalone amount/goods/KRW/method policy come from the saved configuration. There is no supported filter for overriding these values.
 
 ### After Transaction Saved
 
-To hook into transaction saves, use WordPress database hooks or wrap the `nicepay_save_transaction` function:
-
-```php
-// Example: Log every new transaction to an external service
-add_action( 'init', function() {
-    // Check periodically for new transactions
-    // Or use a custom action fired after nicepay_save_transaction
-});
-```
+The plugin does not currently publish a transaction-saved action. Do not document or depend on an assumed hook; integrate only through a separately reviewed extension point.
 
 ### Custom Order Status Mapping
 
@@ -108,7 +106,7 @@ add_filter( 'woocommerce_payment_complete_order_status', function( $status, $ord
 
 ## Working with the NicePay API Class
 
-The `NicePay_API` class handles all NicePay server communication. You can instantiate it anywhere:
+The `NicePay_API` class handles legacy protocol communication. Application code should prefer the WooCommerce refund/payment flows and the standalone offer resolver rather than calling money-moving API methods directly; direct examples do not supply the transaction state, audit, or reconciliation invariants.
 
 ```php
 $api = new NicePay_API();
@@ -128,20 +126,8 @@ $moid = $api->generate_moid( 'CUSTOM' ); // CUSTOM_20260403120000_1234
 // Create signatures
 $sign_data = $api->create_auth_sign_data( $edi_date, '10000' );
 
-// Request a cancellation
-$result = $api->request_cancel(
-    'nicepay00m03012603031200001234', // TID
-    '10000',                          // Cancel amount
-    'Customer requested refund',      // Reason
-    'WC123_20260403_5678',           // Moid
-    false                            // false = full cancel
-);
-
-if ( is_wp_error( $result ) ) {
-    echo $result->get_error_message();
-} elseif ( $api->is_cancel_success( $result['ResultCode'] ) ) {
-    echo 'Cancel successful';
-}
+// Use WC_Gateway_NicePay::process_refund() through WooCommerce so the local
+// refund record and the gateway cancellation remain one audited flow.
 ```
 
 ### Signature Computation Reference
@@ -167,6 +153,12 @@ flowchart LR
 | `create_cancel_sign_data()` | MID + CancelAmt + EdiDate + Key | Cancel request |
 | `verify_cancel_signature()` | TID + MID + CancelAmt + Key | Cancel response |
 
+Signed response amounts are verified with their exact returned bytes. A
+fixed-width response such as `000000001004` is canonicalized to `1004` only for
+the separate amount-binding comparison. Do not trim the value before signature
+verification or add fallback signature representations without a sanitized
+vendor fixture.
+
 ---
 
 ## Transaction Management
@@ -190,7 +182,7 @@ $id = nicepay_save_transaction( array(
 
 // Update a transaction
 nicepay_update_transaction( $id, array(
-    'status'      => 'cancelled',
+    'status'      => 'partially_refunded',
     'result_code' => '2001',
 ) );
 
@@ -220,11 +212,16 @@ echo 'Total: ' . $result['total'];
 | Status | Meaning | Triggered When |
 |---|---|---|
 | `pending` | Transaction initiated, waiting for payment | Form created, before auth |
+| `abandoned` | An older unpaid attempt was replaced | A newer attempt claims the same merchant source |
+| `expired` | The signed offer expired before claim | Hourly bounded recovery job |
 | `paid` | Payment approved successfully | CARD/BANK/CELLPHONE approval |
-| `waiting` | Virtual account issued, awaiting deposit | VBANK approval |
 | `failed` | Payment failed (auth or approval) | Error in any step |
-| `cancelled` | Full cancel processed | Admin cancel or refund |
-| `refunded` | Partial refund processed | Partial refund from WooCommerce |
+| `approving` | One request owns the approval attempt | Atomic claim before server approval |
+| `partially_refunded` | Some captured balance was refunded | Partial WooCommerce refund |
+| `refunded` | Captured balance was fully refunded | Full WooCommerce refund |
+| `needs_reconciliation` | Approval/cancel outcome cannot be proven | Manual merchant review required |
+| `cancelled` | Historical/explicitly cancelled local record | Administrative lifecycle |
+| `waiting` | Reserved status for a future certified asynchronous flow | Not emitted by currently certified methods |
 
 ---
 
@@ -242,9 +239,6 @@ array(
     'amount'       => '10000',
     'goods_name'   => 'Quick Payment',
     'pay_method'   => '',                 // empty = all enabled
-    'buyer_name'   => '',
-    'buyer_email'  => '',
-    'buyer_tel'    => '',
     'button_text'  => 'Pay Now',
     'button_class' => 'nicepay-pay-button',
     'button_color' => '#2563eb',
@@ -269,13 +263,12 @@ if ( $config ) {
     echo $config['button_color']; // '#2563eb'
 }
 
-// Get default presets (4 built-in templates)
+// Get current built-in one-time-payment presets
 $presets = nicepay_get_default_presets();
 
 // Get SVG icon for a payment method
 echo nicepay_get_method_icon( 'CARD' );  // Returns <span class="nicepay-method-icon">...</span>
 echo nicepay_get_method_icon( 'BANK' );
-echo nicepay_get_method_icon( 'VBANK' );
 echo nicepay_get_method_icon( 'CELLPHONE' );
 ```
 
@@ -287,14 +280,14 @@ When `[nicepay_payment id="donation"]` is used:
 flowchart TD
     A[Parse shortcode attributes] --> B{id attribute?}
     B -->|Yes| C[Load saved config]
-    C --> D[Use saved values as defaults]
-    D --> E[Inline attributes override saved values]
-    B -->|No| F[Use plugin defaults]
+    C --> D[Resolve fixed commercial values]
+    D --> E[Allow presentation-only shortcode customization]
+    B -->|No| F[Fail closed: saved id required]
     E --> G[Render payment form]
     F --> G
 ```
 
-Example: `[nicepay_payment id="donation" amount="7500"]` loads the donation config but uses 7500 as the amount.
+Example: `[nicepay_payment id="quick-payment" display_mode="modal"]` changes presentation only. Inline `amount`, `goods_name`, `currency`, or `pay_method` values do not override the saved commercial policy.
 
 ### Display Modes
 
@@ -327,9 +320,10 @@ sequenceDiagram
 
     Buyer->>Form: Fill in fields, click Pay
     Form->>Form: Client-side validation
-    Form->>WP: POST nicepay_init_payment
-    WP->>DB: nicepay_save_transaction()
-    WP-->>Form: {edi_date, moid, sign_data}
+    Form->>WP: POST config_id + buyer-selected certified method
+    WP->>WP: Resolve saved server-side offer
+    WP->>DB: Save immutable transaction snapshot
+    WP-->>Form: Authoritative amount/goods/method/MID + signature
     Form->>Form: Populate hidden fields
     Form->>NP: nicepayStart()
 ```
@@ -340,29 +334,7 @@ sequenceDiagram
 
 ### Override WooCommerce Payment Form
 
-The plugin uses a direct `include` to load `templates/payment-form.php`. To override it, use the `nicepay_payment_form_template` filter (or hook into `woocommerce_receipt_nicepay` with a higher priority to replace the output):
-
-```php
-// Option 1: Replace the template path via filter
-add_filter( 'nicepay_payment_form_template', function( $template_path ) {
-    $theme_template = get_stylesheet_directory() . '/nicepay/payment-form.php';
-    if ( file_exists( $theme_template ) ) {
-        return $theme_template;
-    }
-    return $template_path;
-} );
-```
-
-> **Note:** This filter needs the gateway to apply it. If you need a quick override, you can unhook the default `receipt_page` and add your own:
-
-```php
-// Option 2: Replace the receipt page handler entirely
-add_action( 'init', function() {
-    // Remove the default handler and add your own
-    remove_action( 'woocommerce_receipt_nicepay', array( WC()->payment_gateways()->get_available_payment_gateways()['nicepay'], 'receipt_page' ) );
-    add_action( 'woocommerce_receipt_nicepay', 'my_custom_nicepay_receipt' );
-} );
-```
+The plugin currently includes `templates/payment-form.php` directly and does not expose a supported template-path filter. Editing or unhooking payment rendering without preserving order authority, signatures, return binding, and reconciliation is unsupported.
 
 ### Customize Button Styling
 
@@ -402,34 +374,7 @@ add_filter( 'gettext', function( $translated, $text, $domain ) {
 
 ## Handling Virtual Account Deposits
 
-Virtual account payments follow a two-step process:
-
-```mermaid
-sequenceDiagram
-    participant C as Customer
-    participant WP as WordPress
-    participant NP as NicePay
-
-    C->>WP: Pay with Virtual Account
-    WP->>NP: Approval request
-    NP-->>WP: Account number + expiry
-    WP-->>C: Show account details
-    Note over WP: Order status: on-hold<br/>Transaction status: waiting
-
-    C->>NP: Deposit money to virtual account
-    NP->>WP: Deposit notification (INBOUND)
-    Note over WP: Order status: processing<br/>Transaction status: paid
-```
-
-### Deposit Notification Setup
-
-NicePay sends deposit notifications to your server. You need to:
-
-1. **Open inbound firewall** for NicePay notification IPs (see README)
-2. **Implement a notification endpoint** — this requires coordination with NicePay to configure the callback URL
-3. **Contact NicePay** (`it@nicepay.co.kr`) to set up your deposit notification URL
-
-> **Note:** The current plugin version handles virtual account issuance but the deposit notification handler needs to be configured with NicePay separately. This is typically set up during merchant onboarding.
+Virtual accounts are disabled and unsupported. The plugin does not expose a certified issuance/deposit-notification/refund lifecycle. Do not add an inbound route or enable the legacy method until DG-01/DG-02 evidence exists and the complete state machine, authentication, acknowledgment, retry, expiry, and refund behavior are implemented and reviewed.
 
 ---
 
@@ -443,18 +388,7 @@ define( 'NICEPAY_LIVE_MID', 'your_live_mid' );
 define( 'NICEPAY_LIVE_MERCHANT_KEY', 'your_live_merchant_key' );
 ```
 
-Then modify the API class initialization to check for constants first:
-
-```php
-// In a custom plugin or theme functions.php
-add_filter( 'option_nicepay_live_mid', function( $value ) {
-    return defined( 'NICEPAY_LIVE_MID' ) ? NICEPAY_LIVE_MID : $value;
-} );
-
-add_filter( 'option_nicepay_live_merchant_key', function( $value ) {
-    return defined( 'NICEPAY_LIVE_MERCHANT_KEY' ) ? NICEPAY_LIVE_MERCHANT_KEY : $value;
-} );
-```
+The API reads these constants directly before consulting database options. When either constant is defined, its corresponding admin field is read-only and saving settings does not copy the constant value into the options table. No option filter or source-code modification is required.
 
 ---
 
@@ -503,9 +437,9 @@ Use real card numbers in the NicePay test environment. The test MID is configure
 
 ### Important Test Mode Notes
 
-1. **Virtual Account**: Only test up to account issuance. Do NOT test deposits with test credentials — request a separate MID from NicePay sales team for deposit/refund testing.
-2. **Partial Cancel**: Avoid partial cancellation with test credentials on simple pay services (Naver Pay, Kakao Pay, etc.) as rollback is not possible. Use a dedicated MID.
-3. **Admin Login**: To access the NicePay merchant admin (`npg.nicepay.co.kr`), use the MID without the trailing `m` for both username and password (e.g., `nicepay00` / `nicepay00`).
+1. **DG-01:** Confirm with NICEPAY that the test/live MID is provisioned for legacy PG-Web v3/manual v2.0.8.
+2. **DG-02:** Capture sanitized fixtures for each certified method, decline, full/partial refund, net-cancel, timeout, and replay case. Keep any unverified lifecycle disabled.
+3. **Partial refunds:** Verify vendor behavior for the actual MID before production use; ambiguous responses require reconciliation.
 
 ---
 
@@ -535,7 +469,7 @@ $tx = nicepay_get_transaction_by_tid( $tid );
 if ( $tx ) {
     $data = json_decode( $tx->payment_data, true );
     
-    echo 'Card: ' . $tx->card_name . ' ' . $tx->card_no;
+    echo 'Card issuer: ' . $tx->card_name;
     echo 'Installment: ' . ( $data['CardQuota'] === '00' ? 'Lump sum' : $data['CardQuota'] . ' months' );
 }
 ```
@@ -543,15 +477,22 @@ if ( $tx ) {
 ### Programmatic Refund
 
 ```php
-$gateway = new WC_Gateway_NicePay();
-$result = $gateway->process_refund( $order_id, 5000, 'Defective product' );
+$result = wc_create_refund( array(
+    'order_id'       => $order_id,
+    'amount'         => 5000,
+    'reason'         => 'Defective product',
+    'refund_payment' => true,
+    'restock_items'  => false,
+) );
 
 if ( is_wp_error( $result ) ) {
     echo 'Refund failed: ' . $result->get_error_message();
-} elseif ( $result === true ) {
+} else {
     echo 'Refund processed successfully';
 }
 ```
+
+Do not call `WC_Gateway_NicePay::process_refund()` directly. WooCommerce must create the in-flight `WC_Order_Refund` first so the local order total, append-only refund attempt, remote cancellation, and NicePay balance use the same audited request.
 
 ### WooCommerce Order Meta Fields
 

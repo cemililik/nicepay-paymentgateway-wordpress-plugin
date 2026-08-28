@@ -56,6 +56,19 @@ class NicePayApiTest extends TestCase {
         $this->assertFalse( $api->is_test_mode() );
     }
 
+    public function test_constructor_fails_closed_for_unknown_mode(): void {
+        update_option( 'nicepay_mode', 'production-typo' );
+        update_option( 'nicepay_test_mid', 'testMID' );
+        update_option( 'nicepay_test_merchant_key', 'testMerchantKey' );
+        update_option( 'nicepay_live_mid', 'liveMID' );
+        update_option( 'nicepay_live_merchant_key', 'liveMerchantKey' );
+
+        $api = new NicePay_API();
+
+        $this->assertSame( '', $api->get_mid() );
+        $this->assertSame( '', $api->get_merchant_key() );
+    }
+
     // -------------------------------------------------------
     // EdiDate Generation
     // -------------------------------------------------------
@@ -65,9 +78,37 @@ class NicePayApiTest extends TestCase {
 
         $this->assertMatchesRegularExpression( '/^\d{14}$/', $edi_date );
 
-        // Should be a valid date
-        $parsed = \DateTime::createFromFormat( 'YmdHis', $edi_date );
+        $parsed = \DateTimeImmutable::createFromFormat(
+            '!YmdHis',
+            $edi_date,
+            new \DateTimeZone( 'Asia/Seoul' )
+        );
         $this->assertNotFalse( $parsed );
+    }
+
+    public function test_generate_edi_date_uses_seoul_timezone_independent_of_php_default(): void {
+        $original_timezone = date_default_timezone_get();
+        $seoul_timezone    = new \DateTimeZone( 'Asia/Seoul' );
+
+        try {
+            date_default_timezone_set( 'Pacific/Honolulu' );
+            $before   = new \DateTimeImmutable( 'now', $seoul_timezone );
+            $edi_date = $this->api->generate_edi_date();
+            $after    = new \DateTimeImmutable( 'now', $seoul_timezone );
+        } finally {
+            date_default_timezone_set( $original_timezone );
+        }
+
+        $parsed = \DateTimeImmutable::createFromFormat( '!YmdHis', $edi_date, $seoul_timezone );
+        $this->assertNotFalse( $parsed );
+
+        $minimum = \DateTimeImmutable::createFromFormat( '!YmdHis', $before->format( 'YmdHis' ), $seoul_timezone );
+        $maximum = \DateTimeImmutable::createFromFormat( '!YmdHis', $after->format( 'YmdHis' ), $seoul_timezone );
+        $this->assertNotFalse( $minimum );
+        $this->assertNotFalse( $maximum );
+
+        $this->assertGreaterThanOrEqual( $minimum->getTimestamp(), $parsed->getTimestamp() );
+        $this->assertLessThanOrEqual( $maximum->modify( '+1 second' )->getTimestamp(), $parsed->getTimestamp() );
     }
 
     // -------------------------------------------------------
@@ -77,22 +118,60 @@ class NicePayApiTest extends TestCase {
     public function test_generate_moid_with_default_prefix(): void {
         $moid = $this->api->generate_moid();
 
-        $this->assertStringStartsWith( 'WC_', $moid );
+        $this->assertMatchesRegularExpression( '/^WC_\d{14}_[0-9a-f]{16,}$/', $moid );
         $this->assertLessThanOrEqual( 64, strlen( $moid ) );
     }
 
     public function test_generate_moid_with_custom_prefix(): void {
         $moid = $this->api->generate_moid( 'DONATE' );
 
-        $this->assertStringStartsWith( 'DONATE_', $moid );
+        $this->assertMatchesRegularExpression( '/^DONATE_\d{14}_[0-9a-f]{16,}$/', $moid );
+        $this->assertLessThanOrEqual( 64, strlen( $moid ) );
     }
 
     public function test_generate_moid_unique(): void {
-        $moid1 = $this->api->generate_moid();
-        $moid2 = $this->api->generate_moid();
+        $moids = array();
+        for ( $i = 0; $i < 128; $i++ ) {
+            $moids[] = $this->api->generate_moid();
+        }
 
-        // Random suffix makes collision extremely unlikely
-        $this->assertNotEquals( $moid1, $moid2 );
+        $this->assertCount( 128, array_unique( $moids ) );
+    }
+
+    public function test_generate_moid_sanitizes_and_limits_untrusted_prefix(): void {
+        $moid = $this->api->generate_moid( '../../PAY ORDER/<script>' . str_repeat( 'X', 100 ) );
+
+        $this->assertLessThanOrEqual( 64, strlen( $moid ) );
+        $this->assertMatchesRegularExpression( '/^[A-Za-z0-9_-]+_\d{14}_[0-9a-f]{16,}$/', $moid );
+        $this->assertStringNotContainsString( '..', $moid );
+        $this->assertStringNotContainsString( '/', $moid );
+        $this->assertStringNotContainsString( '<', $moid );
+        $this->assertStringNotContainsString( ' ', $moid );
+    }
+
+    public function test_generate_moid_falls_back_to_wc_when_sanitized_prefix_is_empty(): void {
+        $moid = $this->api->generate_moid( '../../ !!!' );
+
+        $this->assertMatchesRegularExpression( '/^WC_\d{14}_[0-9a-f]{16,}$/', $moid );
+        $this->assertLessThanOrEqual( 64, strlen( $moid ) );
+    }
+
+    public function test_generate_moid_uses_cryptographic_random_bytes(): void {
+        $method = new \ReflectionMethod( NicePay_API::class, 'generate_moid' );
+        $source = file( $method->getFileName() );
+
+        $this->assertIsArray( $source );
+
+        $method_source = implode(
+            '',
+            array_slice(
+                $source,
+                $method->getStartLine() - 1,
+                $method->getEndLine() - $method->getStartLine() + 1
+            )
+        );
+
+        $this->assertMatchesRegularExpression( '/random_bytes\(\s*(?:[89]|[1-9]\d+)\s*\)/', $method_source );
     }
 
     // -------------------------------------------------------
@@ -154,9 +233,8 @@ class NicePayApiTest extends TestCase {
     public function test_verify_auth_signature_tampered_amount(): void {
         $auth_token = 'NICETOKNF435F661A2D54ED799BFB9F4B3F7E369';
 
-        // Generate valid signature for 1004
-        $plain = $auth_token . 'nicepay00m' . '1004' . $this->api->get_merchant_key();
-        $valid_sig = hash( 'sha256', $plain );
+        // Literal signature from the NicePay v2.0.8 worked example for Amt=1004.
+        $valid_sig = 'cc94db193780ffb83d79845bb001b26da397cb5855dd285a3b85a4acc1fa55fe';
 
         // Verify against tampered amount 9999
         $this->assertFalse(
@@ -216,13 +294,11 @@ class NicePayApiTest extends TestCase {
 
         $result = $this->api->create_cancel_sign_data( $cancel_amt, $edi_date );
 
-        // From NicePay documentation example (Section 9.7)
-        // Note: doc example uses "nictest04m" as MID in plaintext but we use "nicepay00m"
-        // So we compute expected ourselves
-        $plain    = 'nicepay00m' . '1004' . '20191219133357' . $this->api->get_merchant_key();
-        $expected = hash( 'sha256', $plain );
-
-        $this->assertEquals( $expected, $result );
+        // Independent golden digest for the documented test MID/key and section 9.7 values.
+        $this->assertSame(
+            'e6959c2ff876c64ccf0008828cab0007a81230c589f3cd727d0277acdc3c4cd5',
+            $result
+        );
     }
 
     // -------------------------------------------------------
@@ -234,10 +310,8 @@ class NicePayApiTest extends TestCase {
         $tid        = 'nicepay00m01012006221311045107';
         $cancel_amt = '1004';
 
-        // Same as approval response signature rule but with CancelAmt
-        // TID + MID + CancelAmt + MerchantKey
-        $plain = $tid . 'nicepay00m' . $cancel_amt . $this->api->get_merchant_key();
-        $sig   = hash( 'sha256', $plain );
+        // Literal NicePay v2.0.8 response signature fixture.
+        $sig = '9439b21e792ee41d1411d7b5e7e34a2062f0f42f19fa3f875f35c388954d4efd';
 
         $this->assertTrue(
             $this->api->verify_cancel_signature( $tid, $cancel_amt, $sig )
@@ -265,7 +339,7 @@ class NicePayApiTest extends TestCase {
     }
 
     public function test_is_success_code_vbank(): void {
-        $this->assertTrue( $this->api->is_success_code( '4100', 'VBANK' ) );
+		$this->assertFalse( $this->api->is_success_code( '4100', 'VBANK' ) );
     }
 
     public function test_is_success_code_cellphone(): void {
@@ -273,19 +347,19 @@ class NicePayApiTest extends TestCase {
     }
 
     public function test_is_success_code_ssg_bank(): void {
-        $this->assertTrue( $this->api->is_success_code( '0000', 'SSG_BANK' ) );
+		$this->assertFalse( $this->api->is_success_code( '0000', 'SSG_BANK' ) );
     }
 
     public function test_is_success_code_gift_cult(): void {
-        $this->assertTrue( $this->api->is_success_code( '0000', 'GIFT_CULT' ) );
+		$this->assertFalse( $this->api->is_success_code( '0000', 'GIFT_CULT' ) );
     }
 
-    public function test_is_success_code_without_method(): void {
-        $this->assertTrue( $this->api->is_success_code( '3001' ) );
-        $this->assertTrue( $this->api->is_success_code( '4000' ) );
-        $this->assertTrue( $this->api->is_success_code( '4100' ) );
-        $this->assertTrue( $this->api->is_success_code( 'A000' ) );
-        $this->assertFalse( $this->api->is_success_code( '9999' ) );
+    public function test_is_success_code_without_method_fails_closed(): void {
+        $this->assertFalse( $this->api->is_success_code( '3001' ) );
+        $this->assertFalse( $this->api->is_success_code( '4000' ) );
+        $this->assertFalse( $this->api->is_success_code( '4100' ) );
+        $this->assertFalse( $this->api->is_success_code( 'A000' ) );
+        $this->assertFalse( $this->api->is_success_code( '0000' ) );
     }
 
     public function test_is_success_code_failure_codes(): void {
@@ -317,25 +391,39 @@ class NicePayApiTest extends TestCase {
         $this->assertMatchesRegularExpression( '/^\d{12}$/', $exp );
     }
 
-    public function test_get_vbank_exp_date_in_future(): void {
-        $exp = $this->api->get_vbank_exp_date();
-
-        $exp_time = \DateTime::createFromFormat( 'YmdHi', $exp );
-        $now      = new \DateTime();
-
-        $this->assertGreaterThan( $now, $exp_time );
-    }
-
-    public function test_get_vbank_exp_date_respects_option(): void {
+    public function test_get_vbank_exp_date_uses_seoul_timezone_and_configured_days(): void {
         update_option( 'nicepay_vbank_expiry_days', 7 );
 
-        $api = new NicePay_API();
-        $exp = $api->get_vbank_exp_date();
+        $original_timezone = date_default_timezone_get();
+        $seoul_timezone    = new \DateTimeZone( 'Asia/Seoul' );
 
-        $exp_time = \DateTime::createFromFormat( 'YmdHi', $exp );
-        $min_expected = new \DateTime( '+6 days' );
+        try {
+            date_default_timezone_set( 'Pacific/Honolulu' );
+            $before = new \DateTimeImmutable( 'now', $seoul_timezone );
+            $expiry = ( new NicePay_API() )->get_vbank_exp_date();
+            $after  = new \DateTimeImmutable( 'now', $seoul_timezone );
+        } finally {
+            date_default_timezone_set( $original_timezone );
+        }
 
-        $this->assertGreaterThan( $min_expected, $exp_time );
+        $parsed = \DateTimeImmutable::createFromFormat( '!YmdHi', $expiry, $seoul_timezone );
+        $this->assertNotFalse( $parsed );
+
+        $minimum = \DateTimeImmutable::createFromFormat(
+            '!YmdHi',
+            $before->modify( '+7 days' )->format( 'YmdHi' ),
+            $seoul_timezone
+        );
+        $maximum = \DateTimeImmutable::createFromFormat(
+            '!YmdHi',
+            $after->modify( '+7 days' )->format( 'YmdHi' ),
+            $seoul_timezone
+        );
+        $this->assertNotFalse( $minimum );
+        $this->assertNotFalse( $maximum );
+
+        $this->assertGreaterThanOrEqual( $minimum->getTimestamp(), $parsed->getTimestamp() );
+        $this->assertLessThanOrEqual( $maximum->modify( '+1 minute' )->getTimestamp(), $parsed->getTimestamp() );
     }
 
     // -------------------------------------------------------
@@ -398,14 +486,10 @@ class NicePayApiTest extends TestCase {
     // Signature Timing Safety
     // -------------------------------------------------------
 
-    public function test_signature_uses_timing_safe_comparison(): void {
-        // Verify that hash_equals is used (tested via valid/invalid pairs)
-        // This test ensures the verify methods work correctly with edge cases
-        $auth_token = str_repeat( 'A', 40 );
-        $amt = '100';
-
-        $plain = $auth_token . $this->api->get_mid() . $amt . $this->api->get_merchant_key();
-        $valid = hash( 'sha256', $plain );
+    public function test_signature_comparison_accepts_only_the_exact_literal_digest(): void {
+        $auth_token = 'NICETOKNF435F661A2D54ED799BFB9F4B3F7E369';
+        $amt        = '1004';
+        $valid      = 'cc94db193780ffb83d79845bb001b26da397cb5855dd285a3b85a4acc1fa55fe';
 
         // Valid
         $this->assertTrue( $this->api->verify_auth_signature( $auth_token, $amt, $valid ) );
@@ -416,5 +500,37 @@ class NicePayApiTest extends TestCase {
 
         // Empty signature
         $this->assertFalse( $this->api->verify_auth_signature( $auth_token, $amt, '' ) );
+    }
+
+    /**
+     * A behavioural valid/invalid pair cannot distinguish hash_equals() from ==.
+     * Keep an explicit implementation guard for all inbound signature verifiers.
+     *
+     * @dataProvider signatureVerifierProvider
+     */
+    public function test_signature_verifiers_use_timing_safe_comparison( string $method_name ): void {
+        $method = new \ReflectionMethod( NicePay_API::class, $method_name );
+        $source = file( $method->getFileName() );
+
+        $this->assertIsArray( $source );
+
+        $method_source = implode(
+            '',
+            array_slice(
+                $source,
+                $method->getStartLine() - 1,
+                $method->getEndLine() - $method->getStartLine() + 1
+            )
+        );
+
+        $this->assertStringContainsString( 'hash_equals(', $method_source );
+    }
+
+    public static function signatureVerifierProvider(): array {
+        return array(
+            'authentication response' => array( 'verify_auth_signature' ),
+            'approval response'       => array( 'verify_approval_signature' ),
+            'cancel response'         => array( 'verify_cancel_signature' ),
+        );
     }
 }

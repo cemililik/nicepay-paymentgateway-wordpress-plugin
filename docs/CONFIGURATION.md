@@ -2,6 +2,10 @@
 
 Step-by-step setup instructions for every environment and use case.
 
+> **Safe current defaults:** Fresh WooCommerce gateways are disabled. Standalone forms are disabled separately and require explicit enablement plus a saved fixed-price configuration. New payments are restricted to `CARD`, `BANK`, or `CELLPHONE`, KRW, and UTF-8. `VBANK`, `SSG_BANK`, `GIFT_CULT`, recurring/subscription billing, escrow, and tax features are unsupported.
+
+> The integration target is legacy PG-Web v3 / authenticated-payment manual v2.0.8. Resolve DG-01 (vendor confirmation that the MID remains provisioned for this flow) and DG-02 (sanitized sandbox/vendor lifecycle fixtures) before production certification or expanding methods.
+
 ## Table of Contents
 
 - [Initial Setup](#initial-setup)
@@ -31,7 +35,7 @@ flowchart TD
     F --> G[Enable Payment Methods]
     G --> H{Using WooCommerce?}
     H -->|Yes| I[Enable in WooCommerce > Payments]
-    H -->|No| J[Add Shortcode to Page]
+    H -->|No| J[Explicitly enable standalone and save fixed-price config]
     I --> K[Test with Test Mode]
     J --> K
     K --> L{All Tests Pass?}
@@ -39,9 +43,9 @@ flowchart TD
     L -->|No| N[Check Troubleshooting]
 ```
 
-### Step 1: Flush Permalinks
+### Step 1: Verify Return Routing
 
-After activating the plugin, go to **Settings > Permalinks** and click **Save Changes** (no changes needed). This registers the `/nicepay-return/` endpoint.
+Activation registers the standalone return endpoint and flushes rules. Before enabling standalone payments, verify the configured return route works in the actual permalink/proxy/cache environment. Do not infer compatibility for an untested hosting topology.
 
 ### Step 2: General Settings
 
@@ -52,7 +56,25 @@ Navigate to **NicePay > Settings > General**.
 | Mode | `Test` | Start with test mode |
 | Language | `KO` | Payment window language |
 | Currency | `KRW` | Must match your WooCommerce store currency |
-| Charset | `utf-8` | Use `euc-kr` only if your site uses EUC-KR encoding |
+| Protocol encoding | `UTF-8` | Fixed; EUC-KR is not selectable or transcoded |
+| Financial record retention | Retain indefinitely | Use a finite period only after legal and accounting approval |
+
+#### Financial record retention
+
+The default policy is **Retain indefinitely**. The plugin cannot determine the tax, accounting, payment, privacy, limitation-period, or contractual rules that apply to a merchant. Selecting a finite period is therefore an administrator decision, not legal advice supplied by the plugin.
+
+To enable automatic cleanup:
+
+1. Choose **Permanently delete eligible NicePay financial records after**.
+2. Enter a whole number from 1 to 36,500 days.
+3. Read and select the permanent-deletion acknowledgement.
+4. Export the relevant transaction CSV, verify a recoverable backup, and save. Each CSV is limited to 10,000 rows; use non-overlapping date ranges and verify every part when a larger ledger must be backed up.
+
+The setting is fail-closed: an invalid period or missing acknowledgement keeps the last valid policy. Cleanup begins through WP-Cron, processes at most 500 records in a daily run, and uses each ledger row's last-updated time. Saving the setting does not restore records already deleted.
+
+Automatic cleanup deletes only eligible rows from this plugin's `nicepay_transactions` and related `nicepay_refund_attempts` tables. It does not delete WooCommerce orders, backups, server/application logs, exported files, or records retained by NICEPAY. Pending approvals, active payment attempts, reconciliation-required states, unknown cancel/net-cancel outcomes, retained authorization tokens, and requested/unknown refunds are protected.
+
+Paid and partially refunded rows can become eligible after the selected period. Once such a local ledger row is deleted, a later refund cannot be initiated through this plugin. Monitor the eligible count, next run, and last-run result shown beside the setting, and ensure WP-Cron operates reliably on low-traffic sites.
 
 ### Step 3: API Credentials
 
@@ -66,18 +88,15 @@ For test mode, the default credentials are pre-filled:
 
 Navigate to **NicePay > Settings > Payment Methods**.
 
-Enable the payment methods you want to offer:
+Enable only methods exposed by the certification gate:
 
 | Method | Description | Notes |
 |---|---|---|
 | Credit Card | Visa, MasterCard, Korean cards | Most common |
-| Bank Transfer | Direct bank transfer | Cash receipt supported |
-| Virtual Account | Issue a temp account number | Customer deposits later |
+| Bank Transfer | Direct bank transfer | Cash-receipt workflows are not supported |
 | Mobile Payment | Charge to mobile bill | Set `GoodsCl` (content/physical) |
-| SSG Bank Account | SSG Pay bank integration | Requires SSG Pay MID setup |
-| Culture Cash | Cultureland gift cards | Requires `MallUserID` |
 
-Set **Virtual Account Expiry Days** (default: 3 days).
+`VBANK`, `SSG_BANK`, and `GIFT_CULT` may appear in legacy protocol documentation or historical records, but they are unavailable for new payments. Virtual-account expiry configuration is not an enablement mechanism.
 
 ---
 
@@ -109,7 +128,7 @@ Merchant Key: EYzu8jGGMfqaDEp76gSckuvnaHHu+bC4opsSN6lHv3b2lurNYkVXrZ7Z1AoqQnXI3e
 | Feature | Limitation |
 |---|---|
 | Credit Card | Use real card numbers; test MID won't charge |
-| Virtual Account | Test issuance only; deposit/refund needs separate MID |
+| Virtual Account | Disabled; issuance alone is not a supported deposit lifecycle |
 | Partial Cancel | Do NOT test with simple pay services (Kakao, Naver, etc.) |
 | Simple Pay | Partial cancel rollback not possible with test MID |
 
@@ -148,17 +167,9 @@ define( 'NICEPAY_LIVE_MID', 'your_live_mid_here' );
 define( 'NICEPAY_LIVE_MERCHANT_KEY', 'your_live_merchant_key_here' );
 ```
 
-Then add to your theme's `functions.php` or a custom plugin:
-
-```php
-add_filter( 'option_nicepay_live_mid', function() {
-    return defined( 'NICEPAY_LIVE_MID' ) ? NICEPAY_LIVE_MID : '';
-} );
-
-add_filter( 'option_nicepay_live_merchant_key', function() {
-    return defined( 'NICEPAY_LIVE_MERCHANT_KEY' ) ? NICEPAY_LIVE_MERCHANT_KEY : '';
-} );
-```
+No option filters are needed. When these constants are defined, NicePay reads
+them directly, renders the corresponding settings as read-only, and never
+copies the live merchant key into the WordPress options table.
 
 ---
 
@@ -184,10 +195,9 @@ Each card shows:
    - **Modal**: Only the button is visible; clicking opens a popup with the payment form
 4. Fill in the **Amount** and **Product Name** (required)
 5. Optionally select a specific **Payment Method** or leave as "All Enabled"
-6. Optionally pre-fill **Buyer Information** — if left empty, buyers fill these fields themselves
-7. Customize the **Button Text** and **Color**
-8. Click **Save Shortcode**
-9. Copy the generated shortcode from the **Shortcodes** tab and paste into any page
+6. Customize the **Button Text** and **Color**. Buyer name, email, and phone are collected from the customer at payment time and cannot be stored in a reusable configuration.
+7. Click **Save Shortcode**
+8. Copy the generated shortcode from the **Shortcodes** tab and paste into any page
 
 ### Editing a Shortcode
 
@@ -195,14 +205,13 @@ Click **Edit** on any card in the Shortcodes tab. The Shortcode Generator opens 
 
 ### Default Presets
 
-On first activation, 4 presets are created:
+Current defaults are fixed one-time-payment examples:
 
 | Name | Amount | Mode | Button Color | Method |
 |---|---|---|---|---|
 | Quick Payment | 10,000 KRW | Inline | Blue | All |
 | Donation | 5,000 KRW | Inline | Green | All |
 | Product Purchase | 50,000 KRW | Modal | Black | All |
-| Subscription | 29,900 KRW | Modal | Purple | Card only |
 
 Presets can be edited or deleted. They are not automatically re-created after deletion.
 
@@ -213,7 +222,7 @@ Presets can be edited or deleted. They are not automatically re-created after de
 ### Enable the Gateway
 
 1. Go to **WooCommerce > Settings > Payments**
-2. Find **NicePay Payment** in the list
+2. Find **NicePay** in the list
 3. Click the toggle to enable it
 4. Click **Set up** to configure title and description
 
@@ -221,7 +230,7 @@ Presets can be edited or deleted. They are not automatically re-created after de
 
 | Setting | Default | Description |
 |---|---|---|
-| Enable/Disable | Enabled | Toggle the payment method |
+| Enable/Disable | Disabled | Toggle the payment method only after readiness and sandbox checks pass |
 | Title | "NicePay Payment" | Shown to customer at checkout |
 | Description | "Pay securely via NicePay..." | Shown below the title |
 
@@ -236,29 +245,31 @@ Typical configurations:
 | Store Currency | NicePay Currency | Notes |
 |---|---|---|
 | KRW | KRW | Most common setup |
-| USD | USD | Requires USD-enabled MID |
+| USD | — | Unsupported for new payments; the request fails closed |
 
 ### Order Status Mapping
 
 ```mermaid
 flowchart LR
     subgraph "After Payment"
-        A[CARD/BANK/CELL] -->|Success| B[completed]
-        C[VBANK] -->|Account Issued| D[on-hold]
-        E[Any] -->|Failed| F[failed]
+        A[CARD/BANK/CELL] -->|Verified approval| B[paid transaction / WC payment_complete]
+        E[Known decline] --> F[failed]
+        U[Ambiguous approval or cancel] --> R[needs_reconciliation]
     end
     subgraph "After Cancel"
-        G[Admin Cancel] --> H[cancelled]
-        I[WC Refund] --> J[refunded]
+        G[Transactions Refund] --> H[WooCommerce refund API]
+        I[Partial refund] --> J[partially_refunded]
+        K[Full refund] --> L[refunded]
     end
 ```
 
 | NicePay Result | WooCommerce Status | Description |
 |---|---|---|
-| CARD/BANK/CELL success | `completed` | Payment received |
-| VBANK success | `on-hold` | Waiting for bank deposit |
-| Auth/Approval failure | `failed` | Payment not processed |
-| Cancel success | `cancelled` | Transaction reversed |
+| CARD/BANK/CELLPHONE verified success | `processing` or `completed`, chosen by WooCommerce | Transaction `paid` |
+| Known auth/approval decline | Order remains payable | Transaction `failed` |
+| Unknown approval/cancel outcome | Manual hold/review | Transaction `needs_reconciliation` |
+| Partial WooCommerce refund | Existing WC status rules | Transaction `partially_refunded` |
+| Full WooCommerce refund | Existing WC status rules | Transaction `refunded` |
 
 ---
 
@@ -266,52 +277,40 @@ flowchart LR
 
 ### Using Saved Shortcodes (Recommended)
 
-The easiest way: create a shortcode in **NicePay > Settings > Shortcode Generator**, then paste it:
+First explicitly enable **Standalone payment forms**, then create a fixed-price saved configuration in **NicePay > Settings > Shortcode Generator** and paste its ID:
 
 ```
 [nicepay_payment id="quick-payment"]
 ```
 
-### Manual Shortcode — Inline Mode
+### Inline Mode
 
-Shows the full payment form directly on the page:
-
-```
-[nicepay_payment amount="10000" goods_name="Product Name" currency="KRW"]
-```
-
-Buyers fill in their name, email, and phone in the form. If you pre-fill buyer info, those fields are hidden:
-
-```
-[nicepay_payment amount="25000" goods_name="Consultation" buyer_name="Kim" buyer_email="kim@example.com" buyer_tel="01012345678" currency="KRW"]
-```
+Set inline mode in the saved configuration, then embed `[nicepay_payment id="quick-payment"]`. Buyer contact fields may still be collected at payment time, but commercial fields are server-side.
 
 ### Manual Shortcode — Modal Mode
 
 Shows only a button. Clicking opens a popup overlay with the full payment form:
 
 ```
-[nicepay_payment amount="50000" goods_name="Premium Plan" display_mode="modal" button_text="Buy Now" button_color="#111827" currency="KRW"]
+[nicepay_payment id="quick-payment" display_mode="modal" button_text="Buy Now" button_color="#111827"]
 ```
 
-### Fixed Payment Method
+### Fixed Payment Method and Amount Authority
 
-```
-[nicepay_payment amount="50000" goods_name="Premium Plan" pay_method="CARD" button_text="Pay with Card" currency="KRW"]
-```
+Configure amount, goods, KRW currency, and any fixed method in the saved configuration. Inline `amount`, `goods_name`, `currency`, and `pay_method` attributes are not commercial overrides. There is no custom/open-amount mode.
 
 ### Button Color Customization
 
 Use `button_color` with a hex value:
 
 ```
-[nicepay_payment amount="10000" goods_name="Donation" button_text="Donate" button_color="#16a34a" currency="KRW"]
+[nicepay_payment id="quick-payment" button_text="Pay" button_color="#16a34a"]
 ```
 
 ### Custom CSS Class
 
 ```
-[nicepay_payment amount="10000" goods_name="Item" button_text="Buy Now" button_class="my-custom-button" currency="KRW"]
+[nicepay_payment id="quick-payment" button_text="Buy Now" button_class="my-custom-button"]
 ```
 
 Then in your CSS:
@@ -358,13 +357,7 @@ flowchart LR
 
 ### Inbound Rules (NicePay → Your Server)
 
-Required only for virtual account deposit notifications:
-
-| Direction | Source IP | Port | Protocol |
-|---|---|---|---|
-| INBOUND | `121.133.126.10` | 443 | TCP/HTTPS |
-| INBOUND | `121.133.126.11` | 443 | TCP/HTTPS |
-| INBOUND | `211.33.136.39` | 443 | TCP/HTTPS |
+No inbound vendor-notification lifecycle is supported. In particular, do not open historical VBANK source-IP rules for this plugin unless a future certified notification endpoint explicitly requires them.
 
 ---
 
@@ -393,7 +386,7 @@ Use a tool like [Poedit](https://poedit.net/) or [Loco Translate](https://wordpr
 ### Per-shortcode Language Override
 
 ```
-[nicepay_payment amount="10000" goods_name="Product" language="EN"]
+[nicepay_payment id="quick-payment" language="EN"]
 ```
 
 ---
@@ -415,7 +408,7 @@ If your site is not on HTTPS, the payment window may not load or may show securi
 | Requirement | Minimum | Recommended |
 |---|---|---|
 | PHP | 7.4 | 8.0+ |
-| WordPress | 5.0 | 6.0+ |
+| WordPress | 5.8 | 6.0+ |
 | WooCommerce | 5.0 | 8.0+ |
 | PHP Extensions | `hash`, `json`, `curl` | — |
 | OpenSSL | 1.0.2+ | 1.1.1+ |
@@ -470,25 +463,26 @@ var_dump( function_exists( 'curl_init' ) ); // should be true
 **Cause:** The return handler didn't execute.
 
 **Fix:**
-1. Go to **Settings > Permalinks** and click Save (flush rewrite rules)
-2. Verify `/?wc-api=nicepay_return` URL is accessible
+1. Verify the WooCommerce return endpoint and standalone route, if enabled, in the current permalink/proxy environment
+2. Confirm the endpoint is not cached or blocked
 3. Check that `wp-cron.php` or page caching isn't interfering
 4. Look at WooCommerce logs for error details
 
 ### Virtual account not receiving deposits
 
-**Cause:** Deposit notification endpoint not configured.
+**Cause:** VBANK is disabled and no certified deposit-notification lifecycle exists.
 
 **Fix:**
-1. Contact NicePay (`it@nicepay.co.kr`) to set up your deposit notification URL
-2. Ensure inbound firewall rules are configured
-3. This requires separate setup outside of this plugin
+1. Do not bypass the method gate.
+2. Use a currently certified method.
+3. Treat VBANK as future work requiring DG-01/DG-02 plus a complete implementation.
 
 ### Partial cancel not working
 
-**Cause:** Some payment methods don't support partial cancel with test credentials.
+**Cause:** The original approval did not certify partial cancellation, the payment used an irreversible simple-pay wallet, or the mobile OTID lifecycle is not certified.
 
 **Fix:**
-1. For simple pay services (Kakao, Naver, etc.), use a dedicated MID for partial cancel testing
-2. Contact NicePay sales team for a separate test MID
-3. Check `CcPartCl` response field to verify if partial cancel is supported for the transaction
+1. Check the transaction detail and original provider response in the NICEPAY console.
+2. Card partial refunds proceed only when the persisted approval flag is `CcPartCl=1`.
+3. The plugin blocks partial refunds for irreversible simple-pay codes and mobile payments; use a full refund or obtain vendor certification before changing those gates.
+4. Never retry a refund marked `needs_reconciliation` or `cancel_status=unknown` until the merchant console confirms the money state.

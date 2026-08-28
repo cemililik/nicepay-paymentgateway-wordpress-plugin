@@ -108,13 +108,23 @@
 
 .nicepay-method-option input[type="radio"] {
     position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
-.nicepay-method-option:has(input:checked),
 .nicepay-method-option.is-selected {
+    border-color: var(--nicepay-primary);
+    background: var(--nicepay-primary-light);
+    box-shadow: 0 0 0 1px var(--nicepay-primary);
+}
+
+.nicepay-method-option:has(input:checked) {
     border-color: var(--nicepay-primary);
     background: var(--nicepay-primary-light);
     box-shadow: 0 0 0 1px var(--nicepay-primary);
@@ -134,8 +144,12 @@
     box-sizing: border-box;
 }
 
-.nicepay-method-option:has(input:checked)::before,
 .nicepay-method-option.is-selected::before {
+    border-color: var(--nicepay-primary);
+    border-width: 5px;
+}
+
+.nicepay-method-option:has(input:checked)::before {
     border-color: var(--nicepay-primary);
     border-width: 5px;
 }
@@ -155,8 +169,11 @@
     height: 22px;
 }
 
-.nicepay-method-option:has(input:checked) .nicepay-method-icon,
 .nicepay-method-option.is-selected .nicepay-method-icon {
+    color: var(--nicepay-primary);
+}
+
+.nicepay-method-option:has(input:checked) .nicepay-method-icon {
     color: var(--nicepay-primary);
 }
 
@@ -167,8 +184,12 @@
     line-height: 1.3;
 }
 
-.nicepay-method-option:has(input:checked) .nicepay-method-label,
 .nicepay-method-option.is-selected .nicepay-method-label {
+    color: var(--nicepay-primary-hover);
+    font-weight: 600;
+}
+
+.nicepay-method-option:has(input:checked) .nicepay-method-label {
     color: var(--nicepay-primary-hover);
     font-weight: 600;
 }
@@ -188,8 +209,8 @@
     align-items: center;
     justify-content: center;
     padding: 14px 36px;
-    background: var(--nicepay-primary);
-    color: #fff !important;
+    background: var(--nicepay-button-background, var(--nicepay-primary));
+    color: var(--nicepay-button-text, #fff) !important;
     border: none;
     border-radius: var(--nicepay-radius-md);
     font-size: 1rem;
@@ -203,14 +224,16 @@
 }
 
 .nicepay-pay-button:hover {
-    background: var(--nicepay-primary-hover);
-    color: #fff !important;
+    background: var(--nicepay-button-background, var(--nicepay-primary-hover));
+    color: var(--nicepay-button-text, #fff) !important;
+    filter: brightness(0.9);
     box-shadow: var(--nicepay-shadow-sm);
     transform: translateY(-1px);
 }
 
 .nicepay-pay-button:active {
     transform: translateY(0);
+    filter: brightness(0.82);
 }
 
 .nicepay-pay-button:focus-visible {
@@ -223,6 +246,7 @@
     cursor: not-allowed;
     transform: none;
     box-shadow: none;
+    filter: none;
 }
 
 /* Button loading spinner */
@@ -236,8 +260,9 @@
     position: absolute;
     width: 20px;
     height: 20px;
-    border: 2.5px solid rgba(255,255,255,0.3);
-    border-top-color: #fff;
+    color: var(--nicepay-button-text, #fff);
+    border: 2.5px solid currentColor;
+    border-right-color: transparent;
     border-radius: 50%;
     animation: nicepay-spin 0.7s linear infinite;
 }
@@ -331,6 +356,12 @@
     display: none;
     position: fixed;
     inset: 0;
+	width: 100%;
+	height: 100%;
+	max-width: none;
+	max-height: none;
+	margin: 0;
+	border: 0;
     background: rgba(0,0,0,0.5);
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
@@ -339,6 +370,10 @@
     align-items: center;
     padding: 16px;
     animation: nicepay-modal-bg-in 0.25s ease;
+}
+
+.nicepay-payment-modal-overlay[open] {
+	display: flex;
 }
 
 .nicepay-payment-modal {
@@ -442,6 +477,9 @@
    Inline Notices (Frontend)
    ============================================ */
 .nicepay-notice {
+	background: #eff6ff;
+	color: #1e3a8a;
+	border: 1px solid #93c5fd;
     padding: 12px 16px;
     border-radius: var(--nicepay-radius-sm);
     margin-bottom: 16px;
@@ -452,6 +490,12 @@
     animation: nicepay-slide-down 0.3s ease;
 }
 
+.nicepay-notice-warning {
+	background: #fef3c7;
+	color: #78350f;
+	border-color: #f59e0b;
+}
+
 .nicepay-notice-error {
     background: var(--nicepay-error-light);
     color: var(--nicepay-error);
@@ -460,6 +504,15 @@
 
 .nicepay-notice-icon {
     flex-shrink: 0;
+}
+
+.nicepay-error {
+	margin: 12px 0;
+	padding: 12px 14px;
+	background: var(--nicepay-error-light);
+	color: var(--nicepay-error);
+	border: 1px solid var(--nicepay-error-border);
+	border-radius: var(--nicepay-radius-md);
 }
 
 @keyframes nicepay-slide-down {
@@ -506,6 +559,9 @@
 .nicepay-status-paid { background: #dcfce7; color: #166534; }
 .nicepay-status-paid::before { background: #16a34a; }
 
+.nicepay-status-approving { background: #ffedd5; color: #9a3412; }
+.nicepay-status-approving::before { background: #ea580c; animation: nicepay-pulse 2s ease-in-out infinite; }
+
 .nicepay-status-failed { background: #fee2e2; color: #991b1b; }
 .nicepay-status-failed::before { background: #dc2626; }
 
@@ -514,6 +570,21 @@
 
 .nicepay-status-refunded { background: #e0e7ff; color: #3730a3; }
 .nicepay-status-refunded::before { background: #6366f1; }
+
+.nicepay-status-partially_refunded { background: #ede9fe; color: #5b21b6; }
+.nicepay-status-partially_refunded::before { background: #7c3aed; }
+
+.nicepay-status-needs_reconciliation {
+	background: #7f1d1d;
+	color: #ffffff;
+	box-shadow: 0 0 0 2px #fecaca;
+}
+.nicepay-status-needs_reconciliation::before { background: #fef2f2; animation: nicepay-pulse 1.25s ease-in-out infinite; }
+
+.nicepay-status-abandoned,
+.nicepay-status-expired { background: #f3f4f6; color: #374151; }
+.nicepay-status-abandoned::before,
+.nicepay-status-expired::before { background: #6b7280; }
 
 .nicepay-status-waiting { background: #dbeafe; color: #1e40af; }
 .nicepay-status-waiting::before { background: #3b82f6; animation: nicepay-pulse 2s ease-in-out infinite; }
@@ -550,5 +621,16 @@
     .nicepay-cancel-link {
         text-align: center;
         padding: 8px 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nicepay-payment-wrapper *,
+    .nicepay-payment-modal-overlay *,
+    .nicepay-loading-overlay * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
     }
 }

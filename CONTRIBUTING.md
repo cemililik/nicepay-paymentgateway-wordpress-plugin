@@ -26,10 +26,10 @@ This project follows a [Code of Conduct](CODE_OF_CONDUCT.md). By participating, 
 ## How to Contribute
 
 1. **Fork** the repository
-2. **Create a branch** from `main` for your changes
+2. **Create a branch** from `development` for your changes
 3. **Make your changes** following the coding standards below
 4. **Test** your changes thoroughly
-5. **Submit a Pull Request** against `main`
+5. **Submit a Pull Request** against `development`
 
 > **Note:** Direct commits to `main` are not allowed. All changes must go through a Pull Request and be approved by the maintainer.
 
@@ -40,8 +40,10 @@ This project follows a [Code of Conduct](CODE_OF_CONDUCT.md). By participating, 
 ### Prerequisites
 
 - PHP 7.4+
-- WordPress 5.0+ (local development environment)
+- WordPress 5.8+ (local development environment)
 - WooCommerce 5.0+ (for gateway testing)
+- Node.js 20+ and npm
+- Docker (for the disposable WordPress/MariaDB integration test)
 - Git
 
 ### Local Setup
@@ -59,6 +61,25 @@ ln -s /path/to/nicepay-paymentgateway-wordpress-plugin nicepay-payment-gateway
 # Activate the plugin in WordPress admin
 ```
 
+### Run the Automated Checks
+
+```bash
+composer install --prefer-dist --no-interaction
+composer test
+composer quality
+npm ci --ignore-scripts
+npm audit --audit-level=high --ignore-scripts
+npm run quality
+bash .github/scripts/check-translations.sh
+bash tests/integration/run-schema-migration.sh
+bash tests/integration/run-woocommerce-smoke.sh
+```
+
+CI repeats the PHPUnit suite on PHP 7.4, 8.0, 8.1, 8.2, and 8.3, runs the
+JavaScript/CSS gates and disposable database migration test, then builds and
+smoke-checks the release ZIP. Money-path changes must include a regression
+test; vendor-dependent behavior must use sanitized fixtures.
+
 ### Enable Debug Mode
 
 Add to `wp-config.php`:
@@ -74,21 +95,14 @@ define( 'WP_DEBUG_DISPLAY', false );
 ## Branch Strategy
 
 ```
-main                    (protected - PR only)
-├── feature/xxx         (new features)
-├── fix/xxx             (bug fixes)
-├── docs/xxx            (documentation updates)
-└── refactor/xxx        (code improvements)
+main                    (protected release branch)
+└── development         (integration branch; normal PR target)
 ```
 
-### Branch Naming
-
-| Prefix | Purpose | Example |
-|---|---|---|
-| `feature/` | New functionality | `feature/deposit-notification` |
-| `fix/` | Bug fixes | `fix/signature-verification` |
-| `docs/` | Documentation only | `docs/update-api-reference` |
-| `refactor/` | Code cleanup, no behavior change | `refactor/extract-form-builder` |
+Repository-wide remediation and release preparation are performed directly on
+`development` when the maintainer explicitly requests that workflow. External
+contributions may use a short-lived fork branch, but the pull request must target
+`development`; `main` receives only reviewed release promotions.
 
 ---
 
@@ -130,7 +144,7 @@ How was this tested?
 ### Review Process
 
 - All PRs are reviewed by the project maintainer (@cemililik)
-- Only the maintainer can merge PRs into `main`
+- Only the maintainer can promote reviewed changes from `development` to `main`
 - Reviews may request changes — please address all feedback before re-requesting review
 
 ---
@@ -141,7 +155,7 @@ How was this tested?
 
 Follow the [WordPress PHP Coding Standards](https://developer.wordpress.org/coding-standards/wordpress-coding-standards/php/):
 
-- Use tabs for indentation
+- Use four spaces for indentation, as defined by `.editorconfig`
 - Opening braces on the same line
 - Use `snake_case` for function and variable names
 - Use `UPPER_CASE` for constants
@@ -183,7 +197,7 @@ function formatAmount($amount, $currency="") {
 - **Always** sanitize inputs: `sanitize_text_field()`, `absint()`, `esc_url_raw()`
 - **Always** escape outputs: `esc_html()`, `esc_attr()`, `esc_url()`, `wp_kses_post()`
 - **Always** use nonces for form submissions and AJAX calls
-- **Always** check capabilities: `current_user_can( 'manage_options' )`
+- **Always** check the narrow capability for the action. Operational payment screens use the filterable `nicepay_manage_transactions_capability` (default `manage_woocommerce`); global settings remain administrator-only.
 - **Never** trust data from `$_POST`, `$_GET`, or `$_REQUEST` without sanitization
 - **Never** use `eval()`, `extract()`, or `serialize()` with user input
 - **Never** commit credentials, API keys, or secrets
@@ -290,4 +304,4 @@ Include:
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the [MIT License](LICENSE).
+By contributing, you agree that your contributions will be licensed under the [GNU General Public License v2.0 or later](LICENSE).

@@ -1,0 +1,63 @@
+name: Bug report
+description: Report a reproducible problem in the NicePay payment gateway.
+title: '[Bug]: '
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not include merchant keys, authentication tokens, card data, or unredacted transaction payloads. Report security vulnerabilities through the private advisory link in SECURITY.md.
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin version
+      placeholder: 2.0.0
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: WordPress, WooCommerce, and PHP versions
+      placeholder: WordPress x.y, WooCommerce x.y, PHP x.y
+    validations:
+      required: true
+  - type: dropdown
+    id: payment-flow
+    attributes:
+      label: Payment flow
+      options:
+        - WooCommerce checkout
+        - Standalone shortcode
+        - Refund or cancellation
+        - Administration
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Provide the smallest repeatable sequence and redact all payment data.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include sanitized error messages or logs when relevant.
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Sensitive-data confirmation
+      options:
+        - label: I removed credentials and sensitive payment or personal data from this report.
+          required: true

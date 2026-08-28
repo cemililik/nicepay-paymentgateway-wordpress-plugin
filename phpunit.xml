@@ -7,22 +7,30 @@
     verbose="true"
     failOnRisky="true"
     failOnWarning="true"
+	beStrictAboutOutputDuringTests="true"
+	convertDeprecationsToExceptions="true"
 >
+    <php>
+        <ini name="date.timezone" value="UTC"/>
+        <ini name="error_reporting" value="-1"/>
+    </php>
+
     <testsuites>
         <testsuite name="Unit">
             <directory>tests/unit</directory>
         </testsuite>
     </testsuites>
 
-    <coverage processUncoveredFiles="false">
+	<coverage processUncoveredFiles="false">
         <include>
+			<directory suffix=".php">admin</directory>
             <directory suffix=".php">includes</directory>
+			<directory suffix=".php">templates</directory>
+			<file>nicepay-payment-gateway.php</file>
         </include>
         <exclude>
             <directory>vendor</directory>
             <directory>tests</directory>
-            <file>includes/class-nicepay-gateway.php</file>
-            <file>includes/class-nicepay-return-handler.php</file>
         </exclude>
     </coverage>
 </phpunit>

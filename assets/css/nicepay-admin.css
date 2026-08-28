@@ -264,6 +264,14 @@
     color: var(--nicepay-text-secondary);
 }
 
+.nicepay-modal-input-label {
+    display: block;
+    margin-bottom: 6px;
+    color: #374151;
+    font-size: 13px;
+    font-weight: 500;
+}
+
 .nicepay-modal-body input[type="text"],
 .nicepay-modal-body textarea {
     width: 100%;
@@ -384,6 +392,16 @@
     width: 18px;
     height: 18px;
     flex-shrink: 0;
+}
+
+.nicepay-toast-icon {
+    display: inline-flex;
+    width: 18px;
+    height: 18px;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-weight: 700;
 }
 
 @keyframes nicepay-toast-in {

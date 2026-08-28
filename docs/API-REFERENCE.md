@@ -1,6 +1,10 @@
 # NicePay API Reference
 
-Complete reference for the NicePay Authenticated Payment API (v2.0.8) as implemented in this plugin.
+Reference for the legacy NICEPAY PG-Web v3 / authenticated-payment manual v2.0.8 contract targeted by this plugin.
+
+> **Protocol capability is not plugin support.** Tables below retain fields and result codes from the legacy manual for interoperability and historical-record interpretation. New plugin payments are currently certified only for `CARD`, `BANK`, and `CELLPHONE`, with KRW and UTF-8. `VBANK`, `SSG_BANK`, and `GIFT_CULT` are rejected by the new-payment gate. Recurring/subscription billing, escrow, and tax features are not implemented.
+
+> **DG-01 / DG-02:** The current public NICEPAY API/SDK may differ from this legacy target. Production certification requires written confirmation that the merchant MID is provisioned for PG-Web v3/manual v2.0.8 (DG-01) and sanitized vendor/sandbox fixtures for all enabled lifecycles, cancel/net-cancel, timeouts, and replay behavior (DG-02). Until then, this reference must not be read as a vendor support guarantee.
 
 ## Table of Contents
 
@@ -31,9 +35,11 @@ flowchart LR
 
 | Phase | Direction | Encoding | Content-Type |
 |---|---|---|---|
-| Authentication | Browser → NicePay | EUC-KR | via JavaScript (nicepay-pgweb.js) |
-| Approval | Server → NicePay | EUC-KR | application/x-www-form-urlencoded |
-| Cancel | Server → NicePay | EUC-KR | application/x-www-form-urlencoded |
+| Authentication | Browser → NicePay | UTF-8 | via legacy `nicepay-pgweb.js` |
+| Approval | Server → NicePay | UTF-8 | `application/x-www-form-urlencoded; charset=utf-8` |
+| Cancel | Server → NicePay | UTF-8 | `application/x-www-form-urlencoded; charset=utf-8` |
+
+The plugin always sends UTF-8. There is no EUC-KR setting or conversion path.
 
 ### Base URLs
 
@@ -64,20 +70,20 @@ Sent to NicePay via `nicepay-pgweb.js` form submission.
 | `EdiDate` | 30 | Timestamp (`YYYYMMDDHHMISS`) |
 | `Moid` | 64 | Merchant order ID (unique per transaction) |
 | `SignData` | 500 | `hex(sha256(EdiDate + MID + Amt + MerchantKey))` |
-| `PayMethod` | 10 | `CARD` / `BANK` / `VBANK` / `CELLPHONE` / `SSG_BANK` / `GIFT_CULT` |
+| `PayMethod` | 10 | Legacy protocol values include `CARD` / `BANK` / `VBANK` / `CELLPHONE` / `SSG_BANK` / `GIFT_CULT`; this plugin sends only certified `CARD` / `BANK` / `CELLPHONE` for new payments |
 
 ### Optional Parameters
 
 | Parameter | Size | Description |
 |---|---|---|
 | `ReturnURL` | 500 | Redirect URL after auth (**required for Mobile**) |
-| `BuyerName` | 30 | Buyer name |
-| `BuyerTel` | 20 | Buyer phone |
-| `BuyerEmail` | 60 | Buyer email |
+| `BuyerName` | 30 bytes | Buyer name; server and browser enforce the UTF-8 byte limit |
+| `BuyerTel` | 20 bytes | Buyer phone |
+| `BuyerEmail` | 60 bytes | Buyer email |
 | `ReqReserved` | 500 | Custom data, returned as-is (no double quotes `"`) |
-| `CurrencyCode` | 3 | `KRW` (default) / `USD` |
+| `CurrencyCode` | 3 | Legacy protocol documents `KRW` / `USD`; this plugin currently sends `KRW` only |
 | `NpLang` | 2 | `KO` (default) / `EN` / `CN` |
-| `CharSet` | 10 | `euc-kr` (default) / `utf-8` |
+| `CharSet` | 10 | This plugin sends `utf-8` only |
 | `LogoImage` | 100 | Logo image full URL (60x60 px) |
 | `SkinType` | — | `default` / `black` |
 | `ConnWithIframe` | 1 | `Y` for iframe mode (PC only) |
@@ -92,6 +98,8 @@ Sent to NicePay via `nicepay-pgweb.js` form submission.
 | `QuotaInterest` | — | Interest-free card info. Format: `CardCode:months|CardCode:months` |
 
 ### Virtual Account Extra Parameters
+
+Protocol reference only: the plugin does not initiate new `VBANK` payments and has no certified deposit-notification lifecycle.
 
 | Parameter | Size | Required | Description |
 |---|---|---|---|
@@ -138,7 +146,7 @@ Sent server-to-server to `NextAppURL`.
 | `Amt` | 12 | Yes | Payment amount |
 | `EdiDate` | 14 | Yes | Timestamp (`YYYYMMDDHHMISS`) |
 | `SignData` | 256 | Yes | `hex(sha256(AuthToken + MID + Amt + EdiDate + MerchantKey))` |
-| `CharSet` | 10 | No | Response encoding |
+| `CharSet` | 10 | No | Response encoding; this plugin requests UTF-8 |
 | `EdiType` | 10 | No | Response format (`JSON` default, `KV` for key=value) |
 
 ---
@@ -151,10 +159,16 @@ Sent server-to-server to `NextAppURL`.
 |---|---|---|
 | `ResultCode` | 4 | Result code (see [Result Codes](#result-codes)) |
 | `ResultMsg` | 100 | Result message |
-| `Amt` | 12 | Transaction amount |
+| `Amt` | 12 | Transaction amount; the response may use fixed-width leading-zero padding |
 | `MID` | 10 | Merchant ID |
 | `Moid` | 64 | Merchant order ID |
 | `Signature` | 500 | `hex(sha256(TID + MID + Amt + MerchantKey))` |
+
+For approval-response signature verification, `Amt` is used byte-for-byte as
+returned by NicePay. Numeric transaction binding separately canonicalizes a
+strict 1–12 digit response (for example, `000000001004` equals `1004`). The
+plugin does not try alternative signature preimages; confirm the merchant
+account's exact sandbox response convention before production certification.
 | `TID` | 30 | Transaction ID |
 | `AuthCode` | 30 | Authorization code |
 | `AuthDate` | 12 | Authorization date (`YYMMDDHHMMSS`) |
@@ -313,14 +327,14 @@ SignData     = hex(sha256(PlainText))
 
 ### Approval Success Codes
 
-| Payment Method | Success Code |
-|---|---|
-| Credit Card (CARD) | `3001` |
-| Bank Transfer (BANK) | `4000` |
-| Virtual Account (VBANK) | `4100` |
-| Mobile Payment (CELLPHONE) | `A000` |
-| SSG Bank Account (SSG_BANK) | `0000` |
-| Culture Cash (GIFT_CULT) | `0000` |
+| Payment Method | Legacy Success Code | New-payment support |
+|---|---|---|
+| Credit Card (`CARD`) | `3001` | Certified gate enabled |
+| Bank Transfer (`BANK`) | `4000` | Certified gate enabled |
+| Mobile Payment (`CELLPHONE`) | `A000` | Certified gate enabled |
+| Virtual Account (`VBANK`) | `4100` | Disabled/unsupported |
+| SSG Bank Account (`SSG_BANK`) | `0000` | Disabled/unsupported |
+| Culture Cash (`GIFT_CULT`) | `0000` | Disabled/unsupported |
 
 ### Cancel Success Codes
 
@@ -392,12 +406,15 @@ SignData     = hex(sha256(PlainText))
 |---|---|
 | 5 seconds | 30 seconds |
 
-The plugin uses WordPress `wp_remote_post()` with a 30-second timeout for all API calls:
+The plugin uses WordPress `wp_remote_post()` with a 30-second overall timeout. A request-scoped `http_api_curl` callback sets `CURLOPT_CONNECTTIMEOUT` to 5 seconds for the exact NicePay URL and is removed in a `finally` block. `nicepay_http_timeout` and `nicepay_http_connect_timeout` may adjust these bounded values per operation (`approval`, `net_cancel`, or `cancel`). Exact vendor retry semantics remain part of DG-01/DG-02 certification; ambiguous results are recorded as `needs_reconciliation`, not treated as success or blindly retried.
 
 ```php
 wp_remote_post( $url, array(
     'timeout'   => 30,
+    'redirection' => 0,
     'sslverify' => true,
     'body'      => $params,
 ) );
 ```
+
+The approval response's `CcPartCl`, `ClickpayCl`, and `CardType` flags are stored as validated first-class fields. Card partial refunds require `CcPartCl=1`; simple-pay codes whose remaining balance may become irreversible are blocked from partial refund.
