@@ -166,6 +166,7 @@ if ( ! function_exists( 'get_option' ) ) {
 
 if ( ! function_exists( 'update_option' ) ) {
     function update_option( $option, $value, $autoload = null ) {
+		unset( $autoload );
         global $wp_options;
         $wp_options[ $option ] = $value;
         return true;
@@ -174,6 +175,7 @@ if ( ! function_exists( 'update_option' ) ) {
 
 if ( ! function_exists( 'add_option' ) ) {
     function add_option( $option, $value = '', $deprecated = '', $autoload = null ) {
+		unset( $deprecated, $autoload );
         global $wp_options;
         if ( isset( $wp_options[ $option ] ) ) {
             return false;
@@ -271,7 +273,8 @@ if ( ! function_exists( 'wp_verify_nonce' ) ) {
 }
 
 if ( ! function_exists( 'current_user_can' ) ) {
-	function current_user_can( $capability ) {
+		function current_user_can( $capability ) {
+			unset( $capability );
 		global $nicepay_admin_test_can_manage;
 		return (bool) $nicepay_admin_test_can_manage;
 	}
@@ -330,7 +333,8 @@ if ( ! function_exists( 'wc_add_notice' ) ) {
 }
 
 if ( ! function_exists( 'wp_safe_redirect' ) ) {
-	function wp_safe_redirect( $location, $status = 302, $x_redirect_by = 'WordPress' ) {
+		function wp_safe_redirect( $location, $status = 302, $x_redirect_by = 'WordPress' ) {
+			unset( $status, $x_redirect_by );
 		throw new NicePay_Test_Redirect_Exception( $location );
 	}
 }

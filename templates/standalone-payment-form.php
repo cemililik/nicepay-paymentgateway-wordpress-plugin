@@ -81,8 +81,8 @@ $show_buyer_fields = empty( $preset_name ) || empty( $preset_email ) || empty( $
     </button>
 </div>
 
-<!-- Modal Overlay -->
-<div class="nicepay-payment-modal-overlay" id="<?php echo esc_attr( $form_id . '-modal' ); ?>" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="<?php echo esc_attr( $form_id . '-title' ); ?>">
+<!-- Native dialog preserves modal semantics, focus isolation and device accessibility. -->
+<dialog class="nicepay-payment-modal-overlay" id="<?php echo esc_attr( $form_id . '-modal' ); ?>" aria-labelledby="<?php echo esc_attr( $form_id . '-title' ); ?>">
     <div class="nicepay-payment-modal" tabindex="-1">
         <button type="button" class="nicepay-payment-modal-close" data-nicepay-close-modal="<?php echo esc_attr( $form_id ); ?>" aria-label="<?php esc_attr_e( 'Close', 'nicepay-payment-gateway' ); ?>">&times;</button>
         <div class="nicepay-payment-modal-body">
@@ -197,5 +197,5 @@ $show_buyer_fields = empty( $preset_name ) || empty( $preset_email ) || empty( $
 <?php if ( $is_modal ) : ?>
         </div><!-- .nicepay-payment-modal-body -->
     </div><!-- .nicepay-payment-modal -->
-</div><!-- .nicepay-payment-modal-overlay -->
+</dialog><!-- .nicepay-payment-modal-overlay -->
 <?php endif; ?>

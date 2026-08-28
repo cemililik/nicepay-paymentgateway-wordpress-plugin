@@ -5,19 +5,22 @@
  * Run only through tests/integration/run-woocommerce-smoke.sh.
  */
 
+final class NicePay_WooCommerce_Integration_Exception extends RuntimeException {
+}
+
 if ( '1' !== getenv( 'NICEPAY_WC_INTEGRATION_TEST' ) || 'nicepay_wc_integration' !== DB_NAME ) {
-	throw new RuntimeException( 'Refusing to run NicePay WooCommerce checks outside the disposable test database.' );
+	throw new NicePay_WooCommerce_Integration_Exception( 'Refusing to run NicePay WooCommerce checks outside the disposable test database.' );
 }
 
 $nicepay_hpos_mode = getenv( 'NICEPAY_HPOS_MODE' );
 if ( ! in_array( $nicepay_hpos_mode, array( 'legacy', 'hpos' ), true ) ) {
-	throw new RuntimeException( 'NICEPAY_HPOS_MODE must be either legacy or hpos.' );
+	throw new NicePay_WooCommerce_Integration_Exception( 'NICEPAY_HPOS_MODE must be either legacy or hpos.' );
 }
 
 /** @param bool $condition Assertion result. @param string $message Failure message. */
 function nicepay_wc_it_assert( $condition, $message ) {
 	if ( ! $condition ) {
-		throw new RuntimeException( $message );
+		throw new NicePay_WooCommerce_Integration_Exception( $message );
 	}
 }
 

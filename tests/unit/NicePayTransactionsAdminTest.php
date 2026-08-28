@@ -7,6 +7,7 @@ use PHPUnit\Framework\TestCase;
 
 if ( ! function_exists( 'add_action' ) ) {
     function add_action( $hook, $callback ) {
+		unset( $hook, $callback );
         return true;
     }
 }
@@ -173,6 +174,7 @@ class NicePayTransactionsAdminTest extends TestCase {
 
     public function test_detail_view_escapes_every_label_and_value_at_output_boundary(): void {
         $source = file_get_contents( NICEPAY_PLUGIN_DIR . 'admin/class-nicepay-transactions.php' );
+		$source .= "\n" . file_get_contents( NICEPAY_PLUGIN_DIR . 'admin/views/transactions.php' );
 
         $this->assertStringContainsString( "esc_html( \$detail['label'] )", $source );
         $this->assertStringContainsString( "esc_html( \$detail['value'] )", $source );

@@ -21,6 +21,7 @@ class NicePayTransactionRepositoryWpdbFake {
     public $get_results_result = array();
 
     public function insert( $table, $data, $formats ) {
+		unset( $table );
         $this->insert_data    = $data;
         $this->insert_formats = $formats;
         return 1;
@@ -43,6 +44,7 @@ class NicePayTransactionRepositoryWpdbFake {
     }
 
     public function update( $table, $data, $where, $formats = null, $where_formats = null ) {
+		unset( $table, $formats, $where_formats );
         $this->update_data  = $data;
         $this->update_where = $where;
         return $this->update_result;
@@ -286,7 +288,7 @@ class NicePayTransactionRepositoryTest extends TestCase {
 		$wpdb->get_row_result = $local_context;
         $api     = new NicePayAbortApiFake( array( 'ResultCode' => '2001', 'ResultMsg' => 'cancelled' ) );
 
-		$result = nicepay_abort_authenticated_payment( 17, $posted_context, $api, 'order_snapshot_changed' );
+		$result = nicepay_abort_authenticated_payment( 17, $api, 'order_snapshot_changed' );
 
         $this->assertFalse( $result['needs_reconciliation'] );
         $this->assertTrue( $result['persisted'] );
@@ -302,11 +304,10 @@ class NicePayTransactionRepositoryTest extends TestCase {
 
     public function test_preapproval_abort_preserves_context_for_unknown_network_cancel(): void {
         global $wpdb;
-        $context = array( 'AuthToken' => 'verified-token', 'TxTid' => 'verified-tid', 'Amt' => '1004' );
 		$wpdb->get_row_result = $this->claimedAuthRow();
         $api     = new NicePayAbortApiFake( new WP_Error( 'nicepay_net_cancel_timeout', 'timeout' ) );
 
-        $result = nicepay_abort_authenticated_payment( 17, $context, $api, 'order_missing' );
+		$result = nicepay_abort_authenticated_payment( 17, $api, 'order_missing' );
 
         $this->assertTrue( $result['needs_reconciliation'] );
         $this->assertTrue( $result['persisted'] );
@@ -323,7 +324,6 @@ class NicePayTransactionRepositoryTest extends TestCase {
 
 		$result = nicepay_abort_authenticated_payment(
 			17,
-			array( 'AuthToken' => 'posted-token', 'TxTid' => 'posted-tid', 'Amt' => '1004' ),
 			$api,
 			'local_context_missing'
 		);

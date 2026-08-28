@@ -10,7 +10,10 @@ if ( ! class_exists( 'Automattic\\WooCommerce\\Blocks\\Payments\\Integrations\\A
 }
 
 if ( ! function_exists( 'add_action' ) ) {
-    function add_action( $hook_name, $callback ) { return true; }
+    function add_action( $hook_name, $callback ) {
+		unset( $hook_name, $callback );
+		return true;
+	}
 }
 
 if ( ! function_exists( 'admin_url' ) ) {
@@ -29,7 +32,10 @@ if ( ! function_exists( 'wp_register_script' ) ) {
 }
 
 if ( ! function_exists( 'wp_set_script_translations' ) ) {
-    function wp_set_script_translations( $handle, $domain, $path = '' ) { return true; }
+    function wp_set_script_translations( $handle, $domain, $path = '' ) {
+		unset( $handle, $domain, $path );
+		return true;
+	}
 }
 
 if ( ! function_exists( 'wp_strip_all_tags' ) ) {
@@ -60,7 +66,10 @@ if ( ! class_exists( 'WC_Payment_Gateway' ) ) {
             return isset( $this->form_fields[ $key ]['default'] ) ? $this->form_fields[ $key ]['default'] : $default;
         }
         public function process_admin_options() { return true; }
-		public function get_return_url( $order = null ) { return 'https://example.com/order-received/'; }
+			public function get_return_url( $order = null ) {
+				unset( $order );
+				return 'https://example.com/order-received/';
+			}
     }
 }
 
@@ -88,16 +97,14 @@ class NicePayBlocksSchemaWpdbFake {
     }
 
     public function get_var( $query ) {
-		if ( false !== strpos( $query, 'wp_nicepay_reconciliation_audit' ) ) {
-			return 'wp_nicepay_reconciliation_audit';
+		$result = null;
+		foreach ( array( 'wp_nicepay_reconciliation_audit', 'wp_nicepay_refund_attempts', 'wp_nicepay_transactions' ) as $table ) {
+			if ( false !== strpos( $query, $table ) ) {
+				$result = $table;
+				break;
+			}
 		}
-        if ( false !== strpos( $query, 'wp_nicepay_refund_attempts' ) ) {
-            return 'wp_nicepay_refund_attempts';
-        }
-        if ( false !== strpos( $query, 'wp_nicepay_transactions' ) ) {
-            return 'wp_nicepay_transactions';
-        }
-        return null;
+		return $result;
     }
 }
 
@@ -120,17 +127,13 @@ class NicePayBlocksIntegrationTest extends TestCase {
 		$this->allow_test_checkout = static function() { return true; };
 		add_filter( 'nicepay_allow_test_mode_checkout', $this->allow_test_checkout );
 
-        $gateway = ( new ReflectionClass( WC_Gateway_NicePay::class ) )->newInstanceWithoutConstructor();
+		$api     = new NicePay_API();
+		$gateway = new WC_Gateway_NicePay( $api );
         $gateway->enabled     = 'yes';
         $gateway->title       = '<strong>NicePay</strong>';
         $gateway->description = '<em>Secure redirect</em>';
         $gateway->supports    = array( 'products', 'refunds' );
-        $api = new NicePay_API();
-        $api_property = new ReflectionProperty( WC_Gateway_NicePay::class, 'api' );
-        $api_property->setAccessible( true );
-        $api_property->setValue( $gateway, $api );
-
-		$nicepay_wc_test_environment = new NicePayBlocksWooFake( $gateway );
+			$nicepay_wc_test_environment = new NicePayBlocksWooFake( $gateway );
 	}
 
 	protected function tearDown(): void {

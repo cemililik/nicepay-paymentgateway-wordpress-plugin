@@ -19,6 +19,8 @@ class NicePayStandaloneTemplateTest extends TestCase {
         $this->assertStringNotContainsString( 'function nicepayStartStandalone', $template );
         $this->assertStringContainsString( "array_unshift( \$button_classes, 'nicepay-pay-button' )", $template );
         $this->assertStringContainsString( '--nicepay-button-text:', $template );
+		$this->assertStringContainsString( '<dialog class="nicepay-payment-modal-overlay"', $template );
+		$this->assertStringNotContainsString( 'role="dialog"', $template );
     }
 
     public function test_frontend_reads_config_from_the_clicked_form_instance(): void {

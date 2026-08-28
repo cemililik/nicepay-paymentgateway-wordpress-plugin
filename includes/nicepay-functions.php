@@ -9,6 +9,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 require_once __DIR__ . '/class-nicepay-transaction-schema.php';
 
+define( 'NICEPAY_PRESET_QUICK_PAYMENT', 'Quick Payment' );
+define( 'NICEPAY_PRESET_PRODUCT_PURCHASE', 'Product Purchase' );
+
 /**
  * Log NicePay events for debugging
  *
@@ -64,23 +67,21 @@ function nicepay_redact_log_data( $data, $key = '' ) {
     // similar vendor/application spellings share one deny list.
     $normalized_key = strtolower( preg_replace( '/[^A-Za-z0-9]/', '', (string) $key ) );
 
-    if ( in_array( $normalized_key, $sensitive, true ) ) {
-        return '[REDACTED]';
-    }
-
-    if ( is_array( $data ) ) {
-        $redacted = array();
-        foreach ( $data as $child_key => $value ) {
-            $redacted[ $child_key ] = nicepay_redact_log_data( $value, (string) $child_key );
-        }
-        return $redacted;
-    }
-
-    if ( is_object( $data ) ) {
-        return nicepay_redact_log_data( get_object_vars( $data ) );
-    }
-
-    return is_string( $data ) ? str_replace( array( "\r", "\n" ), ' ', $data ) : $data;
+	$result = $data;
+	if ( in_array( $normalized_key, $sensitive, true ) ) {
+		$result = '[REDACTED]';
+	} elseif ( is_array( $data ) ) {
+		$redacted = array();
+		foreach ( $data as $child_key => $value ) {
+			$redacted[ $child_key ] = nicepay_redact_log_data( $value, (string) $child_key );
+		}
+		$result = $redacted;
+	} elseif ( is_object( $data ) ) {
+		$result = nicepay_redact_log_data( get_object_vars( $data ) );
+	} elseif ( is_string( $data ) ) {
+		$result = str_replace( array( "\r", "\n" ), ' ', $data );
+	}
+	return $result;
 }
 
 /**
@@ -162,9 +163,10 @@ function nicepay_get_approval_error_audit( $error ) {
         : 'unknown';
     $needs_reconciliation = 'confirmed' !== $status;
 
-    $result_code = isset( $data['net_cancel_result_code'] ) && is_scalar( $data['net_cancel_result_code'] )
-        ? sanitize_text_field( (string) $data['net_cancel_result_code'] )
-        : ( $needs_reconciliation ? 'not_confirmed' : '' );
+	$result_code = $needs_reconciliation ? 'not_confirmed' : '';
+	if ( isset( $data['net_cancel_result_code'] ) && is_scalar( $data['net_cancel_result_code'] ) ) {
+		$result_code = sanitize_text_field( (string) $data['net_cancel_result_code'] );
+	}
     $result_msg = isset( $data['net_cancel_result_msg'] ) && is_scalar( $data['net_cancel_result_msg'] )
         ? nicepay_utf8_byte_cut( sanitize_text_field( (string) $data['net_cancel_result_msg'] ), 500 )
         : '';
@@ -200,12 +202,13 @@ function nicepay_get_approval_error_audit( $error ) {
  * @return array<string,mixed> Transaction update fields.
  */
 function nicepay_get_mismatched_approval_audit( $binding_error, $net_cancel, $auth_token ) {
-    $cancel_unknown = is_wp_error( $net_cancel );
-    $result_code    = $cancel_unknown
-        ? $net_cancel->get_error_code()
-        : ( isset( $net_cancel['ResultCode'] ) && is_scalar( $net_cancel['ResultCode'] )
-            ? sanitize_text_field( (string) $net_cancel['ResultCode'] )
-            : '' );
+	$cancel_unknown = is_wp_error( $net_cancel );
+	$result_code    = '';
+	if ( $cancel_unknown ) {
+		$result_code = $net_cancel->get_error_code();
+	} elseif ( isset( $net_cancel['ResultCode'] ) && is_scalar( $net_cancel['ResultCode'] ) ) {
+		$result_code = sanitize_text_field( (string) $net_cancel['ResultCode'] );
+	}
     $binding_code = is_wp_error( $binding_error )
         ? $binding_error->get_error_code()
         : 'nicepay_approval_binding_failed';
@@ -218,8 +221,8 @@ function nicepay_get_mismatched_approval_audit( $binding_error, $net_cancel, $au
         'net_cancel_status'       => $cancel_unknown ? 'unknown' : 'confirmed',
         'net_cancel_result_code'  => $result_code,
         'net_cancel_result_msg'   => '',
-        'net_cancel_requested_at' => gmdate( 'Y-m-d H:i:s' ),
-        'net_cancel_completed_at' => $cancel_unknown ? null : gmdate( 'Y-m-d H:i:s' ),
+		'net_cancel_requested_at' => gmdate( NICEPAY_DB_DATETIME_FORMAT ),
+		'net_cancel_completed_at' => $cancel_unknown ? null : gmdate( NICEPAY_DB_DATETIME_FORMAT ),
         'auth_token'              => (string) $auth_token,
     );
 }
@@ -228,21 +231,23 @@ function nicepay_get_mismatched_approval_audit( $binding_error, $net_cancel, $au
  * Reverse an authenticated payment after a local post-authentication failure.
  *
  * @param int         $transaction_id Transaction row ID.
- * @param array       $auth_data      Deprecated browser context; deliberately ignored.
  * @param NicePay_API $api            Configured API client.
  * @param string      $reason         Stable internal failure code.
  * @return array<string,mixed> Reversal and persistence outcome.
  */
-function nicepay_abort_authenticated_payment( $transaction_id, array $auth_data, $api, $reason ) {
-    $requested_at = gmdate( 'Y-m-d H:i:s' );
+function nicepay_abort_authenticated_payment( $transaction_id, $api, $reason ) {
+	$requested_at = gmdate( NICEPAY_DB_DATETIME_FORMAT );
 	$local_context = nicepay_get_authenticated_payment_context( $transaction_id );
 	$net_cancel    = is_wp_error( $local_context )
 		? $local_context
 		: $api->request_net_cancel( $local_context );
     $unknown      = is_wp_error( $net_cancel );
-    $result_code  = $unknown
-        ? $net_cancel->get_error_code()
-        : ( isset( $net_cancel['ResultCode'] ) ? sanitize_text_field( (string) $net_cancel['ResultCode'] ) : '' );
+	$result_code  = '';
+	if ( $unknown ) {
+		$result_code = $net_cancel->get_error_code();
+	} elseif ( isset( $net_cancel['ResultCode'] ) ) {
+		$result_code = sanitize_text_field( (string) $net_cancel['ResultCode'] );
+	}
     $result_msg   = ! $unknown && isset( $net_cancel['ResultMsg'] )
         ? nicepay_utf8_byte_cut( sanitize_text_field( (string) $net_cancel['ResultMsg'] ), 500 )
         : '';
@@ -258,7 +263,7 @@ function nicepay_abort_authenticated_payment( $transaction_id, array $auth_data,
             'net_cancel_result_code'    => $result_code,
             'net_cancel_result_msg'     => $result_msg,
             'net_cancel_requested_at'   => $requested_at,
-            'net_cancel_completed_at'   => $unknown ? null : gmdate( 'Y-m-d H:i:s' ),
+			'net_cancel_completed_at'   => $unknown ? null : gmdate( NICEPAY_DB_DATETIME_FORMAT ),
 			'auth_token'                => $unknown && ! is_wp_error( $local_context ) ? $local_context['AuthToken'] : '',
             'active_attempt_key'        => null,
         ),
@@ -371,7 +376,7 @@ function nicepay_save_transaction( $data ) {
     );
 
     $data = wp_parse_args( $data, $defaults );
-	$now  = gmdate( 'Y-m-d H:i:s' );
+	$now  = gmdate( NICEPAY_DB_DATETIME_FORMAT );
 	$data['created_at'] = $now;
 	$data['updated_at'] = $now;
 
@@ -410,7 +415,7 @@ function nicepay_update_transaction( $id, $data, $require_change = false ) {
     if ( isset( $data['payment_data'] ) && is_array( $data['payment_data'] ) ) {
         $data['payment_data'] = wp_json_encode( $data['payment_data'], JSON_UNESCAPED_UNICODE );
     }
-	$data['updated_at'] = gmdate( 'Y-m-d H:i:s' );
+	$data['updated_at'] = gmdate( NICEPAY_DB_DATETIME_FORMAT );
 
     $prepared = NicePay_Transaction_Schema::prepare_write( $data );
     if ( empty( $prepared['data'] ) ) {
@@ -842,8 +847,8 @@ function nicepay_save_refund_attempt( array $data ) {
     $data['requested_amount'] = nicepay_normalize_amount( $data['requested_amount'], 'KRW' );
     $data['currency']         = 'KRW';
     $data['status']           = 'requested';
-    $data['requested_at']     = isset( $data['requested_at'] ) ? $data['requested_at'] : gmdate( 'Y-m-d H:i:s' );
-	$data['created_at']       = gmdate( 'Y-m-d H:i:s' );
+	$data['requested_at']     = isset( $data['requested_at'] ) ? $data['requested_at'] : gmdate( NICEPAY_DB_DATETIME_FORMAT );
+	$data['created_at']       = gmdate( NICEPAY_DB_DATETIME_FORMAT );
     $prepared                 = NicePay_Transaction_Schema::prepare_refund_write( $data );
     $table                    = $wpdb->prefix . 'nicepay_refund_attempts';
     $result                   = $wpdb->insert( $table, $prepared['data'], $prepared['formats'] );
@@ -865,37 +870,31 @@ function nicepay_save_refund_attempt( array $data ) {
  * @return bool
  */
 function nicepay_complete_refund_attempt( $attempt_id, $cancel_moid, array $data ) {
-    global $wpdb;
+	global $wpdb;
 
-    $attempt_id  = absint( $attempt_id );
-    $cancel_moid = (string) $cancel_moid;
-    if ( $attempt_id < 1 || '' === $cancel_moid ) {
-        return false;
-    }
-
-    if ( isset( $data['response_data'] ) && is_array( $data['response_data'] ) ) {
-        $data['response_data'] = wp_json_encode( nicepay_filter_payment_data( $data['response_data'] ), JSON_UNESCAPED_UNICODE );
-    }
-    $prepared = NicePay_Transaction_Schema::prepare_refund_write( $data );
-    if ( empty( $prepared['data'] ) ) {
-        return false;
-    }
-
-    $table  = $wpdb->prefix . 'nicepay_refund_attempts';
-    $result = $wpdb->update(
-        $table,
-        $prepared['data'],
-        array( 'id' => $attempt_id, 'cancel_moid' => $cancel_moid, 'status' => 'requested' ),
-        $prepared['formats'],
-        array( '%d', '%s', '%s' )
-    );
-
-    if ( 1 !== (int) $result ) {
-        nicepay_log( 'Refund attempt completion did not update exactly one row', array( 'refund_attempt_id' => $attempt_id ), 'error' );
-        return false;
-    }
-
-    return true;
+	$attempt_id  = absint( $attempt_id );
+	$cancel_moid = (string) $cancel_moid;
+	$completed   = false;
+	if ( $attempt_id > 0 && '' !== $cancel_moid ) {
+		if ( isset( $data['response_data'] ) && is_array( $data['response_data'] ) ) {
+			$data['response_data'] = wp_json_encode( nicepay_filter_payment_data( $data['response_data'] ), JSON_UNESCAPED_UNICODE );
+		}
+		$prepared = NicePay_Transaction_Schema::prepare_refund_write( $data );
+		if ( ! empty( $prepared['data'] ) ) {
+			$result = $wpdb->update(
+				$wpdb->prefix . 'nicepay_refund_attempts',
+				$prepared['data'],
+				array( 'id' => $attempt_id, 'cancel_moid' => $cancel_moid, 'status' => 'requested' ),
+				$prepared['formats'],
+				array( '%d', '%s', '%s' )
+			);
+			$completed = 1 === (int) $result;
+			if ( ! $completed ) {
+				nicepay_log( 'Refund attempt completion did not update exactly one row', array( 'refund_attempt_id' => $attempt_id ), 'error' );
+			}
+		}
+	}
+	return $completed;
 }
 
 /**
@@ -919,7 +918,7 @@ function nicepay_release_unsent_refund_claim( $transaction_id, $cancel_moid ) {
             'cancel_result_code'  => 'LOCAL_AUDIT_WRITE_FAILED',
             'cancel_result_msg'   => '',
             'cancel_requested_at' => null,
-			'updated_at'          => gmdate( 'Y-m-d H:i:s' ),
+			'updated_at'          => gmdate( NICEPAY_DB_DATETIME_FORMAT ),
         ),
         array(
             'id'            => absint( $transaction_id ),
@@ -951,39 +950,28 @@ function nicepay_complete_transaction_refund( $id, $cancel_moid, array $data ) {
 
     $id          = absint( $id );
     $cancel_moid = (string) $cancel_moid;
-    if ( $id < 1 || '' === $cancel_moid ) {
-        return false;
-    }
-
-    if ( isset( $data['payment_data'] ) && is_array( $data['payment_data'] ) ) {
-        $data['payment_data'] = wp_json_encode( $data['payment_data'], JSON_UNESCAPED_UNICODE );
-    }
-	$data['updated_at'] = gmdate( 'Y-m-d H:i:s' );
-
-    $prepared = NicePay_Transaction_Schema::prepare_write( $data );
-    if ( empty( $prepared['data'] ) ) {
-        return false;
-    }
-
-    $table  = $wpdb->prefix . 'nicepay_transactions';
-    $result = $wpdb->update(
-        $table,
-        $prepared['data'],
-        array(
-            'id'            => $id,
-            'cancel_moid'   => $cancel_moid,
-            'cancel_status' => 'requested',
-        ),
-        $prepared['formats'],
-        array( '%d', '%s', '%s' )
-    );
-
-    if ( 1 !== (int) $result ) {
-        nicepay_log( 'Confirmed refund could not update its reserved ledger row', array( 'transaction_id' => $id ), 'error' );
-        return false;
-    }
-
-    return true;
+	$completed   = false;
+	if ( $id > 0 && '' !== $cancel_moid ) {
+		if ( isset( $data['payment_data'] ) && is_array( $data['payment_data'] ) ) {
+			$data['payment_data'] = wp_json_encode( $data['payment_data'], JSON_UNESCAPED_UNICODE );
+		}
+		$data['updated_at'] = gmdate( NICEPAY_DB_DATETIME_FORMAT );
+		$prepared = NicePay_Transaction_Schema::prepare_write( $data );
+		if ( ! empty( $prepared['data'] ) ) {
+			$result = $wpdb->update(
+				$wpdb->prefix . 'nicepay_transactions',
+				$prepared['data'],
+				array( 'id' => $id, 'cancel_moid' => $cancel_moid, 'cancel_status' => 'requested' ),
+				$prepared['formats'],
+				array( '%d', '%s', '%s' )
+			);
+			$completed = 1 === (int) $result;
+			if ( ! $completed ) {
+				nicepay_log( 'Confirmed refund could not update its reserved ledger row', array( 'transaction_id' => $id ), 'error' );
+			}
+		}
+	}
+	return $completed;
 }
 
 /**
@@ -1104,36 +1092,31 @@ function nicepay_expire_pending_transactions() {
  * @return void
  */
 function nicepay_warn_cancelled_order_with_captured_funds( $order_id ) {
-    if ( ! function_exists( 'wc_get_order' ) ) {
-        return;
-    }
+	$order = nicepay_order_requiring_cancel_warning( $order_id );
+	if ( null !== $order ) {
+		$order->add_order_note(
+			__( 'Warning: cancelling the WooCommerce order does not refund captured NicePay funds. Verify the remaining balance and create an explicit WooCommerce refund if money must be returned.', 'nicepay-payment-gateway' )
+		);
+		$order->update_meta_data( '_nicepay_cancelled_funds_warning', 'yes' );
+		$order->save();
+	}
+}
 
-    $order = wc_get_order( $order_id );
-    if ( ! $order || 'nicepay' !== $order->get_payment_method() ||
-        'yes' === $order->get_meta( '_nicepay_cancelled_funds_warning' ) ) {
-        return;
-    }
-
-    $tid = (string) $order->get_meta( '_nicepay_tid' );
-    if ( '' === $tid ) {
-        return;
-    }
-
-    $transaction = nicepay_get_transaction_by_tid( $tid, $order->get_id() );
-    if ( $transaction && 'refunded' === (string) $transaction->status ) {
-        return;
-    }
-
-    if ( $transaction && isset( $transaction->remaining_amount ) &&
-        '0' === nicepay_normalize_ledger_amount( $transaction->remaining_amount ) ) {
-        return;
-    }
-
-    $order->add_order_note(
-        __( 'Warning: cancelling the WooCommerce order does not refund captured NicePay funds. Verify the remaining balance and create an explicit WooCommerce refund if money must be returned.', 'nicepay-payment-gateway' )
-    );
-    $order->update_meta_data( '_nicepay_cancelled_funds_warning', 'yes' );
-    $order->save();
+/** @return object|null */
+function nicepay_order_requiring_cancel_warning( $order_id ) {
+	$order = function_exists( 'wc_get_order' ) ? wc_get_order( $order_id ) : null;
+	$result = null;
+	if ( $order && 'nicepay' === $order->get_payment_method() &&
+		'yes' !== $order->get_meta( '_nicepay_cancelled_funds_warning' ) ) {
+		$tid         = (string) $order->get_meta( '_nicepay_tid' );
+		$transaction = '' !== $tid ? nicepay_get_transaction_by_tid( $tid, $order->get_id() ) : null;
+		$has_balance = ! $transaction || ! isset( $transaction->remaining_amount ) ||
+			'0' !== nicepay_normalize_ledger_amount( $transaction->remaining_amount );
+		if ( '' !== $tid && $has_balance && ( ! $transaction || 'refunded' !== (string) $transaction->status ) ) {
+			$result = $order;
+		}
+	}
+	return $result;
 }
 
 /**
@@ -1170,111 +1153,138 @@ function nicepay_get_reconciliation_count() {
 function nicepay_resolve_reconciliation( $transaction_id, $decision, $reason, $actor_id ) {
 	global $wpdb;
 
-	$transaction_id = absint( $transaction_id );
-	$actor_id       = absint( $actor_id );
-	$decision       = sanitize_key( (string) $decision );
-	$reason         = nicepay_utf8_byte_cut( sanitize_textarea_field( (string) $reason ), 1000 );
-	if ( $transaction_id < 1 || $actor_id < 1 || ! in_array( $decision, array( 'reversed', 'captured' ), true ) ) {
-		return new WP_Error( 'nicepay_reconciliation_invalid_request', __( 'The reconciliation decision is invalid.', 'nicepay-payment-gateway' ) );
+	$request = nicepay_validate_reconciliation_request( $transaction_id, $decision, $reason, $actor_id );
+	if ( ! is_wp_error( $request ) && false === $wpdb->query( 'START TRANSACTION' ) ) {
+		$request = new WP_Error( 'nicepay_reconciliation_transaction_failed', __( 'The reconciliation update could not be started.', 'nicepay-payment-gateway' ) );
 	}
-	if ( '' === trim( $reason ) ) {
-		return new WP_Error( 'nicepay_reconciliation_reason_required', __( 'A reconciliation reason is required.', 'nicepay-payment-gateway' ) );
-	}
-
-	$table       = NicePay_Installer::table_name( $wpdb );
-	$audit_table = NicePay_Installer::reconciliation_audit_table_name( $wpdb );
-	if ( false === $wpdb->query( 'START TRANSACTION' ) ) {
-		return new WP_Error( 'nicepay_reconciliation_transaction_failed', __( 'The reconciliation update could not be started.', 'nicepay-payment-gateway' ) );
+	if ( is_wp_error( $request ) ) {
+		return $request;
 	}
 
 	try {
-		$transaction = $wpdb->get_row(
-			$wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d FOR UPDATE", $transaction_id )
-		);
-		if ( ! is_object( $transaction ) ||
-			'needs_reconciliation' !== (string) $transaction->status ||
-			'required' !== (string) $transaction->reconciliation_status ) {
+		$context = nicepay_get_reconciliation_context( $wpdb, $request['transaction_id'] );
+		$result  = is_wp_error( $context )
+			? $context
+			: nicepay_persist_reconciliation( $wpdb, $request, $context );
+		if ( is_wp_error( $result ) ) {
 			$wpdb->query( 'ROLLBACK' );
-			return new WP_Error( 'nicepay_reconciliation_state_changed', __( 'This transaction no longer requires reconciliation.', 'nicepay-payment-gateway' ) );
 		}
-
-		$captured = nicepay_normalize_ledger_amount( isset( $transaction->amount ) ? $transaction->amount : '' );
-		$refunded = nicepay_normalize_ledger_amount( isset( $transaction->refunded_amount ) ? $transaction->refunded_amount : '0' );
-		if ( false === $captured || false === $refunded || nicepay_compare_integer_amounts( $refunded, $captured ) > 0 ) {
-			$wpdb->query( 'ROLLBACK' );
-			return new WP_Error( 'nicepay_reconciliation_amount_invalid', __( 'The transaction amount cannot be reconciled safely.', 'nicepay-payment-gateway' ) );
-		}
-
-		$now = gmdate( 'Y-m-d H:i:s' );
-		if ( 'captured' === $decision ) {
-			$remaining = nicepay_subtract_integer_amounts( $captured, $refunded );
-			$status    = '0' === $remaining ? 'refunded' : ( '0' === $refunded ? 'paid' : 'partially_refunded' );
-			$update    = array(
-				'status'                  => $status,
-				'approval_state'          => 'approved',
-				'captured_amount'         => $captured,
-				'remaining_amount'        => $remaining,
-				'approved_at'             => $now,
-			);
-		} else {
-			$status = 'failed';
-			$update = array(
-				'status'                  => 'failed',
-				'approval_state'          => 'failed',
-				'captured_amount'         => '0',
-				'remaining_amount'        => '0',
-			);
-		}
-
-		$update = array_merge(
-			$update,
-			array(
-				'reconciliation_status'     => 'resolved',
-				'reconciliation_checked_at' => $now,
-				'reconciliation_note'       => $reason,
-				'active_attempt_key'         => null,
-				'auth_token'                => '',
-				'updated_at'                => $now,
-			)
-		);
-		$prepared = NicePay_Transaction_Schema::prepare_write( $update );
-		$changed  = $wpdb->update(
-			$table,
-			$prepared['data'],
-			array( 'id' => $transaction_id ),
-			$prepared['formats'],
-			array( '%d' )
-		);
-		if ( 1 !== (int) $changed ) {
-			$wpdb->query( 'ROLLBACK' );
-			return new WP_Error( 'nicepay_reconciliation_update_failed', __( 'The reconciliation decision could not be saved.', 'nicepay-payment-gateway' ) );
-		}
-
-		$audited = $wpdb->insert(
-			$audit_table,
-			array(
-				'transaction_id'   => $transaction_id,
-				'actor_id'         => $actor_id,
-				'action'           => $decision,
-				'reason'           => $reason,
-				'previous_status'  => 'needs_reconciliation',
-				'resulting_status' => $status,
-				'confirmed_amount' => 'captured' === $decision ? $captured : '0',
-				'created_at'       => $now,
-			),
-			array( '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s' )
-		);
-		if ( 1 !== (int) $audited || false === $wpdb->query( 'COMMIT' ) ) {
-			$wpdb->query( 'ROLLBACK' );
-			return new WP_Error( 'nicepay_reconciliation_audit_failed', __( 'The reconciliation audit record could not be saved.', 'nicepay-payment-gateway' ) );
-		}
-
-		return array( 'decision' => $decision, 'status' => $status, 'amount' => 'captured' === $decision ? $captured : '0' );
+		return $result;
 	} catch ( Throwable $throwable ) {
 		$wpdb->query( 'ROLLBACK' );
 		nicepay_log( 'Reconciliation resolution failed', $throwable->getMessage(), 'error' );
 		return new WP_Error( 'nicepay_reconciliation_exception', __( 'The reconciliation decision could not be saved.', 'nicepay-payment-gateway' ) );
 	}
+}
+
+/** @return array<string,mixed>|WP_Error */
+function nicepay_validate_reconciliation_request( $transaction_id, $decision, $reason, $actor_id ) {
+	$request = array(
+		'transaction_id' => absint( $transaction_id ),
+		'actor_id'       => absint( $actor_id ),
+		'decision'       => sanitize_key( (string) $decision ),
+		'reason'         => nicepay_utf8_byte_cut( sanitize_textarea_field( (string) $reason ), 1000 ),
+	);
+	$result = $request;
+	if ( $request['transaction_id'] < 1 || $request['actor_id'] < 1 ||
+		! in_array( $request['decision'], array( 'reversed', 'captured' ), true ) ) {
+		$result = new WP_Error( 'nicepay_reconciliation_invalid_request', __( 'The reconciliation decision is invalid.', 'nicepay-payment-gateway' ) );
+	} elseif ( '' === trim( $request['reason'] ) ) {
+		$result = new WP_Error( 'nicepay_reconciliation_reason_required', __( 'A reconciliation reason is required.', 'nicepay-payment-gateway' ) );
+	}
+	return $result;
+}
+
+/** @return array<string,string>|WP_Error */
+function nicepay_get_reconciliation_context( $wpdb, $transaction_id ) {
+	$table       = NicePay_Installer::table_name( $wpdb );
+	$transaction = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$table} WHERE id = %d FOR UPDATE", $transaction_id ) );
+	$result      = array();
+	if ( ! is_object( $transaction ) || 'needs_reconciliation' !== (string) $transaction->status ||
+		'required' !== (string) $transaction->reconciliation_status ) {
+		$result = new WP_Error( 'nicepay_reconciliation_state_changed', __( 'This transaction no longer requires reconciliation.', 'nicepay-payment-gateway' ) );
+	} else {
+		$captured = nicepay_normalize_ledger_amount( isset( $transaction->amount ) ? $transaction->amount : '' );
+		$refunded = nicepay_normalize_ledger_amount( isset( $transaction->refunded_amount ) ? $transaction->refunded_amount : '0' );
+		$result   = false === $captured || false === $refunded || nicepay_compare_integer_amounts( $refunded, $captured ) > 0
+			? new WP_Error( 'nicepay_reconciliation_amount_invalid', __( 'The transaction amount cannot be reconciled safely.', 'nicepay-payment-gateway' ) )
+			: array( 'captured' => $captured, 'refunded' => $refunded );
+	}
+	return $result;
+}
+
+/** @return array<string,mixed> */
+function nicepay_reconciliation_update( array $request, array $context, $now ) {
+	$captured = $context['captured'];
+	$refunded = $context['refunded'];
+	if ( 'captured' === $request['decision'] ) {
+		$remaining = nicepay_subtract_integer_amounts( $captured, $refunded );
+		$status    = nicepay_reconciled_capture_status( $remaining, $refunded );
+		$update    = array(
+			'status' => $status, 'approval_state' => 'approved', 'captured_amount' => $captured,
+			'remaining_amount' => $remaining, 'approved_at' => $now,
+		);
+	} else {
+		$status = 'failed';
+		$update = array( 'status' => $status, 'approval_state' => 'failed', 'captured_amount' => '0', 'remaining_amount' => '0' );
+	}
+	$update = array_merge(
+		$update,
+		array(
+			'reconciliation_status' => 'resolved', 'reconciliation_checked_at' => $now,
+			'reconciliation_note' => $request['reason'], 'active_attempt_key' => null,
+			'auth_token' => '', 'updated_at' => $now,
+		)
+	);
+	return array( 'status' => $status, 'fields' => $update );
+}
+
+/** @return string */
+function nicepay_reconciled_capture_status( $remaining, $refunded ) {
+	$status = 'partially_refunded';
+	if ( '0' === $remaining ) {
+		$status = 'refunded';
+	} elseif ( '0' === $refunded ) {
+		$status = 'paid';
+	}
+	return $status;
+}
+
+/** @return array<string,string>|WP_Error */
+function nicepay_persist_reconciliation( $wpdb, array $request, array $context ) {
+	$now      = gmdate( NICEPAY_DB_DATETIME_FORMAT );
+	$resolved = nicepay_reconciliation_update( $request, $context, $now );
+	$prepared = NicePay_Transaction_Schema::prepare_write( $resolved['fields'] );
+	$changed  = $wpdb->update(
+		NicePay_Installer::table_name( $wpdb ),
+		$prepared['data'],
+		array( 'id' => $request['transaction_id'] ),
+		$prepared['formats'],
+		array( '%d' )
+	);
+	$result = null;
+	if ( 1 !== (int) $changed ) {
+		$result = new WP_Error( 'nicepay_reconciliation_update_failed', __( 'The reconciliation decision could not be saved.', 'nicepay-payment-gateway' ) );
+	} else {
+		$audited = $wpdb->insert(
+			NicePay_Installer::reconciliation_audit_table_name( $wpdb ),
+			array(
+				'transaction_id' => $request['transaction_id'], 'actor_id' => $request['actor_id'],
+				'action' => $request['decision'], 'reason' => $request['reason'],
+				'previous_status' => 'needs_reconciliation', 'resulting_status' => $resolved['status'],
+				'confirmed_amount' => 'captured' === $request['decision'] ? $context['captured'] : '0',
+				'created_at' => $now,
+			),
+			array( '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s' )
+		);
+		$result = 1 === (int) $audited && false !== $wpdb->query( 'COMMIT' )
+			? array(
+				'decision' => $request['decision'], 'status' => $resolved['status'],
+				'amount' => 'captured' === $request['decision'] ? $context['captured'] : '0',
+			)
+			: new WP_Error( 'nicepay_reconciliation_audit_failed', __( 'The reconciliation audit record could not be saved.', 'nicepay-payment-gateway' ) );
+	}
+	return $result;
 }
 
 /**
@@ -1285,34 +1295,29 @@ function nicepay_resolve_reconciliation( $transaction_id, $decision, $reason, $a
  * @return array<string,string>|false
  */
 function nicepay_issue_standalone_receipt( $transaction_id ) {
-    $transaction_id = absint( $transaction_id );
-    if ( $transaction_id < 1 ) {
-        return false;
-    }
-
-    try {
-        $token = bin2hex( random_bytes( 32 ) );
-    } catch ( Throwable $throwable ) {
-        nicepay_log( 'Standalone receipt token generation failed', $transaction_id, 'error' );
-        return false;
-    }
-
-    if ( ! nicepay_update_transaction(
-        $transaction_id,
-        array(
-            'receipt_token_hash' => hash( 'sha256', $token ),
-            'receipt_issued_at'  => gmdate( 'Y-m-d H:i:s' ),
-        ),
-        true
-    ) ) {
-        nicepay_log( 'Standalone receipt token could not be persisted', $transaction_id, 'error' );
-        return false;
-    }
-
-    return array(
-        'token' => $token,
-        'url'   => add_query_arg( 'nicepay_receipt', $token, home_url( '/' ) ),
-    );
+	$transaction_id = absint( $transaction_id );
+	$result = false;
+	if ( $transaction_id > 0 ) {
+		try {
+			$token = bin2hex( random_bytes( 32 ) );
+			$stored = nicepay_update_transaction(
+				$transaction_id,
+				array(
+					'receipt_token_hash' => hash( 'sha256', $token ),
+					'receipt_issued_at'  => gmdate( NICEPAY_DB_DATETIME_FORMAT ),
+				),
+				true
+			);
+			if ( $stored ) {
+				$result = array( 'token' => $token, 'url' => add_query_arg( 'nicepay_receipt', $token, home_url( '/' ) ) );
+			} else {
+				nicepay_log( 'Standalone receipt token could not be persisted', $transaction_id, 'error' );
+			}
+		} catch ( Throwable $throwable ) {
+			nicepay_log( 'Standalone receipt token generation failed', $transaction_id, 'error' );
+		}
+	}
+	return $result;
 }
 
 /**
@@ -1649,40 +1654,56 @@ function nicepay_buyer_field_limits() {
  * @return array<string,string>|WP_Error
  */
 function nicepay_validate_buyer_fields( $buyer_name, $buyer_email, $buyer_tel, $required = true ) {
-    if ( ! is_string( $buyer_name ) || ! is_string( $buyer_email ) || ! is_string( $buyer_tel ) ) {
-        return new WP_Error( 'nicepay_buyer_fields_invalid', __( 'Buyer information is invalid.', 'nicepay-payment-gateway' ) );
-    }
+	$result = new WP_Error( 'nicepay_buyer_fields_invalid', __( 'Buyer information is invalid.', 'nicepay-payment-gateway' ) );
+	if ( is_string( $buyer_name ) && is_string( $buyer_email ) && is_string( $buyer_tel ) ) {
+		$values = array(
+			'buyer_name'  => sanitize_text_field( $buyer_name ),
+			'buyer_email' => sanitize_email( $buyer_email ),
+			'buyer_tel'   => sanitize_text_field( $buyer_tel ),
+		);
+		$result = nicepay_validate_buyer_lengths( $values, $required );
+		if ( ! is_wp_error( $result ) ) {
+			$result = nicepay_validate_buyer_contact( $values );
+		}
+		if ( ! is_wp_error( $result ) ) {
+			$result = $values;
+		}
+	}
+	return $result;
+}
 
-    $values = array(
-        'buyer_name'  => sanitize_text_field( $buyer_name ),
-        'buyer_email' => sanitize_email( $buyer_email ),
-        'buyer_tel'   => sanitize_text_field( $buyer_tel ),
-    );
-    $limits = nicepay_buyer_field_limits();
+/**
+ * @param array<string,string> $values Sanitized buyer values.
+ * @param bool                 $required Whether all values are mandatory.
+ * @return true|WP_Error
+ */
+function nicepay_validate_buyer_lengths( array $values, $required ) {
+	$result = true;
+	$limits = nicepay_buyer_field_limits();
+	foreach ( $values as $field => $value ) {
+		if ( $required && '' === $value ) {
+			$result = new WP_Error( 'nicepay_buyer_fields_required', __( 'Buyer information is required.', 'nicepay-payment-gateway' ) );
+			break;
+		}
+		if ( '' !== $value && ( 1 !== preg_match( '//u', $value ) || strlen( $value ) > $limits[ $field ] ) ) {
+			$result = new WP_Error( 'nicepay_buyer_fields_too_long', __( 'Buyer information exceeds the payment provider field limits.', 'nicepay-payment-gateway' ) );
+			break;
+		}
+	}
+	return $result;
+}
 
-    foreach ( $values as $field => $value ) {
-        if ( $required && '' === $value ) {
-            return new WP_Error( 'nicepay_buyer_fields_required', __( 'Buyer information is required.', 'nicepay-payment-gateway' ) );
-        }
-        if ( '' !== $value && ( 1 !== preg_match( '//u', $value ) || strlen( $value ) > $limits[ $field ] ) ) {
-            return new WP_Error( 'nicepay_buyer_fields_too_long', __( 'Buyer information exceeds the payment provider field limits.', 'nicepay-payment-gateway' ) );
-        }
-    }
-
-    if ( '' !== $values['buyer_email'] ) {
-        $valid_email = function_exists( 'is_email' )
-            ? is_email( $values['buyer_email'] )
-            : filter_var( $values['buyer_email'], FILTER_VALIDATE_EMAIL );
-        if ( ! $valid_email ) {
-            return new WP_Error( 'nicepay_buyer_email_invalid', __( 'Buyer email address is invalid.', 'nicepay-payment-gateway' ) );
-        }
-    }
-
-    if ( '' !== $values['buyer_tel'] && ! preg_match( '/^[0-9+() -]{7,20}$/', $values['buyer_tel'] ) ) {
-        return new WP_Error( 'nicepay_buyer_phone_invalid', __( 'Buyer phone number is invalid.', 'nicepay-payment-gateway' ) );
-    }
-
-    return $values;
+/** @param array<string,string> $values Sanitized buyer values. @return true|WP_Error */
+function nicepay_validate_buyer_contact( array $values ) {
+	$result = true;
+	$email  = $values['buyer_email'];
+	$valid_email = function_exists( 'is_email' ) ? is_email( $email ) : filter_var( $email, FILTER_VALIDATE_EMAIL );
+	if ( '' !== $email && ! $valid_email ) {
+		$result = new WP_Error( 'nicepay_buyer_email_invalid', __( 'Buyer email address is invalid.', 'nicepay-payment-gateway' ) );
+	} elseif ( '' !== $values['buyer_tel'] && ! preg_match( '/^[0-9+() -]{7,20}$/', $values['buyer_tel'] ) ) {
+		$result = new WP_Error( 'nicepay_buyer_phone_invalid', __( 'Buyer phone number is invalid.', 'nicepay-payment-gateway' ) );
+	}
+	return $result;
 }
 
 /**
@@ -1717,50 +1738,40 @@ function nicepay_increment_integer_string( $integer ) {
  * @return string|false Normalized amount, or false when invalid/unsupported.
  */
 function nicepay_normalize_amount( $amount, $currency = '' ) {
-    if ( ! $currency ) {
-        $currency = get_option( 'nicepay_currency', 'KRW' );
-    }
+	$currency = $currency ? $currency : get_option( 'nicepay_currency', 'KRW' );
+	$currency = strtoupper( (string) $currency );
+	$result   = false;
+	$raw      = nicepay_amount_input_string( $amount );
+	if ( nicepay_is_supported_currency( $currency ) && false !== $raw &&
+		preg_match( '/^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/', $raw ) ) {
+		$parts   = explode( '.', $raw, 2 );
+		$integer = $parts[0];
+		$decimal = isset( $parts[1] ) ? $parts[1] : '';
+		if ( '' !== $decimal && (int) $decimal[0] >= 5 ) {
+			$integer = nicepay_increment_integer_string( $integer );
+		}
+		$integer = ltrim( $integer, '0' );
+		$result  = nicepay_amount_within_limit( $integer ) ? $integer : false;
+	}
+	return $result;
+}
 
-    $currency = strtoupper( (string) $currency );
-    if ( ! nicepay_is_supported_currency( $currency ) ) {
-        return false;
-    }
+/** @param mixed $amount Raw amount. @return string|false */
+function nicepay_amount_input_string( $amount ) {
+	$result = false;
+	if ( ( is_int( $amount ) || is_float( $amount ) ) && is_finite( (float) $amount ) ) {
+		$result = rtrim( rtrim( sprintf( '%.8F', (float) $amount ), '0' ), '.' );
+	} elseif ( is_string( $amount ) ) {
+		$result = trim( $amount );
+	}
+	return $result;
+}
 
-    if ( is_int( $amount ) || is_float( $amount ) ) {
-        if ( ! is_finite( (float) $amount ) ) {
-            return false;
-        }
-        $raw = rtrim( rtrim( sprintf( '%.8F', (float) $amount ), '0' ), '.' );
-    } elseif ( is_string( $amount ) ) {
-        $raw = trim( $amount );
-    } else {
-        return false;
-    }
-
-    if ( ! preg_match( '/^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/', $raw ) ) {
-        return false;
-    }
-
-    $parts   = explode( '.', $raw, 2 );
-    $integer = $parts[0];
-    $decimal = isset( $parts[1] ) ? $parts[1] : '';
-
-    if ( '' !== $decimal && (int) $decimal[0] >= 5 ) {
-        $integer = nicepay_increment_integer_string( $integer );
-    }
-
-    $integer = ltrim( $integer, '0' );
-    if ( '' === $integer ) {
-        return false;
-    }
-
-    $maximum = '999999999999';
-    if ( strlen( $integer ) > strlen( $maximum ) ||
-        ( strlen( $integer ) === strlen( $maximum ) && strcmp( $integer, $maximum ) > 0 ) ) {
-        return false;
-    }
-
-    return $integer;
+/** @param string $integer Canonical integer digits. @return bool */
+function nicepay_amount_within_limit( $integer ) {
+	$maximum = '999999999999';
+	return '' !== $integer && ( strlen( $integer ) < strlen( $maximum ) ||
+		( strlen( $integer ) === strlen( $maximum ) && strcmp( $integer, $maximum ) <= 0 ) );
 }
 
 /**
@@ -1972,10 +1983,10 @@ function nicepay_get_default_presets() {
     return array(
         array(
             'id'           => 'quick-payment',
-            'name'         => 'Quick Payment',
+			'name'         => NICEPAY_PRESET_QUICK_PAYMENT,
             'display_mode' => 'inline',
             'amount'       => '10000',
-            'goods_name'   => 'Quick Payment',
+			'goods_name'   => NICEPAY_PRESET_QUICK_PAYMENT,
             'goods_class'  => '0',
             'pay_method'   => '',
             'button_text'  => 'Pay Now',
@@ -2008,10 +2019,10 @@ function nicepay_get_default_presets() {
         ),
         array(
             'id'           => 'product-purchase',
-            'name'         => 'Product Purchase',
+			'name'         => NICEPAY_PRESET_PRODUCT_PURCHASE,
             'display_mode' => 'modal',
             'amount'       => '50000',
-            'goods_name'   => 'Product Purchase',
+			'goods_name'   => NICEPAY_PRESET_PRODUCT_PURCHASE,
             'goods_class'  => '1',
             'pay_method'   => '',
             'button_text'  => 'Buy Now',
@@ -2041,13 +2052,13 @@ function nicepay_get_preset_labels( $id ) {
     $labels = array(
         'quick-payment' => array(
             'canonical' => array(
-                'name'        => 'Quick Payment',
-                'goods_name'  => 'Quick Payment',
+				'name'        => NICEPAY_PRESET_QUICK_PAYMENT,
+				'goods_name'  => NICEPAY_PRESET_QUICK_PAYMENT,
                 'button_text' => 'Pay Now',
             ),
             'localized' => array(
-                'name'        => __( 'Quick Payment', 'nicepay-payment-gateway' ),
-                'goods_name'  => __( 'Quick Payment', 'nicepay-payment-gateway' ),
+				'name'        => nicepay_translate_preset_label( NICEPAY_PRESET_QUICK_PAYMENT ),
+				'goods_name'  => nicepay_translate_preset_label( NICEPAY_PRESET_QUICK_PAYMENT ),
                 'button_text' => __( 'Pay Now', 'nicepay-payment-gateway' ),
             ),
         ),
@@ -2065,13 +2076,13 @@ function nicepay_get_preset_labels( $id ) {
         ),
         'product-purchase' => array(
             'canonical' => array(
-                'name'        => 'Product Purchase',
-                'goods_name'  => 'Product Purchase',
+				'name'        => NICEPAY_PRESET_PRODUCT_PURCHASE,
+				'goods_name'  => NICEPAY_PRESET_PRODUCT_PURCHASE,
                 'button_text' => 'Buy Now',
             ),
             'localized' => array(
-                'name'        => __( 'Product Purchase', 'nicepay-payment-gateway' ),
-                'goods_name'  => __( 'Product Purchase', 'nicepay-payment-gateway' ),
+				'name'        => nicepay_translate_preset_label( NICEPAY_PRESET_PRODUCT_PURCHASE ),
+				'goods_name'  => nicepay_translate_preset_label( NICEPAY_PRESET_PRODUCT_PURCHASE ),
                 'button_text' => __( 'Buy Now', 'nicepay-payment-gateway' ),
             ),
         ),
@@ -2081,7 +2092,16 @@ function nicepay_get_preset_labels( $id ) {
         return null;
     }
 
-    return $labels[ $id ];
+	return $labels[ $id ];
+}
+
+/** @return string */
+function nicepay_translate_preset_label( $label ) {
+	$translations = array(
+		NICEPAY_PRESET_QUICK_PAYMENT   => __( 'Quick Payment', 'nicepay-payment-gateway' ),
+		NICEPAY_PRESET_PRODUCT_PURCHASE => __( 'Product Purchase', 'nicepay-payment-gateway' ),
+	);
+	return isset( $translations[ $label ] ) ? $translations[ $label ] : (string) $label;
 }
 
 /**

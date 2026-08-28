@@ -87,7 +87,7 @@ final class NicePay_Installer {
 	 * @return string
 	 */
 	public static function duplicate_moid_count_sql( $table_name ) {
-		if ( ! preg_match( '/^[A-Za-z0-9_]+$/', $table_name ) ) {
+		if ( ! preg_match( NicePay_Transaction_Schema::IDENTIFIER_PATTERN, $table_name ) ) {
 			throw new InvalidArgumentException( 'Invalid NicePay transaction table name.' );
 		}
 
@@ -101,7 +101,7 @@ final class NicePay_Installer {
 	 * @return string
 	 */
 	public static function duplicate_tid_count_sql( $table_name ) {
-		if ( ! preg_match( '/^[A-Za-z0-9_]+$/', $table_name ) ) {
+		if ( ! preg_match( NicePay_Transaction_Schema::IDENTIFIER_PATTERN, $table_name ) ) {
 			throw new InvalidArgumentException( 'Invalid NicePay transaction table name.' );
 		}
 
@@ -123,99 +123,137 @@ final class NicePay_Installer {
 			global $wpdb;
 		}
 
-		if ( ! is_object( $wpdb ) || ! isset( $wpdb->prefix ) || ! method_exists( $wpdb, 'get_charset_collate' ) ) {
-			return new WP_Error( 'nicepay_schema_missing_wpdb', __( 'NicePay schema installation requires a valid wpdb instance.', 'nicepay-payment-gateway' ) );
+		$context = self::prepare_install_context( $wpdb );
+		if ( isset( $context['result'] ) ) {
+			return $context['result'];
 		}
 
-		$current = (string) get_option( self::VERSION_OPTION, '' );
-		$target  = self::schema_version();
-		$table   = self::table_name( $wpdb );
-		$refund_table = self::refund_table_name( $wpdb );
-		$audit_table  = self::reconciliation_audit_table_name( $wpdb );
+		if ( ! self::acquire_install_lock() ) {
+			return new WP_Error( 'nicepay_schema_upgrade_locked', __( 'Another NicePay schema upgrade is already running.', 'nicepay-payment-gateway' ) );
+		}
 
-		if ( '' !== $current && version_compare( $current, $target, '>' ) ) {
-			return new WP_Error(
+		try {
+			return self::install_schema( $wpdb, $db_delta, $context );
+		} finally {
+			delete_option( self::LOCK_OPTION );
+		}
+	}
+
+	/** @return array<string,mixed> */
+	private static function prepare_install_context( $wpdb ) {
+		$result = null;
+		$target = self::schema_version();
+		$current = (string) get_option( self::VERSION_OPTION, '' );
+
+		if ( ! is_object( $wpdb ) || ! isset( $wpdb->prefix ) || ! method_exists( $wpdb, 'get_charset_collate' ) ) {
+			$result = new WP_Error( 'nicepay_schema_missing_wpdb', __( 'NicePay schema installation requires a valid wpdb instance.', 'nicepay-payment-gateway' ) );
+		} elseif ( '' !== $current && version_compare( $current, $target, '>' ) ) {
+			$result = new WP_Error(
 				'nicepay_schema_downgrade_blocked',
 				__( 'NicePay will not run an older schema over a newer database.', 'nicepay-payment-gateway' ),
 				array( 'current' => $current, 'target' => $target )
 			);
 		}
 
-		$table_exists        = self::table_exists( $wpdb, $table );
-		$refund_table_exists = self::table_exists( $wpdb, $refund_table );
-		$audit_table_exists  = self::table_exists( $wpdb, $audit_table );
+		if ( null !== $result ) {
+			return array( 'result' => $result );
+		}
+
+		$context = array(
+			'current'             => $current,
+			'target'              => $target,
+			'table'               => self::table_name( $wpdb ),
+			'refund_table'        => self::refund_table_name( $wpdb ),
+			'audit_table'         => self::reconciliation_audit_table_name( $wpdb ),
+		);
+		$context['table_exists']        = self::table_exists( $wpdb, $context['table'] );
+		$context['refund_table_exists'] = self::table_exists( $wpdb, $context['refund_table'] );
+		$context['audit_table_exists']  = self::table_exists( $wpdb, $context['audit_table'] );
 
 		if ( $current === $target &&
 			(string) get_option( self::VERIFIED_VERSION_OPTION, '' ) === $target &&
-			$table_exists && $refund_table_exists && $audit_table_exists ) {
-			return array(
-				'status'  => 'current',
-				'version' => $target,
-				'table'   => $table,
-				'refund_table' => $refund_table,
-				'audit_table'  => $audit_table,
-				'changes' => array(),
-			);
+			$context['table_exists'] && $context['refund_table_exists'] && $context['audit_table_exists'] ) {
+			$context['result'] = self::install_response( 'current', $context, array() );
 		}
 
-		$lock_acquired = add_option( self::LOCK_OPTION, time(), '', false );
-		if ( ! $lock_acquired ) {
+		return $context;
+	}
+
+	/** @return bool */
+	private static function acquire_install_lock() {
+		$acquired = add_option( self::LOCK_OPTION, time(), '', false );
+		if ( ! $acquired ) {
 			$lock_time = (int) get_option( self::LOCK_OPTION, 0 );
 			if ( $lock_time > 0 && $lock_time < time() - self::LOCK_TTL ) {
 				delete_option( self::LOCK_OPTION );
-				$lock_acquired = add_option( self::LOCK_OPTION, time(), '', false );
+				$acquired = add_option( self::LOCK_OPTION, time(), '', false );
 			}
 		}
-		if ( ! $lock_acquired ) {
-			return new WP_Error( 'nicepay_schema_upgrade_locked', __( 'Another NicePay schema upgrade is already running.', 'nicepay-payment-gateway' ) );
+		return (bool) $acquired;
+	}
+
+	/** @return array<string,mixed>|WP_Error */
+	private static function install_schema( $wpdb, $db_delta, array $context ) {
+		$result = self::prepare_legacy_table( $wpdb, $context['table'], $context['table_exists'] );
+		if ( ! is_wp_error( $result ) ) {
+			$result = self::run_db_delta( $wpdb, $db_delta, $context );
 		}
+		if ( ! is_wp_error( $result ) ) {
+			$changes = $result;
+			$result  = self::finalize_install( $wpdb, $context );
+		}
+		if ( ! is_wp_error( $result ) ) {
+			$result = self::install_response( 'installed', $context, $changes );
+		}
+		return $result;
+	}
 
-		try {
-
+	/** @return true|WP_Error */
+	private static function prepare_legacy_table( $wpdb, $table, $table_exists ) {
+		$result = true;
 		if ( $table_exists ) {
 			$duplicates = (int) $wpdb->get_var( self::duplicate_moid_count_sql( $table ) );
+			$duplicate_tids = (int) $wpdb->get_var( self::duplicate_tid_count_sql( $table ) );
 			if ( $duplicates > 0 ) {
-				return new WP_Error(
+				$result = new WP_Error(
 					'nicepay_schema_duplicate_moid',
 					__( 'NicePay cannot add the unique Moid index until duplicate Moids are reviewed.', 'nicepay-payment-gateway' ),
-					array(
-						'table'            => $table,
-						'duplicate_groups' => $duplicates,
-					)
+					array( 'table' => $table, 'duplicate_groups' => $duplicates )
 				);
-			}
-
-			$duplicate_tids = (int) $wpdb->get_var( self::duplicate_tid_count_sql( $table ) );
-			if ( $duplicate_tids > 0 ) {
-				return new WP_Error(
+			} elseif ( $duplicate_tids > 0 ) {
+				$result = new WP_Error(
 					'nicepay_schema_duplicate_tid',
 					__( 'NicePay cannot add the unique TID index until duplicate transaction IDs are reviewed.', 'nicepay-payment-gateway' ),
-					array(
-						'table'            => $table,
-						'duplicate_groups' => $duplicate_tids,
-					)
+					array( 'table' => $table, 'duplicate_groups' => $duplicate_tids )
 				);
-			}
-
-			// dbDelta does not reliably change nullability. Make the legacy empty
-			// TID sentinel nullable before converting it, otherwise MySQL running
-			// without strict mode silently writes the empty string back.
-			if ( self::column_exists( $wpdb, $table, 'tid' ) ) {
-				$altered = $wpdb->query( "ALTER TABLE {$table} MODIFY tid varchar(50) NULL" );
-				if ( false === $altered || ! empty( $wpdb->last_error ) ) {
-					return new WP_Error(
-						'nicepay_schema_tid_nullable_failed',
-						__( 'NicePay could not make the legacy transaction ID nullable.', 'nicepay-payment-gateway' ),
-						array( 'database_error' => $wpdb->last_error )
-					);
-				}
-				$normalized = $wpdb->query( "UPDATE {$table} SET tid = NULL WHERE tid = ''" );
-				if ( false === $normalized || ! empty( $wpdb->last_error ) ) {
-					return new WP_Error( 'nicepay_schema_tid_normalization_failed', __( 'NicePay could not normalize legacy transaction IDs.', 'nicepay-payment-gateway' ) );
-				}
+			} elseif ( self::column_exists( $wpdb, $table, 'tid' ) ) {
+				$result = self::normalize_legacy_tid( $wpdb, $table );
 			}
 		}
+		return $result;
+	}
 
+	/** @return true|WP_Error */
+	private static function normalize_legacy_tid( $wpdb, $table ) {
+		$result  = true;
+		$altered = $wpdb->query( "ALTER TABLE {$table} MODIFY tid varchar(50) NULL" );
+		if ( false === $altered || ! empty( $wpdb->last_error ) ) {
+			$result = new WP_Error(
+				'nicepay_schema_tid_nullable_failed',
+				__( 'NicePay could not make the legacy transaction ID nullable.', 'nicepay-payment-gateway' ),
+				array( 'database_error' => $wpdb->last_error )
+			);
+		} else {
+			$normalized = $wpdb->query( "UPDATE {$table} SET tid = NULL WHERE tid = ''" );
+			if ( false === $normalized || ! empty( $wpdb->last_error ) ) {
+				$result = new WP_Error( 'nicepay_schema_tid_normalization_failed', __( 'NicePay could not normalize legacy transaction IDs.', 'nicepay-payment-gateway' ) );
+			}
+		}
+		return $result;
+	}
+
+	/** @return array<int,mixed>|WP_Error */
+	private static function run_db_delta( $wpdb, $db_delta, array $context ) {
 		if ( null === $db_delta ) {
 			if ( ! function_exists( 'dbDelta' ) ) {
 				require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -223,74 +261,66 @@ final class NicePay_Installer {
 			$db_delta = 'dbDelta';
 		}
 
-		if ( ! is_callable( $db_delta ) ) {
-			return new WP_Error( 'nicepay_schema_missing_dbdelta', __( 'NicePay schema installation requires dbDelta.', 'nicepay-payment-gateway' ) );
-		}
-
-		$sql            = NicePay_Transaction_Schema::create_table_sql( $table, $wpdb->get_charset_collate() );
-		$refund_sql     = NicePay_Transaction_Schema::create_refund_table_sql( $refund_table, $wpdb->get_charset_collate() );
-		$audit_sql      = NicePay_Transaction_Schema::create_reconciliation_audit_table_sql( $audit_table, $wpdb->get_charset_collate() );
-		$changes        = call_user_func( $db_delta, $sql );
-		$refund_changes = call_user_func( $db_delta, $refund_sql );
-		$audit_changes  = call_user_func( $db_delta, $audit_sql );
-
-		if ( ! empty( $wpdb->last_error ) ) {
-			return new WP_Error(
-				'nicepay_schema_db_error',
-				__( 'NicePay transaction schema upgrade failed.', 'nicepay-payment-gateway' ),
-				array( 'database_error' => $wpdb->last_error )
+		$result = new WP_Error( 'nicepay_schema_missing_dbdelta', __( 'NicePay schema installation requires dbDelta.', 'nicepay-payment-gateway' ) );
+		if ( is_callable( $db_delta ) ) {
+			$sql = array(
+				NicePay_Transaction_Schema::create_table_sql( $context['table'], $wpdb->get_charset_collate() ),
+				NicePay_Transaction_Schema::create_refund_table_sql( $context['refund_table'], $wpdb->get_charset_collate() ),
+				NicePay_Transaction_Schema::create_reconciliation_audit_table_sql( $context['audit_table'], $wpdb->get_charset_collate() ),
 			);
+			$changes = array();
+			foreach ( $sql as $statement ) {
+				$statement_changes = call_user_func( $db_delta, $statement );
+				$changes = array_merge( $changes, is_array( $statement_changes ) ? $statement_changes : array() );
+			}
+			$result = empty( $wpdb->last_error )
+				? $changes
+				: new WP_Error(
+					'nicepay_schema_db_error',
+					__( 'NicePay transaction schema upgrade failed.', 'nicepay-payment-gateway' ),
+					array( 'database_error' => $wpdb->last_error )
+				);
+		}
+		return $result;
+	}
+
+	/** @return true|WP_Error */
+	private static function finalize_install( $wpdb, array $context ) {
+		$tables_exist = self::table_exists( $wpdb, $context['table'] ) &&
+			self::table_exists( $wpdb, $context['refund_table'] ) &&
+			self::table_exists( $wpdb, $context['audit_table'] );
+		$result = $tables_exist
+			? self::verify_schema( $wpdb, $context['table'], $context['refund_table'], $context['audit_table'] )
+			: new WP_Error( 'nicepay_schema_table_missing', __( 'NicePay transaction schema upgrade did not create all required tables.', 'nicepay-payment-gateway' ) );
+
+		foreach ( array( 'backfill_legacy_rows', 'scrub_legacy_sensitive_data' ) as $operation ) {
+			if ( ! is_wp_error( $result ) ) {
+				$result = self::{$operation}( $wpdb, $context['table'] );
+			}
 		}
 
-		if ( ! self::table_exists( $wpdb, $table ) || ! self::table_exists( $wpdb, $refund_table ) ||
-			! self::table_exists( $wpdb, $audit_table ) ) {
-			return new WP_Error(
-				'nicepay_schema_table_missing',
-				__( 'NicePay transaction schema upgrade did not create all required tables.', 'nicepay-payment-gateway' )
-			);
+		if ( ! is_wp_error( $result ) && $context['current'] !== $context['target'] &&
+			false === update_option( self::VERSION_OPTION, $context['target'], false ) ) {
+			$result = new WP_Error( 'nicepay_schema_version_write_failed', __( 'NicePay could not store the transaction schema version.', 'nicepay-payment-gateway' ) );
 		}
+		if ( ! is_wp_error( $result ) &&
+			(string) get_option( self::VERIFIED_VERSION_OPTION, '' ) !== $context['target'] &&
+			false === update_option( self::VERIFIED_VERSION_OPTION, $context['target'], false ) ) {
+			$result = new WP_Error( 'nicepay_schema_verification_write_failed', __( 'NicePay could not store the verified schema version.', 'nicepay-payment-gateway' ) );
+		}
+		return $result;
+	}
 
-		$verified = self::verify_schema( $wpdb, $table, $refund_table, $audit_table );
-		if ( is_wp_error( $verified ) ) {
-			return $verified;
-		}
-
-		$backfilled = self::backfill_legacy_rows( $wpdb, $table );
-		if ( is_wp_error( $backfilled ) ) {
-			return $backfilled;
-		}
-
-		// Clean spent credentials only after the physical schema is proven. The
-		// legacy payment payload is deliberately retained unless an operator calls
-		// scrub_legacy_payment_payloads() with explicit confirmation.
-		$scrubbed = self::scrub_legacy_sensitive_data( $wpdb, $table );
-		if ( is_wp_error( $scrubbed ) ) {
-			return $scrubbed;
-		}
-
-		if ( $current !== $target && false === update_option( self::VERSION_OPTION, $target, false ) ) {
-			return new WP_Error( 'nicepay_schema_version_write_failed', __( 'NicePay could not store the transaction schema version.', 'nicepay-payment-gateway' ) );
-		}
-		if ( (string) get_option( self::VERIFIED_VERSION_OPTION, '' ) !== $target &&
-			false === update_option( self::VERIFIED_VERSION_OPTION, $target, false ) ) {
-			return new WP_Error( 'nicepay_schema_verification_write_failed', __( 'NicePay could not store the verified schema version.', 'nicepay-payment-gateway' ) );
-		}
-
+	/** @return array<string,mixed> */
+	private static function install_response( $status, array $context, array $changes ) {
 		return array(
-			'status'  => 'installed',
-			'version' => $target,
-			'table'   => $table,
-			'refund_table' => $refund_table,
-			'audit_table'  => $audit_table,
-			'changes' => array_merge(
-				is_array( $changes ) ? $changes : array(),
-				is_array( $refund_changes ) ? $refund_changes : array(),
-				is_array( $audit_changes ) ? $audit_changes : array()
-			),
+			'status'       => $status,
+			'version'      => $context['target'],
+			'table'        => $context['table'],
+			'refund_table' => $context['refund_table'],
+			'audit_table'  => $context['audit_table'],
+			'changes'      => $changes,
 		);
-		} finally {
-			delete_option( self::LOCK_OPTION );
-		}
 	}
 
 	/**
@@ -299,68 +329,43 @@ final class NicePay_Installer {
 	 * @return true|WP_Error
 	 */
 	public static function verify_schema( $wpdb, $table, $refund_table, $audit_table ) {
+		$result = true;
 		if ( ! method_exists( $wpdb, 'get_results' ) ) {
-			return new WP_Error( 'nicepay_schema_inspection_unavailable', __( 'NicePay cannot verify the upgraded schema.', 'nicepay-payment-gateway' ) );
-		}
-
-		$required_columns = array_keys( NicePay_Transaction_Schema::columns() );
-		$column_rows      = $wpdb->get_results( "SHOW COLUMNS FROM {$table}" );
-		$columns          = array();
-		foreach ( (array) $column_rows as $row ) {
-			if ( isset( $row->Field ) ) {
-				$columns[] = (string) $row->Field;
-			}
-		}
-
-		$required_indexes = array(
-			'uniq_moid',
-			'uniq_tid',
-			'uniq_active_attempt',
-			'idx_source_ref',
-			'idx_status_offer_expiry',
-			'idx_status_approval_started',
-		);
-		$index_rows       = $wpdb->get_results( "SHOW INDEX FROM {$table}" );
-		$indexes          = array();
-		foreach ( (array) $index_rows as $row ) {
-			if ( isset( $row->Key_name ) ) {
-				$indexes[] = (string) $row->Key_name;
-			}
-		}
-
-		$missing_columns = array_values( array_diff( $required_columns, array_unique( $columns ) ) );
-		$missing_indexes = array_values( array_diff( $required_indexes, array_unique( $indexes ) ) );
-		if ( ! empty( $missing_columns ) || ! empty( $missing_indexes ) ) {
-			return new WP_Error(
-				'nicepay_schema_verification_failed',
-				__( 'NicePay transaction schema is incomplete after dbDelta.', 'nicepay-payment-gateway' ),
-				array( 'missing_columns' => $missing_columns, 'missing_indexes' => $missing_indexes )
+			$result = new WP_Error( 'nicepay_schema_inspection_unavailable', __( 'NicePay cannot verify the upgraded schema.', 'nicepay-payment-gateway' ) );
+		} else {
+			$required_indexes = array(
+				'uniq_moid', 'uniq_tid', 'uniq_active_attempt', 'idx_source_ref',
+				'idx_status_offer_expiry', 'idx_status_approval_started',
 			);
-		}
+			$columns         = self::schema_names( $wpdb->get_results( "SHOW COLUMNS FROM {$table}" ), 'Field' );
+			$indexes         = self::schema_names( $wpdb->get_results( "SHOW INDEX FROM {$table}" ), 'Key_name' );
+			$missing_columns = array_values( array_diff( array_keys( NicePay_Transaction_Schema::columns() ), $columns ) );
+			$missing_indexes = array_values( array_diff( $required_indexes, $indexes ) );
 
-		$refund_indexes = $wpdb->get_results( "SHOW INDEX FROM {$refund_table}" );
-		$refund_names   = array();
-		foreach ( (array) $refund_indexes as $row ) {
-			if ( isset( $row->Key_name ) ) {
-				$refund_names[] = (string) $row->Key_name;
+			if ( ! empty( $missing_columns ) || ! empty( $missing_indexes ) ) {
+				$result = new WP_Error(
+					'nicepay_schema_verification_failed',
+					__( 'NicePay transaction schema is incomplete after dbDelta.', 'nicepay-payment-gateway' ),
+					array( 'missing_columns' => $missing_columns, 'missing_indexes' => $missing_indexes )
+				);
+			} elseif ( ! in_array( 'uniq_cancel_moid', self::schema_names( $wpdb->get_results( "SHOW INDEX FROM {$refund_table}" ), 'Key_name' ), true ) ) {
+				$result = new WP_Error( 'nicepay_schema_verification_failed', __( 'NicePay refund ledger is missing its identity index.', 'nicepay-payment-gateway' ) );
+			} elseif ( ! in_array( 'idx_reconciliation_transaction', self::schema_names( $wpdb->get_results( "SHOW INDEX FROM {$audit_table}" ), 'Key_name' ), true ) ) {
+				$result = new WP_Error( 'nicepay_schema_verification_failed', __( 'NicePay reconciliation audit ledger is missing its transaction index.', 'nicepay-payment-gateway' ) );
 			}
 		}
-		if ( ! in_array( 'uniq_cancel_moid', $refund_names, true ) ) {
-			return new WP_Error( 'nicepay_schema_verification_failed', __( 'NicePay refund ledger is missing its identity index.', 'nicepay-payment-gateway' ) );
-		}
+		return $result;
+	}
 
-		$audit_indexes = $wpdb->get_results( "SHOW INDEX FROM {$audit_table}" );
-		$audit_names   = array();
-		foreach ( (array) $audit_indexes as $row ) {
-			if ( isset( $row->Key_name ) ) {
-				$audit_names[] = (string) $row->Key_name;
+	/** @return string[] */
+	private static function schema_names( $rows, $property ) {
+		$names = array();
+		foreach ( (array) $rows as $row ) {
+			if ( is_object( $row ) && isset( $row->{$property} ) ) {
+				$names[] = (string) $row->{$property};
 			}
 		}
-		if ( ! in_array( 'idx_reconciliation_transaction', $audit_names, true ) ) {
-			return new WP_Error( 'nicepay_schema_verification_failed', __( 'NicePay reconciliation audit ledger is missing its transaction index.', 'nicepay-payment-gateway' ) );
-		}
-
-		return true;
+		return array_values( array_unique( $names ) );
 	}
 
 	/**
@@ -434,8 +439,8 @@ final class NicePay_Installer {
 	 * @return bool
 	 */
 	private static function column_exists( $wpdb, $table, $column ) {
-		if ( ! preg_match( '/^[A-Za-z0-9_]+$/', $table ) ||
-			! preg_match( '/^[A-Za-z0-9_]+$/', $column ) ||
+		if ( ! preg_match( NicePay_Transaction_Schema::IDENTIFIER_PATTERN, $table ) ||
+			! preg_match( NicePay_Transaction_Schema::IDENTIFIER_PATTERN, $column ) ||
 			! method_exists( $wpdb, 'prepare' ) || ! method_exists( $wpdb, 'get_var' ) ) {
 			return false;
 		}

@@ -12,8 +12,9 @@ if ( ! function_exists( 'admin_url' ) ) {
 }
 
 if ( ! function_exists( 'add_action' ) ) {
-    function add_action( $hook_name, $callback ) {
-        return true;
+	    function add_action( $hook_name, $callback ) {
+		unset( $hook_name, $callback );
+	        return true;
     }
 }
 
@@ -29,7 +30,9 @@ if ( ! class_exists( 'WC_Payment_Gateway' ) ) {
         public $title;
         public $description;
         public $enabled;
-        public function init_settings() {}
+	        public function init_settings() {
+			// Intentionally empty: this focused gateway double has no persisted WooCommerce settings to load.
+		}
         public function get_option( $key, $default = null ) {
             return isset( $this->form_fields[ $key ]['default'] ) ? $this->form_fields[ $key ]['default'] : $default;
         }
@@ -79,8 +82,9 @@ class NicePayRefundWpdbFake {
 	public $update_results = array();
 	public $update_history = array();
 
-    public function insert( $table, $data, $formats ) {
-        $this->insert_data = $data;
+	    public function insert( $table, $data, $formats ) {
+		unset( $table, $formats );
+	        $this->insert_data = $data;
 		return $this->insert_result;
     }
 
@@ -102,7 +106,8 @@ class NicePayRefundWpdbFake {
         return $this->query_result;
     }
 
-    public function update( $table, $data, $where, $formats = null, $where_formats = null ) {
+	    public function update( $table, $data, $where, $formats = null, $where_formats = null ) {
+		unset( $formats, $where_formats );
         $this->update_data  = $data;
         $this->update_where = $where;
 		$this->update_history[] = array( 'table' => $table, 'data' => $data, 'where' => $where );
@@ -176,7 +181,7 @@ class NicePayRefundTest extends TestCase {
         $this->assertSame( '500', $wpdb->update_data['refunded_amount'] );
         $this->assertSame( '500', $wpdb->update_data['remaining_amount'] );
         $this->assertSame( 'requested', $wpdb->update_where['cancel_status'] );
-        $this->assertSame( $wpdb->update_data['cancel_status'], 'confirmed' );
+	        $this->assertSame( 'confirmed', $wpdb->update_data['cancel_status'] );
     }
 
 	public function test_transport_error_locks_refund_for_reconciliation(): void {

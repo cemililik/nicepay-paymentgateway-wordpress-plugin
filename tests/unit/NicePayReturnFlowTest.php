@@ -38,7 +38,10 @@ if ( ! class_exists( 'WC_Payment_Gateway' ) ) {
 			return isset( $this->form_fields[ $key ]['default'] ) ? $this->form_fields[ $key ]['default'] : $default;
 		}
 		public function process_admin_options() { return true; }
-		public function get_return_url( $order = null ) { return 'https://example.com/order-received/'; }
+			public function get_return_url( $order = null ) {
+				unset( $order );
+				return 'https://example.com/order-received/';
+			}
 	}
 }
 
@@ -95,6 +98,7 @@ final class NicePayReturnFlowWpdbFake {
 	}
 
 	public function update( $table, $data, $where, $formats = null, $where_formats = null ) {
+		unset( $table, $where, $formats, $where_formats );
 		$this->updates[] = $data;
 		$result = empty( $this->update_results ) ? 1 : array_shift( $this->update_results );
 		if ( false !== $result && 0 !== (int) $result ) {
@@ -119,7 +123,10 @@ final class NicePayWooReturnOrderFake {
 	public function get_order_key() { return 'wc_order_key_42'; }
 	public function get_payment_method() { return 'nicepay'; }
 	public function needs_payment() { return in_array( $this->status, array( 'pending', 'failed' ), true ); }
-	public function get_checkout_payment_url( $on_checkout = false ) { return 'https://example.com/order-pay/42/'; }
+	public function get_checkout_payment_url( $on_checkout = false ) {
+		unset( $on_checkout );
+		return 'https://example.com/order-pay/42/';
+	}
 	public function update_status( $status, $note = '' ) {
 		$this->status = $status;
 		if ( '' !== $note ) {
@@ -357,20 +364,14 @@ final class NicePayReturnFlowTest extends TestCase {
 	}
 
 	private function run_handler(): string {
-		$handler  = new NicePay_Return_Handler();
-		$property = new ReflectionProperty( NicePay_Return_Handler::class, 'api' );
-		$property->setAccessible( true );
-		$property->setValue( $handler, $this->api );
+		$handler = new NicePay_Return_Handler( $this->api );
 		ob_start();
 		$handler->process();
 		return (string) ob_get_clean();
 	}
 
 	private function run_woocommerce_handler(): void {
-		$gateway  = new WC_Gateway_NicePay();
-		$property = new ReflectionProperty( WC_Gateway_NicePay::class, 'api' );
-		$property->setAccessible( true );
-		$property->setValue( $gateway, $this->api );
+		$gateway = new WC_Gateway_NicePay( $this->api );
 		$gateway->handle_return();
 	}
 

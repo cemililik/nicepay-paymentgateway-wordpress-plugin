@@ -19,6 +19,8 @@ for required_path in \
     "$plugin_slug/includes/class-nicepay-gateway.php" \
     "$plugin_slug/includes/class-nicepay-inbound-validator.php" \
     "$plugin_slug/includes/class-nicepay-installer.php" \
+	"$plugin_slug/includes/class-nicepay-refund-processor.php" \
+	"$plugin_slug/includes/class-nicepay-woocommerce-return-handler.php" \
 	"$plugin_slug/includes/class-nicepay-retention.php" \
     "$plugin_slug/includes/class-nicepay-transaction-schema.php" \
     "$plugin_slug/includes/class-nicepay-blocks-integration.php" \
@@ -27,7 +29,11 @@ for required_path in \
     "$plugin_slug/assets/js/nicepay-admin.js" \
     "$plugin_slug/assets/js/nicepay-shortcode-admin.js" \
     "$plugin_slug/assets/js/nicepay-blocks.js" \
+	"$plugin_slug/admin/views/general-settings.php" \
+	"$plugin_slug/admin/views/shortcode-generator.php" \
+	"$plugin_slug/admin/views/transactions.php" \
     "$plugin_slug/templates/payment-form.php" \
+	"$plugin_slug/templates/payment-result.php" \
 	"$plugin_slug/readme.txt" \
     "$plugin_slug/README.md" \
     "$plugin_slug/LICENSE" \

@@ -44,6 +44,7 @@ if ( ! function_exists( 'wp_next_scheduled' ) ) {
 
 if ( ! function_exists( 'did_action' ) ) {
     function did_action( $hook ) {
+		unset( $hook );
         return 0;
     }
 }
@@ -62,6 +63,7 @@ if ( ! function_exists( 'apply_filters' ) ) {
 
 if ( ! function_exists( 'current_user_can' ) ) {
     function current_user_can( $capability ) {
+		unset( $capability );
         global $nicepay_admin_test_can_manage;
         return (bool) $nicepay_admin_test_can_manage;
     }
@@ -80,6 +82,7 @@ if ( ! function_exists( 'check_admin_referer' ) ) {
 
 if ( ! function_exists( 'wp_die' ) ) {
     function wp_die( $message = '', $title = '', $args = array() ) {
+		unset( $title );
         $response = is_array( $args ) && isset( $args['response'] ) ? (int) $args['response'] : 500;
         throw new NicePayAdminOperationsDieException( (string) $message, $response );
     }
@@ -114,6 +117,7 @@ class NicePayAdminOperationsWpdbFake {
     }
 
     public function get_results( $query, $output = null ) {
+		unset( $output );
         $this->queries[] = $query;
         if ( false !== strpos( $query, 'GROUP BY currency' ) ) {
             return $this->summary_rows;
@@ -123,16 +127,14 @@ class NicePayAdminOperationsWpdbFake {
 
     public function get_var( $query ) {
         $this->queries[] = $query;
-		if ( false !== strpos( $query, 'wp_nicepay_reconciliation_audit' ) ) {
-			return 'wp_nicepay_reconciliation_audit';
+		$result = null;
+		foreach ( array( 'wp_nicepay_reconciliation_audit', 'wp_nicepay_refund_attempts', 'wp_nicepay_transactions' ) as $table ) {
+			if ( false !== strpos( $query, $table ) ) {
+				$result = $table;
+				break;
+			}
 		}
-        if ( false !== strpos( $query, 'wp_nicepay_refund_attempts' ) ) {
-            return 'wp_nicepay_refund_attempts';
-        }
-        if ( false !== strpos( $query, 'wp_nicepay_transactions' ) ) {
-            return 'wp_nicepay_transactions';
-        }
-        return null;
+		return $result;
     }
 
     public function get_row( $query ) {
@@ -434,6 +436,8 @@ class NicePayAdminOperationsTest extends TestCase {
 
     public function test_admin_ui_exposes_escaped_report_filtered_export_and_contrast_variables(): void {
         $transactions_source = file_get_contents( NICEPAY_PLUGIN_DIR . 'admin/class-nicepay-transactions.php' );
+		$transactions_view   = file_get_contents( NICEPAY_PLUGIN_DIR . 'admin/views/transactions.php' );
+		$transactions_source .= "\n" . $transactions_view;
         $settings_source     = file_get_contents( NICEPAY_PLUGIN_DIR . 'admin/class-nicepay-admin.php' );
 
         $this->assertStringContainsString( "wp_nonce_url(", $transactions_source );

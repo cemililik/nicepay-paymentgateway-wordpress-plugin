@@ -437,7 +437,11 @@
             trigger: document.activeElement,
             bodyOverflow: document.body.style.overflow
         };
-        modal.style.display = 'flex';
+		if (typeof modal.showModal === 'function') {
+			modal.showModal();
+		} else {
+			modal.setAttribute('open', '');
+		}
         document.body.style.overflow = 'hidden';
         var keyHandler = function(event) {
             if (event.key === 'Escape') {
@@ -471,7 +475,11 @@
     function closeModal(formId) {
         var modal = document.getElementById(formId + '-modal');
         var state = modalState.get(formId);
-        if (modal) modal.style.display = 'none';
+		if (modal && typeof modal.close === 'function' && modal.open) {
+			modal.close();
+		} else if (modal) {
+			modal.removeAttribute('open');
+		}
         document.body.style.overflow = state ? state.bodyOverflow : '';
         if (state) {
             document.removeEventListener('keydown', state.keyHandler);

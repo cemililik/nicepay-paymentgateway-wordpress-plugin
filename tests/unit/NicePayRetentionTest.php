@@ -199,7 +199,8 @@ class NicePayRetentionTest extends TestCase {
 	}
 
 	public function test_admin_surface_explains_scope_and_permanent_effects(): void {
-		$source = file_get_contents( NICEPAY_PLUGIN_DIR . 'admin/class-nicepay-admin.php' );
+		$source = file_get_contents( NICEPAY_PLUGIN_DIR . 'admin/class-nicepay-admin.php' ) .
+			file_get_contents( NICEPAY_PLUGIN_DIR . 'admin/views/general-settings.php' );
 
 		$this->assertStringContainsString( 'Financial record retention', $source );
 		$this->assertStringContainsString( 'This is a permanent, legally significant deletion policy.', $source );

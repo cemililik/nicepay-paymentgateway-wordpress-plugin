@@ -44,32 +44,39 @@ class NicePayInstallerWpdbFake {
 		return $query;
 	}
 
-	public function get_var( $query ) {
-		$this->queries[] = $query;
-		if ( 0 === strpos( $query, 'SHOW TABLES LIKE' ) ) {
-			if ( false !== strpos( $query, 'wp_nicepay_reconciliation_audit' ) ) {
-				return $this->audit_table_exists ? 'wp_nicepay_reconciliation_audit' : null;
+		public function get_var( $query ) {
+			$this->queries[] = $query;
+			$result = null;
+			if ( 0 === strpos( $query, 'SHOW TABLES LIKE' ) ) {
+				$result = $this->table_lookup_result( $query );
+			} elseif ( 0 === strpos( $query, 'SHOW COLUMNS FROM' ) ) {
+				$result = $this->column_lookup_result( $query );
+			} elseif ( 0 === strpos( $query, 'SELECT COUNT(*) FROM' ) ) {
+				$result = false !== strpos( $query, 'nicepay_duplicate_tids' ) ? $this->duplicate_tid_groups : $this->duplicate_groups;
 			}
-			if ( false !== strpos( $query, 'wp_nicepay_refund_attempts' ) ) {
-				return $this->refund_table_exists ? 'wp_nicepay_refund_attempts' : null;
-			}
-			return $this->table_exists ? 'wp_nicepay_transactions' : null;
+			return $result;
 		}
-		if ( 0 === strpos( $query, 'SHOW COLUMNS FROM' ) ) {
+
+		private function table_lookup_result( $query ) {
+			$result = $this->table_exists ? 'wp_nicepay_transactions' : null;
+			if ( false !== strpos( $query, 'wp_nicepay_reconciliation_audit' ) ) {
+				$result = $this->audit_table_exists ? 'wp_nicepay_reconciliation_audit' : null;
+			} elseif ( false !== strpos( $query, 'wp_nicepay_refund_attempts' ) ) {
+				$result = $this->refund_table_exists ? 'wp_nicepay_refund_attempts' : null;
+			}
+			return $result;
+		}
+
+		private function column_lookup_result( $query ) {
+			$result = null;
 			foreach ( $this->existing_columns as $column ) {
 				if ( false !== strpos( $query, "'" . $column . "'" ) ) {
-					return $column;
+					$result = $column;
+					break;
 				}
 			}
-			return null;
+			return $result;
 		}
-		if ( 0 === strpos( $query, 'SELECT COUNT(*) FROM' ) ) {
-			return false !== strpos( $query, 'nicepay_duplicate_tids' )
-				? $this->duplicate_tid_groups
-				: $this->duplicate_groups;
-		}
-		return null;
-	}
 
 	public function query( $query ) {
 		$this->queries[] = $query;
@@ -83,9 +90,12 @@ class NicePayInstallerWpdbFake {
 				return (object) array( 'Field' => $column );
 			}, $this->schema_columns );
 		}
-		$indexes = false !== strpos( $query, 'wp_nicepay_reconciliation_audit' )
-			? $this->audit_indexes
-			: ( false !== strpos( $query, 'wp_nicepay_refund_attempts' ) ? $this->refund_indexes : $this->schema_indexes );
+			$indexes = $this->schema_indexes;
+			if ( false !== strpos( $query, 'wp_nicepay_reconciliation_audit' ) ) {
+				$indexes = $this->audit_indexes;
+			} elseif ( false !== strpos( $query, 'wp_nicepay_refund_attempts' ) ) {
+				$indexes = $this->refund_indexes;
+			}
 		return array_map( static function ( $index ) {
 			return (object) array( 'Key_name' => $index );
 		}, $indexes );
@@ -94,15 +104,20 @@ class NicePayInstallerWpdbFake {
 
 class NicePayInstallerTest extends TestCase {
 
-	protected function setUp(): void {
-		global $wp_options;
-		$wp_options = array();
-	}
+		protected function setUp(): void {
+			parent::setUp();
+			$this->reset_options();
+		}
 
-	protected function tearDown(): void {
-		global $wp_options;
-		$wp_options = array();
-	}
+		protected function tearDown(): void {
+			$this->reset_options();
+			parent::tearDown();
+		}
+
+		private function reset_options(): void {
+			global $wp_options;
+			$wp_options = array();
+		}
 
 	public function test_current_version_is_idempotent_and_skips_dbdelta(): void {
 		$wpdb = new NicePayInstallerWpdbFake();

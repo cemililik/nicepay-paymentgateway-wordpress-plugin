@@ -13,6 +13,7 @@ if ( ! function_exists( 'admin_url' ) ) {
 
 if ( ! function_exists( 'add_action' ) ) {
     function add_action( $hook_name, $callback ) {
+		unset( $hook_name, $callback );
         return true;
     }
 }
@@ -57,11 +58,16 @@ require_once NICEPAY_PLUGIN_DIR . 'includes/class-nicepay-gateway.php';
 class NicePayGatewayDefaultsTest extends TestCase {
 
     protected function setUp(): void {
-        global $wp_options;
-        $wp_options = array();
+		parent::setUp();
+		$this->reset_options();
     }
 
     protected function tearDown(): void {
+		$this->reset_options();
+		parent::tearDown();
+	}
+
+	private function reset_options(): void {
         global $wp_options;
         $wp_options = array();
     }

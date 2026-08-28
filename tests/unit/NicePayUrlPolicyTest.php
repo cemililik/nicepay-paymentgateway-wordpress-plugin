@@ -18,6 +18,7 @@ class NicePayUrlPolicyTest extends TestCase {
 
         $this->api          = new NicePay_API();
         $this->validate_url = new ReflectionMethod( NicePay_API::class, 'validate_nicepay_url' );
+		// Test-only reflection verifies the non-public SSRF boundary without widening production visibility.
         $this->validate_url->setAccessible( true );
     }
 
@@ -85,6 +86,7 @@ class NicePayUrlPolicyTest extends TestCase {
 
     public function test_http_policy_disables_redirects_and_pins_utf8(): void {
         $method = new ReflectionMethod( NicePay_API::class, 'request_args' );
+		// Test-only reflection verifies an internal HTTP hardening policy without changing production visibility.
         $method->setAccessible( true );
 
         $args = $method->invoke( $this->api, array( 'MID' => 'nicepay00m' ) );
@@ -97,6 +99,7 @@ class NicePayUrlPolicyTest extends TestCase {
 
     public function test_decode_response_rejects_non_2xx_before_json_parsing(): void {
         $method = new ReflectionMethod( NicePay_API::class, 'decode_response' );
+		// Test-only reflection exercises hostile transport responses at the private parsing boundary.
         $method->setAccessible( true );
 
         $result = $method->invoke(
@@ -114,6 +117,7 @@ class NicePayUrlPolicyTest extends TestCase {
 
     public function test_decode_response_requires_valid_json_object(): void {
         $method = new ReflectionMethod( NicePay_API::class, 'decode_response' );
+		// Test-only reflection exercises hostile transport responses at the private parsing boundary.
         $method->setAccessible( true );
 
         $result = $method->invoke(

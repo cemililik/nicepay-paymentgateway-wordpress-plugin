@@ -5,8 +5,14 @@
  * Run only through tests/integration/run-schema-migration.sh.
  */
 
+final class NicePay_Schema_Integration_Exception extends RuntimeException {
+}
+
+const NICEPAY_IT_TABLE_LOOKUP_SQL = 'SHOW TABLES LIKE %s';
+const NICEPAY_IT_DATETIME_FORMAT  = 'Y-m-d H:i:s';
+
 if ( '1' !== getenv( 'NICEPAY_INTEGRATION_TEST' ) || 'nicepay_integration' !== DB_NAME ) {
-	throw new RuntimeException( 'Refusing to run NicePay schema integration checks outside the disposable test database.' );
+	throw new NicePay_Schema_Integration_Exception( 'Refusing to run NicePay schema integration checks outside the disposable test database.' );
 }
 
 global $wpdb;
@@ -14,7 +20,7 @@ global $wpdb;
 /** @param bool $condition Assertion result. @param string $message Failure message. */
 function nicepay_it_assert( $condition, $message ) {
 	if ( ! $condition ) {
-		throw new RuntimeException( $message );
+		throw new NicePay_Schema_Integration_Exception( $message );
 	}
 }
 
@@ -22,9 +28,9 @@ $table        = NicePay_Installer::table_name( $wpdb );
 $refund_table = NicePay_Installer::refund_table_name( $wpdb );
 $audit_table  = NicePay_Installer::reconciliation_audit_table_name( $wpdb );
 
-nicepay_it_assert( $table === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ), 'Fresh transaction table is missing.' );
-nicepay_it_assert( $refund_table === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $refund_table ) ), 'Fresh refund table is missing.' );
-nicepay_it_assert( $audit_table === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $audit_table ) ), 'Fresh reconciliation audit table is missing.' );
+nicepay_it_assert( $table === $wpdb->get_var( $wpdb->prepare( NICEPAY_IT_TABLE_LOOKUP_SQL, $table ) ), 'Fresh transaction table is missing.' );
+nicepay_it_assert( $refund_table === $wpdb->get_var( $wpdb->prepare( NICEPAY_IT_TABLE_LOOKUP_SQL, $refund_table ) ), 'Fresh refund table is missing.' );
+nicepay_it_assert( $audit_table === $wpdb->get_var( $wpdb->prepare( NICEPAY_IT_TABLE_LOOKUP_SQL, $audit_table ) ), 'Fresh reconciliation audit table is missing.' );
 nicepay_it_assert( NicePay_Installer::is_current(), 'Fresh schema is not current.' );
 
 $indexes = $wpdb->get_col( "SHOW INDEX FROM {$table}", 2 );
@@ -119,9 +125,9 @@ nicepay_it_assert( false !== nicepay_save_transaction( array( 'moid' => 'POST_UP
 
 // Repository timestamps must be UTC even when the database session is not.
 $wpdb->query( "SET time_zone = '+09:00'" );
-$utc_before = gmdate( 'Y-m-d H:i:s' );
+$utc_before = gmdate( NICEPAY_IT_DATETIME_FORMAT );
 $utc_row_id = nicepay_save_transaction( array( 'moid' => 'UTC_CONTRACT_1', 'order_id' => 'utc-contract' ) );
-$utc_after  = gmdate( 'Y-m-d H:i:s' );
+$utc_after  = gmdate( NICEPAY_IT_DATETIME_FORMAT );
 $utc_row    = $wpdb->get_row( $wpdb->prepare( "SELECT created_at, updated_at FROM {$table} WHERE id = %d", $utc_row_id ) );
 nicepay_it_assert( $utc_row && $utc_row->created_at >= $utc_before && $utc_row->created_at <= $utc_after, 'Transaction created_at inherited the database session timezone.' );
 nicepay_it_assert( $utc_row->created_at === $utc_row->updated_at, 'Initial UTC transaction timestamps diverged.' );
@@ -133,7 +139,7 @@ update_option( NicePay_Installer::VERSION_OPTION, NicePay_Installer::schema_vers
 delete_option( NicePay_Installer::VERIFIED_VERSION_OPTION );
 $repair = NicePay_Installer::maybe_install();
 nicepay_it_assert( ! is_wp_error( $repair ), 'Missing-table self-repair failed.' );
-nicepay_it_assert( $refund_table === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $refund_table ) ), 'Refund table was not recreated.' );
+nicepay_it_assert( $refund_table === $wpdb->get_var( $wpdb->prepare( NICEPAY_IT_TABLE_LOOKUP_SQL, $refund_table ) ), 'Refund table was not recreated.' );
 
 // The unique active-attempt key must reject two concurrently prepared payment
 // forms for the same WooCommerce order, even though abandon + insert are two
@@ -221,8 +227,8 @@ for ( $index = 0; $index < 50; $index++ ) {
 		array(
 			'moid'       => sprintf( 'IT_%014d_%016x', $index, $index ),
 			'order_id'   => 'integration-' . $index,
-			'created_at' => gmdate( 'Y-m-d H:i:s' ),
-			'updated_at' => gmdate( 'Y-m-d H:i:s' ),
+			'created_at' => gmdate( NICEPAY_IT_DATETIME_FORMAT ),
+			'updated_at' => gmdate( NICEPAY_IT_DATETIME_FORMAT ),
 		),
 		array( '%s', '%s', '%s', '%s' )
 	);
@@ -348,12 +354,12 @@ delete_option( 'nicepay_delete_data_on_uninstall' );
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	define( 'WP_UNINSTALL_PLUGIN', true );
 }
-require dirname( __DIR__, 2 ) . '/uninstall.php';
-nicepay_it_assert( $table === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ), 'Default uninstall policy deleted the transaction ledger.' );
+require_once dirname( __DIR__, 2 ) . '/uninstall.php';
+nicepay_it_assert( $table === $wpdb->get_var( $wpdb->prepare( NICEPAY_IT_TABLE_LOOKUP_SQL, $table ) ), 'Default uninstall policy deleted the transaction ledger.' );
 update_option( 'nicepay_delete_data_on_uninstall', 'yes', false );
 nicepay_uninstall_current_site();
 foreach ( array( $table, $refund_table, $audit_table ) as $deleted_table ) {
-	nicepay_it_assert( $deleted_table !== $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $deleted_table ) ), 'Opt-in uninstall did not remove a NicePay table.' );
+	nicepay_it_assert( $deleted_table !== $wpdb->get_var( $wpdb->prepare( NICEPAY_IT_TABLE_LOOKUP_SQL, $deleted_table ) ), 'Opt-in uninstall did not remove a NicePay table.' );
 }
 nicepay_it_assert( false === get_option( NicePay_Installer::VERSION_OPTION, false ), 'Opt-in uninstall retained the schema version option.' );
 
