@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-08-28T06:55:53+00:00\n"
+"POT-Creation-Date: 2026-08-28T08:13:50+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: nicepay-payment-gateway\n"
@@ -1506,35 +1506,35 @@ msgstr ""
 msgid "Invalid payment configuration identifier."
 msgstr ""
 
-#: includes/class-nicepay-offer-resolver.php:100
+#: includes/class-nicepay-offer-resolver.php:101
 msgid "This payment currency is not supported."
 msgstr ""
 
-#: includes/class-nicepay-offer-resolver.php:102
+#: includes/class-nicepay-offer-resolver.php:103
 msgid "The saved payment amount is invalid."
 msgstr ""
 
-#: includes/class-nicepay-offer-resolver.php:104
+#: includes/class-nicepay-offer-resolver.php:105
 msgid "The saved goods name is invalid."
 msgstr ""
 
-#: includes/class-nicepay-offer-resolver.php:117
+#: includes/class-nicepay-offer-resolver.php:118
 msgid "Invalid payment method."
 msgstr ""
 
-#: includes/class-nicepay-offer-resolver.php:119
+#: includes/class-nicepay-offer-resolver.php:120
 msgid "The selected payment method does not match this configuration."
 msgstr ""
 
-#: includes/class-nicepay-offer-resolver.php:122
+#: includes/class-nicepay-offer-resolver.php:123
 msgid "The saved payment method is not available."
 msgstr ""
 
-#: includes/class-nicepay-offer-resolver.php:123
+#: includes/class-nicepay-offer-resolver.php:124
 msgid "The selected payment method is not available."
 msgstr ""
 
-#: includes/class-nicepay-offer-resolver.php:138
+#: includes/class-nicepay-offer-resolver.php:139
 msgid "A content or physical-goods classification is required for mobile payments."
 msgstr ""
 

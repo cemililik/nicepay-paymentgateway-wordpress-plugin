@@ -4,7 +4,7 @@ msgstr ""
 "Project-Id-Version: NicePay Payment Gateway 2.0.1\n"
 "Report-Msgid-Bugs-To: https://github.com/cemililik/nicepay-paymentgateway-"
 "wordpress-plugin/issues\n"
-"POT-Creation-Date: 2026-08-28T06:55:53+00:00\n"
+"POT-Creation-Date: 2026-08-28T08:13:50+00:00\n"
 "PO-Revision-Date: 2026-08-27 10:10+0300\n"
 "Last-Translator: NicePay maintainers\n"
 "Language-Team: Turkish\n"
@@ -1595,35 +1595,35 @@ msgstr "Ödeme yapılandırması bulunamadı."
 msgid "Invalid payment configuration identifier."
 msgstr "Geçersiz ödeme yapılandırması tanımlayıcısı."
 
-#: includes/class-nicepay-offer-resolver.php:100
+#: includes/class-nicepay-offer-resolver.php:101
 msgid "This payment currency is not supported."
 msgstr "Bu ödeme para birimi desteklenmiyor."
 
-#: includes/class-nicepay-offer-resolver.php:102
+#: includes/class-nicepay-offer-resolver.php:103
 msgid "The saved payment amount is invalid."
 msgstr "Geçersiz ödeme tutarı."
 
-#: includes/class-nicepay-offer-resolver.php:104
+#: includes/class-nicepay-offer-resolver.php:105
 msgid "The saved goods name is invalid."
 msgstr "Kaydedilen ürün adı geçersiz."
 
-#: includes/class-nicepay-offer-resolver.php:117
+#: includes/class-nicepay-offer-resolver.php:118
 msgid "Invalid payment method."
 msgstr "Geçersiz ödeme yöntemi."
 
-#: includes/class-nicepay-offer-resolver.php:119
+#: includes/class-nicepay-offer-resolver.php:120
 msgid "The selected payment method does not match this configuration."
 msgstr "Seçilen ödeme yöntemi bu yapılandırmayla eşleşmiyor."
 
-#: includes/class-nicepay-offer-resolver.php:122
+#: includes/class-nicepay-offer-resolver.php:123
 msgid "The saved payment method is not available."
 msgstr "Kaydedilen ödeme yöntemi kullanılamıyor."
 
-#: includes/class-nicepay-offer-resolver.php:123
+#: includes/class-nicepay-offer-resolver.php:124
 msgid "The selected payment method is not available."
 msgstr "Seçilen ödeme yöntemi kullanılamıyor."
 
-#: includes/class-nicepay-offer-resolver.php:138
+#: includes/class-nicepay-offer-resolver.php:139
 msgid ""
 "A content or physical-goods classification is required for mobile payments."
 msgstr ""

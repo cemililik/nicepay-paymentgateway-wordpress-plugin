@@ -85,8 +85,9 @@ final class NicePay_Offer_Resolver {
 		$currency = isset( $config['currency'] ) && is_string( $config['currency'] )
 			? strtoupper( trim( $config['currency'] ) )
 			: '';
+		$raw_amount = isset( $config['amount'] ) ? $config['amount'] : null;
 		$amount = 'KRW' === $currency
-			? nicepay_normalize_amount( isset( $config['amount'] ) ? $config['amount'] : null, $currency )
+			? nicepay_normalize_amount( $raw_amount, $currency )
 			: false;
 		$raw_goods = isset( $config['goods_name'] ) && is_string( $config['goods_name'] )
 			? trim( $config['goods_name'] )
